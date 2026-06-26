@@ -29,24 +29,39 @@ export async function GET() {
     aggressive: 'تهاجمی',
   }
 
-  const rows = [['نام', 'ایمیل', 'موبایل', 'سن', 'A|CAP+', 'تعداد تست', 'آخرین نوع سرمایه‌گذاری', 'آخرین امتیاز', 'تاریخ ثبت‌نام'].join(',')]
+  const rows = [['نام', 'ایمیل', 'موبایل', 'سن', 'A|CAP+', 'تاریخ ثبت‌نام', 'امتیاز تست', 'نوع سرمایه‌گذاری', 'تاریخ تست'].join(',')]
 
   for (const u of allUsers) {
     const p = profileMap[u.id]
     const s = subMap[u.id]
     const rs = resultsMap[u.id] || []
-    const last = rs[rs.length - 1]
-    rows.push([
-      `"${u.name}"`,
-      `"${u.email}"`,
-      `"${p?.phone || ''}"`,
-      p?.age ?? '',
-      s?.acapPlus ? 'بله' : 'خیر',
-      rs.length,
-      last ? `"${TYPE_LABELS[last.investorType] || last.investorType}"` : '',
-      last ? last.score : '',
-      new Date(u.createdAt).toLocaleDateString('fa-IR'),
-    ].join(','))
+    const phone = p?.phone || rs.find(r => r.phone)?.phone || ''
+
+    if (rs.length === 0) {
+      rows.push([
+        `"${u.name}"`,
+        `"${u.email}"`,
+        `"${phone}"`,
+        p?.age ?? '',
+        s?.acapPlus ? 'بله' : 'خیر',
+        new Date(u.createdAt).toLocaleDateString('fa-IR'),
+        '', '', '',
+      ].join(','))
+    } else {
+      for (const r of rs) {
+        rows.push([
+          `"${u.name}"`,
+          `"${u.email}"`,
+          `"${phone}"`,
+          p?.age ?? '',
+          s?.acapPlus ? 'بله' : 'خیر',
+          new Date(u.createdAt).toLocaleDateString('fa-IR'),
+          r.score,
+          `"${TYPE_LABELS[r.investorType] || r.investorType}"`,
+          new Date(r.createdAt).toLocaleDateString('fa-IR'),
+        ].join(','))
+      }
+    }
   }
 
   return new Response('\uFEFF' + rows.join('\n'), {

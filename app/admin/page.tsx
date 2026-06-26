@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
-import { createTicket } from '@/app/actions/tickets'
 import { useSession } from '@/lib/auth-client'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
@@ -15,8 +14,8 @@ export default function AdminPage() {
   const [tab, setTab] = useState<'users' | 'tickets'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null)
-  const [sugUser, setSugUser] = useState<string | null>(null)
   const [sugTitle, setSugTitle] = useState('')
   const [sugContent, setSugContent] = useState('')
   const [replyMsg, setReplyMsg] = useState('')
@@ -41,11 +40,13 @@ export default function AdminPage() {
       ...u,
       subscription: u.subscription ? { ...u.subscription, acapPlus: !current } : null,
     } : u))
+    if (selectedUser?.id === userId) {
+      setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, acapPlus: !current } : null } : null)
+    }
   }
 
   async function handleSuggestion(userId: string) {
     await sendSuggestion(userId, sugTitle, sugContent)
-    setSugUser(null)
     setSugTitle('')
     setSugContent('')
   }
@@ -76,50 +77,67 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-950 text-white p-6" dir="rtl">
       <h1 className="text-2xl font-bold mb-6">پنل مدیریت A|CAP</h1>
       <div className="flex gap-4 mb-6">
-        <button onClick={() => setTab('users')} className={`px-4 py-2 rounded ${tab === 'users' ? 'bg-emerald-600' : 'bg-gray-700'}`}>کاربران</button>
-        <button onClick={() => setTab('tickets')} className={`px-4 py-2 rounded ${tab === 'tickets' ? 'bg-emerald-600' : 'bg-gray-700'}`}>تیکت‌ها</button>
+        <button onClick={() => { setTab('users'); setSelectedUser(null) }} className={`px-4 py-2 rounded ${tab === 'users' ? 'bg-emerald-600' : 'bg-gray-700'}`}>کاربران</button>
+        <button onClick={() => { setTab('tickets'); setSelectedTicket(null) }} className={`px-4 py-2 rounded ${tab === 'tickets' ? 'bg-emerald-600' : 'bg-gray-700'}`}>تیکت‌ها</button>
         <a href="/api/export-csv" download className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 transition-colors">📥 خروجی CSV</a>
       </div>
 
       {tab === 'users' && (
-        <div className="space-y-4">
-          {users.map(u => (
-            <div key={u.id} className="bg-gray-900 p-4 rounded-lg border border-gray-800">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold">{u.name}</p>
-                  <p className="text-sm text-gray-400">{u.email}</p>
-                  {u.profile && <p className="text-sm text-gray-400">تلفن: {u.profile.phone}</p>}
-                  {u.profile?.age && <p className="text-sm text-gray-400">سن: {u.profile.age}</p>}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleToggle(u.id, u.subscription?.acapPlus ?? false)}
-                    className={`px-3 py-1 rounded text-sm ${u.subscription?.acapPlus ? 'bg-amber-600' : 'bg-gray-600'}`}
-                  >
-                    {u.subscription?.acapPlus ? 'A|CAP+ فعال' : 'فعال‌سازی A|CAP+'}
-                  </button>
-                  <button onClick={() => setSugUser(sugUser === u.id ? null : u.id)} className="px-3 py-1 bg-blue-600 rounded text-sm">
-                    ارسال پیشنهاد
-                  </button>
-                </div>
+        <div className="flex gap-4">
+          <div className="w-1/3 space-y-2">
+            {users.map(u => (
+              <div key={u.id} onClick={() => setSelectedUser(u)} className={`bg-gray-900 p-3 rounded cursor-pointer border ${selectedUser?.id === u.id ? 'border-emerald-500' : 'border-gray-800 hover:border-gray-600'}`}>
+                <p className="font-semibold">{u.name}</p>
+                <p className="text-xs text-gray-400">{u.email}</p>
+                <p className="text-xs text-gray-500">{u.profile?.phone || '—'}</p>
               </div>
-              {sugUser === u.id && (
-                <div className="mt-4 space-y-2 border-t border-gray-700 pt-4">
+            ))}
+          </div>
+          <div className="flex-1">
+            {selectedUser ? (
+              <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
+                <h2 className="text-xl font-bold mb-4">{selectedUser.name}</h2>
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between py-2 border-b border-gray-800">
+                    <span className="text-gray-400">ایمیل</span>
+                    <span>{selectedUser.email}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-800">
+                    <span className="text-gray-400">موبایل</span>
+                    <span>{selectedUser.profile?.phone || '—'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-800">
+                    <span className="text-gray-400">سن</span>
+                    <span>{selectedUser.profile?.age || '—'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-800">
+                    <span className="text-gray-400">A|CAP+</span>
+                    <button
+                      onClick={() => handleToggle(selectedUser.id, selectedUser.subscription?.acapPlus ?? false)}
+                      className={`px-3 py-1 rounded text-sm ${selectedUser.subscription?.acapPlus ? 'bg-amber-600' : 'bg-gray-600'}`}
+                    >
+                      {selectedUser.subscription?.acapPlus ? 'فعال' : 'غیرفعال'}
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="font-semibold mb-3">ارسال پیشنهاد</h3>
+                <div className="space-y-2">
                   <input value={sugTitle} onChange={e => setSugTitle(e.target.value)} placeholder="عنوان پیشنهاد" className="w-full p-2 rounded bg-gray-800 border border-gray-700" />
                   <textarea value={sugContent} onChange={e => setSugContent(e.target.value)} placeholder="متن پیشنهاد" rows={3} className="w-full p-2 rounded bg-gray-800 border border-gray-700" />
-                  <button onClick={() => handleSuggestion(u.id)} className="px-4 py-2 bg-emerald-600 rounded">ارسال</button>
+                  <button onClick={() => handleSuggestion(selectedUser.id)} className="px-4 py-2 bg-emerald-600 rounded">ارسال پیشنهاد</button>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">روی یک کاربر کلیک کنید</div>
+            )}
+          </div>
         </div>
       )}
 
       {tab === 'tickets' && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <h2 className="text-lg font-semibold mb-2">تیکت‌ها</h2>
             {tickets.map(t => (
               <div key={t.id} onClick={() => openTicket(t.id)} className={`bg-gray-900 p-3 rounded cursor-pointer border ${selectedTicket === t.id ? 'border-emerald-500' : 'border-gray-800'}`}>
                 <p className="font-medium">{t.subject}</p>
@@ -130,7 +148,6 @@ export default function AdminPage() {
           <div className="space-y-4">
             {selectedTicket && (
               <>
-                <h2 className="text-lg font-semibold">پیام‌ها</h2>
                 {msgs.map(m => (
                   <div key={m.id} className="bg-gray-900 p-3 rounded">
                     <p className="text-sm">{m.message}</p>
