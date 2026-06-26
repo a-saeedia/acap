@@ -7,8 +7,9 @@ import { signOut } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import {
   User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle
+  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X
 } from 'lucide-react'
+import { saveProfile } from '@/app/actions/profile'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
@@ -48,10 +49,21 @@ export function DashboardClient({ data }: Props) {
   const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
   const phone = profile?.phone || quizResults.find(r => r.phone)?.phone || ''
   const [isAdmin, setIsAdmin] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [phoneMsg, setPhoneMsg] = useState('')
+  const [dismissBanner, setDismissBanner] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
   }, [])
+
+  const handleSavePhone = async () => {
+    if (!/^0\d{10}$/.test(phoneInput)) { setPhoneMsg('شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد'); return }
+    setPhoneMsg('')
+    await saveProfile({ phone: phoneInput })
+    setPhoneMsg('✓ شماره موبایل با موفقیت ثبت شد')
+    setTimeout(() => window.location.reload(), 1500)
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -100,6 +112,29 @@ export function DashboardClient({ data }: Props) {
           </h1>
           <p className="text-muted-foreground text-sm">{user.email}</p>
         </motion.div>
+
+        {/* Phone warning banner */}
+        {!phone && !dismissBanner && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6"
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-amber-400 font-semibold mb-2">شماره موبایل شما ثبت نشده است</p>
+                <p className="text-amber-300/70 text-sm mb-3">برای استفاده از تمامی امکانات، لطفاً شماره موبایل خود را وارد کنید</p>
+                <div className="flex gap-2">
+                  <input value={phoneInput} onChange={e => setPhoneInput(e.target.value)} placeholder="شماره موبایل (مثال: ۰۹۱۲۳۴۵۶۷۸۹)" type="tel" className="input-field flex-1" />
+                  <button onClick={handleSavePhone} className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors">ثبت</button>
+                </div>
+                {phoneMsg && <p className={`text-sm mt-2 ${phoneMsg.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>{phoneMsg}</p>}
+              </div>
+              <button onClick={() => setDismissBanner(true)} className="text-amber-400/50 hover:text-amber-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
