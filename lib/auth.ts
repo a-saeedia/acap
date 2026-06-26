@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { Pool } from 'pg'
+import { sendResetPasswordEmail } from './email'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -26,7 +27,12 @@ export const auth = betterAuth({
   database: pool,
   baseURL: getBaseURL(),
   trustedOrigins,
-  emailAndPassword: { enabled: true },
+  emailAndPassword: {
+    enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendResetPasswordEmail(user.email, url)
+    },
+  },
   ...(process.env.NODE_ENV === 'development' && {
     advanced: {
       defaultCookieAttributes: { sameSite: 'lax', secure: false },
