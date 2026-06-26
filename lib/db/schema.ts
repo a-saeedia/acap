@@ -108,3 +108,27 @@ export const ticketMessage = pgTable('ticket_message', {
   message: text('message').notNull(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
+
+export const asset = pgTable('asset', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  type: text('type').notNull(),
+  symbol: text('symbol').notNull(),
+  label: text('label').notNull(),
+  quantity: bigint('quantity', { mode: 'number' }).notNull().default(0),
+  purchasePrice: bigint('purchasePrice', { mode: 'number' }),
+  purchaseDate: timestamp('purchaseDate'),
+  notes: text('notes'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const assetPrice = pgTable('asset_price', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  symbol: text('symbol').notNull(),
+  price: bigint('price', { mode: 'number' }).notNull(),
+  currency: text('currency').notNull().default('IRR'),
+  source: text('source'),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
