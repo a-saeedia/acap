@@ -72,15 +72,16 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
     if (!email || !validateEmail(email)) { setError('لطفاً یک ایمیل معتبر وارد کنید'); return }
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await fetch('/api/auth/request-password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      if (!res.ok) throw new Error()
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'خطایی رخ داد')
       setSent(true)
-    } catch {
-      setError('خطایی رخ داد، دوباره تلاش کنید')
+    } catch (e: any) {
+      setError(e.message || 'خطایی رخ داد، دوباره تلاش کنید')
     }
     setLoading(false)
   }

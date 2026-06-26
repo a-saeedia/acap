@@ -30,7 +30,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
-      await sendResetPasswordEmail(user.email, url)
+      const token = url.split('/reset-password/')[1]?.split('?')[0] || ''
+      const base = getBaseURL()
+      await sendResetPasswordEmail(user.email, `${base}/reset-password?token=${token}`)
     },
   },
   ...(process.env.NODE_ENV === 'development' && {
