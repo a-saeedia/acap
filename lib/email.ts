@@ -1,22 +1,16 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+const FROM = process.env.RESEND_FROM || 'A|CAP <onboarding@resend.dev>'
 
 export async function sendResetPasswordEmail(email: string, url: string) {
-  if (!process.env.SMTP_USER) {
-    console.log('Reset password URL:', url)
+  if (!resend) {
+    console.log('RESEND_API_KEY not set. Reset URL:', url)
     return
   }
-  await transporter.sendMail({
-    from: `"A|CAP" <${process.env.SMTP_USER}>`,
+  await resend.emails.send({
+    from: FROM,
     to: email,
     subject: 'بازیابی رمز عبور - A Capital',
     html: `
