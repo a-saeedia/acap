@@ -17,3 +17,5 @@ node_modules
 
 # Remove pnpm lock since we use npm
 pnpm-lock.yaml
+
+.vercel
