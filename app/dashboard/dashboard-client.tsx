@@ -4,9 +4,10 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { signOut } from '@/lib/auth-client'
+import { useState, useEffect } from 'react'
 import {
   User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone
+  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle
 } from 'lucide-react'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
@@ -44,6 +45,11 @@ export function DashboardClient({ data }: Props) {
   const { user, profile, quizResults } = data
   const latest = quizResults[quizResults.length - 1]
   const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
+  }, [])
 
   const handleSignOut = async () => {
     await signOut()
@@ -60,6 +66,14 @@ export function DashboardClient({ data }: Props) {
             <Image src="/logo-transparent.png" alt="A Capital" width={140} height={42} className="h-8 w-auto object-contain" />
           </button>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button onClick={() => router.push('/admin')}
+                className="flex items-center gap-1.5 glass border border-red-500/30 hover:border-red-500/60 rounded-xl px-3 py-1.5 text-sm text-red-400 transition-all"
+              >
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">مدیریت</span>
+              </button>
+            )}
             <button onClick={() => router.push('/')}
               className="hidden sm:flex items-center gap-1.5 glass border border-border hover:border-primary/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-all"
             >
@@ -236,6 +250,20 @@ export function DashboardClient({ data }: Props) {
             >
               <h3 className="font-black text-lg text-foreground mb-4">اقدامات سریع</h3>
               <div className="space-y-2">
+                <button
+                  onClick={() => router.push('/acap-plus')}
+                  className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors text-sm font-semibold text-amber-400"
+                >
+                  <Crown className="w-4 h-4 flex-shrink-0" />
+                  A|CAP+ (پیشنهادات اختصاصی)
+                </button>
+                <button
+                  onClick={() => router.push('/tickets')}
+                  className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-blue-400/30 transition-colors text-sm font-semibold text-blue-400"
+                >
+                  <HelpCircle className="w-4 h-4 flex-shrink-0" />
+                  تیکت‌های پشتیبانی
+                </button>
                 <a href="https://t.me/acapitalsbot" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors text-sm font-semibold text-primary"
                 >

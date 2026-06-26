@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from './theme-provider'
-import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard } from 'lucide-react'
+import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 
@@ -22,6 +22,13 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const { data: session } = useSession()
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
+    }
+  }, [session])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -97,6 +104,29 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
 
               {session?.user ? (
                 <div className="hidden md:flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      onClick={() => router.push('/admin')}
+                      className="flex items-center gap-1.5 glass border border-red-500/30 hover:border-red-500/60 rounded-xl px-3 py-1.5 text-sm text-red-400 transition-all"
+                    >
+                      <Shield className="w-4 h-4" />
+                      مدیریت
+                    </button>
+                  )}
+                  <button
+                    onClick={() => router.push('/tickets')}
+                    className="flex items-center gap-1.5 glass border border-border hover:border-blue-400/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-blue-400 transition-all"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    تیکت
+                  </button>
+                  <button
+                    onClick={() => router.push('/acap-plus')}
+                    className="flex items-center gap-1.5 glass border border-amber-500/30 hover:border-amber-500/60 rounded-xl px-3 py-1.5 text-sm text-amber-400 transition-all"
+                  >
+                    <Crown className="w-4 h-4" />
+                    A|CAP+
+                  </button>
                   <button
                     onClick={() => router.push('/dashboard')}
                     className="flex items-center gap-1.5 glass border border-primary/30 hover:border-primary/60 rounded-xl px-3 py-1.5 text-sm text-primary transition-all"
@@ -158,9 +188,14 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
               ))}
               <div className="pt-3 flex flex-col gap-2">
                 {session?.user ? (
-                  <button onClick={() => router.push('/dashboard')} className="btn-primary py-3 rounded-xl font-bold">
-                    داشبورد من
-                  </button>
+                  <>
+                    {isAdmin && <button onClick={() => router.push('/admin')} className="btn-primary py-3 rounded-xl font-bold bg-red-600/20 text-red-400 border border-red-500/30">پنل مدیریت</button>}
+                    <button onClick={() => router.push('/tickets')} className="btn-primary py-3 rounded-xl font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">تیکت‌ها</button>
+                    <button onClick={() => router.push('/acap-plus')} className="btn-primary py-3 rounded-xl font-bold bg-amber-600/20 text-amber-400 border border-amber-500/30">A|CAP+</button>
+                    <button onClick={() => router.push('/dashboard')} className="btn-primary py-3 rounded-xl font-bold">
+                      داشبورد من
+                    </button>
+                  </>
                 ) : (
                   <button onClick={() => { setMenuOpen(false); onOpenAuth?.() }} className="btn-primary py-3 rounded-xl font-bold">
                     ورود / ثبت‌نام

@@ -73,3 +73,38 @@ export const quizResult = pgTable('quiz_result', {
   answers: jsonb('answers').notNull(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
+
+export const subscription = pgTable('subscription', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  acapPlus: boolean('acapPlus').notNull().default(false),
+  acapPlusSince: timestamp('acapPlusSince'),
+  acapPlusUntil: timestamp('acapPlusUntil'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const suggestion = pgTable('suggestion', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+export const ticket = pgTable('ticket', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  subject: text('subject').notNull(),
+  status: text('status').notNull().default('open'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const ticketMessage = pgTable('ticket_message', {
+  id: text('id').primaryKey(),
+  ticketId: text('ticketId').notNull(),
+  userId: text('userId').notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
