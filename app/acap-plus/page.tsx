@@ -25,12 +25,22 @@ export default function AcapPlusPage() {
 
   if (!isPlus) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center" dir="rtl">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-6" dir="rtl">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
+          <div className="text-6xl mb-6">💎</div>
           <h1 className="text-3xl font-bold mb-4">A|CAP+</h1>
           <p className="text-gray-400 mb-6">این بخش ویژه کاربران A|CAP+ می‌باشد</p>
-          <p className="text-gray-500">برای استفاده از این بخش، با مدیر سیستم تماس بگیرید</p>
-        </div>
+          <p className="text-gray-500 mb-8">برای فعال‌سازی و دریافت پیشنهادات اختصاصی، با پشتیبان ما در تلگرام هماهنگ شوید</p>
+          <a
+            href="https://t.me/acapitalsbot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl text-lg font-bold transition-all"
+          >
+            <MessageCircle className="w-6 h-6" />
+            ارتباط با پشتیبان تلگرام
+          </a>
+        </motion.div>
       </div>
     )
   }
