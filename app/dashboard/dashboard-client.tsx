@@ -46,6 +46,7 @@ export function DashboardClient({ data }: Props) {
   const { user, profile, quizResults } = data
   const latest = quizResults[quizResults.length - 1]
   const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
+  const phone = profile?.phone || quizResults.find(r => r.phone)?.phone || ''
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export function DashboardClient({ data }: Props) {
             { label: 'تعداد تست', value: quizResults.length, icon: Trophy, color: '#2979FF' },
             { label: 'شخصیت مالی', value: typeInfo?.emoji ?? '—', icon: User, color: typeInfo?.color ?? '#888' },
             { label: 'آخرین امتیاز', value: latest ? `${latest.score}/۱۰۰` : '—', icon: Target, color: '#10B981' },
-            { label: 'موبایل ثبت‌شده', value: profile?.phone || quizResults.find(r => r.phone)?.phone ? '✓' : '✗', icon: Phone, color: profile?.phone || quizResults.find(r => r.phone)?.phone ? '#10B981' : '#EF4444' },
+            { label: 'موبایل ثبت‌شده', value: phone ? '✓' : '✗', icon: Phone, color: phone ? '#10B981' : '#EF4444' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -231,7 +232,7 @@ export function DashboardClient({ data }: Props) {
                 {[
                   { label: 'نام', value: user.name },
                   { label: 'ایمیل', value: user.email },
-                  ...(profile?.phone ? [{ label: 'موبایل', value: profile.phone }] : []),
+                  ...(phone ? [{ label: 'موبایل', value: phone }] : []),
                   ...(profile?.age ? [{ label: 'سن', value: `${profile.age} سال` }] : []),
                 ].map(item => (
                   <div key={item.label} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
