@@ -25,10 +25,11 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [resetUrl, setResetUrl] = useState('')
   const router = useRouter()
 
   const reset = () => {
-    setError(''); setLoading(false); setSent(false)
+    setError(''); setLoading(false); setSent(false); setResetUrl('')
     setName(''); setPhone(''); setEmail(''); setPassword('')
   }
 
@@ -72,15 +73,20 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
     if (!email || !validateEmail(email)) { setError('لطفاً یک ایمیل معتبر وارد کنید'); return }
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await fetch('/api/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      if (!res.ok) throw new Error()
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
       setSent(true)
-    } catch {
-      setError('خطایی رخ داد، دوباره تلاش کنید')
+      if (data.url) {
+        try { await navigator.clipboard.writeText(data.url) } catch {}
+        setResetUrl(data.url)
+      }
+    } catch (e: any) {
+      setError(e.message || 'خطایی رخ داد، دوباره تلاش کنید')
     }
     setLoading(false)
   }
@@ -126,6 +132,12 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                     <div className="text-4xl mb-3">📧</div>
                     <p className="text-emerald-400 font-semibold">ایمیل بازیابی ارسال شد</p>
                     <p className="text-sm text-muted-foreground mt-1">لطفاً صندوق ورودی خود را بررسی کنید</p>
+                    {resetUrl && (
+                      <div className="mt-3 p-3 bg-gray-800 rounded-xl border border-gray-700">
+                        <p className="text-xs text-gray-400 mb-2">لینک بازیابی (کپی شد):</p>
+                        <a href={resetUrl} className="text-emerald-400 text-sm break-all underline">{resetUrl}</a>
+                      </div>
+                    )}
                     <button onClick={() => switchMode('sign-in')} className="mt-4 text-primary text-sm underline">
                       بازگشت به ورود
                     </button>
