@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react'
 import { signIn, signUp } from '@/lib/auth-client'
+import { saveProfile } from '@/app/actions/profile'
 import { useRouter } from 'next/navigation'
 
 type Mode = 'sign-in' | 'sign-up' | 'forgot-password'
@@ -56,7 +57,8 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
     if (!validateName(name)) { setError('نام باید حداقل ۲ کاراکتر باشد'); return }
     if (password.length < 8) { setError('رمز عبور باید حداقل ۸ کاراکتر باشد'); return }
     if (!validateEmail(email)) { setError('ایمیل معتبر وارد کنید'); return }
-    if (phone && !validatePhone(phone)) { setError('شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد'); return }
+    if (!phone) { setError('شماره موبایل الزامی است'); return }
+    if (!validatePhone(phone)) { setError('شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد'); return }
     setLoading(true); setError('')
     const { error } = await signUp.email({ email, password, name: name.trim() })
     if (error) {
@@ -64,6 +66,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
       setLoading(false)
       return
     }
+    await saveProfile({ phone }).catch(() => {})
     reset(); onClose()
     router.push('/dashboard')
   }
@@ -161,7 +164,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   {mode === 'sign-up' && (
                     <>
                       <input value={name} onChange={e => setName(e.target.value)} placeholder="نام و نام خانوادگی *" className="input-field w-full" />
-                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="شماره موبایل (اختیاری)" type="tel" className="input-field w-full" />
+                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="شماره موبایل *" type="tel" className="input-field w-full" />
                       {phone && !validatePhone(phone) && <p className="text-xs text-red-400">شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد</p>}
                     </>
                   )}

@@ -78,6 +78,7 @@ export default function AdminPage() {
       <div className="flex gap-4 mb-6">
         <button onClick={() => setTab('users')} className={`px-4 py-2 rounded ${tab === 'users' ? 'bg-emerald-600' : 'bg-gray-700'}`}>کاربران</button>
         <button onClick={() => setTab('tickets')} className={`px-4 py-2 rounded ${tab === 'tickets' ? 'bg-emerald-600' : 'bg-gray-700'}`}>تیکت‌ها</button>
+        <a href="/api/export-csv" download className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 transition-colors">📥 خروجی CSV</a>
       </div>
 
       {tab === 'users' && (
