@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="baleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1FA8E0"/>
+      <stop offset="100%" stop-color="#0E7FC0"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="256" height="256" rx="52" fill="url(#baleGrad)"/>
+  <!-- Bale speech-bubble / B letterform mark -->
+  <!-- Outer chat bubble -->
+  <path fill="#ffffff" d="M68 72 C68 60 78 50 90 50 L180 50 C192 50 202 60 202 72 L202 148 C202 160 192 170 180 170 L148 170 L128 196 L108 170 L90 170 C78 170 68 160 68 148 Z"/>
+  <!-- Inner B letter cutout in brand blue -->
+  <text x="104" y="148" font-family="Arial Black, sans-serif" font-weight="900" font-size="92" fill="url(#baleGrad)" letter-spacing="-4">B</text>
+</svg>
