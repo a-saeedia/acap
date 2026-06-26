@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { useTheme } from './theme-provider'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Connected-A Chart Background
@@ -336,6 +337,7 @@ function CursorWave() {
 // Hero
 // ─────────────────────────────────────────────────────────────────────────────
 export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
+  const { theme } = useTheme()
   const scrollTo = (id: string) => {
     const el = document.querySelector(id)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
@@ -370,7 +372,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
               transition={{ duration: 0.65 }}
             >
               <Image
-                src="/logo-transparent.png"
+                src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'}
                 alt="A Capital"
                 width={420}
                 height={126}

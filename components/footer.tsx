@@ -3,8 +3,10 @@
 import { motion } from 'framer-motion'
 import { AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
+import { useTheme } from './theme-provider'
 
 export function Footer() {
+  const { theme } = useTheme()
   const scrollTo = (href: string) => {
     const el = document.querySelector(href)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
@@ -86,7 +88,7 @@ export function Footer() {
               }}
             />
             <Image
-              src="/logo-transparent.png"
+              src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'}
               alt="A Capital"
               width={480}
               height={144}
