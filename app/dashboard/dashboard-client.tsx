@@ -31,6 +31,7 @@ interface Props {
       id: string
       score: number
       investorType: string
+      phone: string | null
       createdAt: Date
     }[]
   }
@@ -105,7 +106,7 @@ export function DashboardClient({ data }: Props) {
             { label: 'تعداد تست', value: quizResults.length, icon: Trophy, color: '#2979FF' },
             { label: 'شخصیت مالی', value: typeInfo?.emoji ?? '—', icon: User, color: typeInfo?.color ?? '#888' },
             { label: 'آخرین امتیاز', value: latest ? `${latest.score}/۱۰۰` : '—', icon: Target, color: '#10B981' },
-            { label: 'موبایل ثبت‌شده', value: profile?.phone ? '✓' : '✗', icon: Phone, color: profile?.phone ? '#10B981' : '#EF4444' },
+            { label: 'موبایل ثبت‌شده', value: profile?.phone || quizResults.find(r => r.phone)?.phone ? '✓' : '✗', icon: Phone, color: profile?.phone || quizResults.find(r => r.phone)?.phone ? '#10B981' : '#EF4444' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}

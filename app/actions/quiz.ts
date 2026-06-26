@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { quizResult } from '@/lib/db/schema'
+import { quizResult, userProfile } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
@@ -26,6 +26,20 @@ export async function saveQuizResult(data: {
     investorType: data.investorType,
     answers: data.answers,
   })
+
+  if (userId && data.phone) {
+    const existing = await db.select().from(userProfile).where(eq(userProfile.userId, userId)).limit(1)
+    if (existing.length === 0) {
+      await db.insert(userProfile).values({
+        id: crypto.randomUUID(),
+        userId,
+        phone: data.phone,
+      })
+    } else {
+      await db.update(userProfile).set({ phone: data.phone }).where(eq(userProfile.userId, userId))
+    }
+  }
+
   return { id }
 }
 
