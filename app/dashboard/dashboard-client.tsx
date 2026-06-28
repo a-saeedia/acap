@@ -323,12 +323,6 @@ export function DashboardClient({ data }: Props) {
                   <HelpCircle className="w-4 h-4 flex-shrink-0" />
                   تیکت‌های پشتیبانی
                 </button>
-                <a href="https://t.me/acapitalsbot" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors text-sm font-semibold text-primary"
-                >
-                  <TrendingUp className="w-4 h-4 flex-shrink-0" />
-                  سیگنال‌های ACAP Plus
-                </a>
                 <a href="https://t.me/acapitalsbot?start=ref_3bCj2pqq" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
                 >

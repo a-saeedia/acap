@@ -16,6 +16,7 @@ export default function AcapPlusPage() {
   const [checking, setChecking] = useState(true)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loadingSugs, setLoadingSugs] = useState(true)
+  const [selectedSug, setSelectedSug] = useState<Suggestion | null>(null)
 
   useEffect(() => {
     if (isPending) return
@@ -111,6 +112,11 @@ export default function AcapPlusPage() {
     )
   }
 
+  const openSuggestion = (s: Suggestion) => {
+    setSelectedSug(s)
+    if (!s.isRead) handleMarkRead(s.id)
+  }
+
   // Plus user — show suggestions
   return (
     <div className="min-h-screen bg-background text-foreground p-6" dir="rtl">
@@ -136,36 +142,28 @@ export default function AcapPlusPage() {
             <p className="text-muted-foreground/60 text-sm mt-2">به زودی اولین پیشنهاد اختصاصی خود را دریافت خواهید کرد</p>
           </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {suggestions.map((s, i) => (
-              <motion.div
+              <motion.button
                 key={s.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className={`rounded-2xl p-5 border transition-all cursor-pointer ${!s.isRead ? 'bg-amber-500/5 border-amber-500/20 shadow-lg shadow-amber-500/5' : 'glass border-border'}`}
-                onClick={() => { if (!s.isRead) handleMarkRead(s.id) }}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                onClick={() => openSuggestion(s)}
+                className={`w-full text-right rounded-2xl p-4 border transition-all ${!s.isRead ? 'bg-amber-500/5 border-amber-500/20 shadow-lg shadow-amber-500/5' : 'glass border-border hover:border-amber-500/30'}`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      {!s.isRead && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />}
-                      <span className="font-bold text-foreground">{s.title}</span>
-                    </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{s.content}</p>
-                    {s.profitAmount && (
-                      <div className="inline-flex items-center gap-1.5 mt-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400 text-xs font-bold">+{s.profitAmount.toLocaleString('fa-IR')} تومان سود</span>
-                      </div>
-                    )}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {!s.isRead && <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0 animate-pulse shadow-lg shadow-amber-400/50" />}
+                    {s.isRead && <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/20 flex-shrink-0" />}
+                    <span className={`font-bold truncate ${!s.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>{s.title}</span>
                   </div>
-                  <div className="text-left flex-shrink-0">
-                    <p className="text-muted-foreground/50 text-xs">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</p>
-                    {s.isRead && <p className="text-muted-foreground/30 text-[10px] mt-1">خوانده شده</p>}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-muted-foreground/50 text-xs">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</span>
+                    {s.profitAmount && <span className="text-emerald-400 text-xs font-bold">+{s.profitAmount.toLocaleString('fa-IR')}</span>}
                   </div>
                 </div>
-              </motion.div>
+              </motion.button>
             ))}
           </div>
         )}
@@ -180,6 +178,74 @@ export default function AcapPlusPage() {
           </button>
         </motion.div>
       </div>
+
+      {/* Suggestion detail modal */}
+      {selectedSug && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSelectedSug(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="w-full max-w-lg glass border border-amber-500/20 rounded-3xl overflow-hidden shadow-2xl shadow-amber-500/10"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header gradient */}
+            <div className="bg-gradient-to-l from-amber-500/20 via-amber-500/10 to-transparent px-6 pt-6 pb-4 border-b border-amber-500/10">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                      <Crown className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-xs text-amber-400 font-bold">پیشنهاد اختصاصی</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-foreground leading-tight">{selectedSug.title}</h2>
+                </div>
+                <button onClick={() => setSelectedSug(null)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/20 hover:bg-black/30 text-muted-foreground hover:text-foreground transition-all flex-shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground font-medium">جزئیات پیشنهاد</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <p className="text-foreground/90 leading-relaxed text-sm whitespace-pre-wrap">{selectedSug.content}</p>
+              </div>
+
+              {selectedSug.profitAmount && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-emerald-400/70 font-medium">سود حاصل از پیشنهاد</p>
+                      <p className="text-emerald-400 text-lg font-black">+{selectedSug.profitAmount.toLocaleString('fa-IR')} تومان</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground/50 pt-2 border-t border-border">
+                <span>ارسال شده در {new Date(selectedSug.createdAt).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                {selectedSug.isRead && <span>خوانده شده</span>}
+                {!selectedSug.isRead && <span className="text-amber-400 font-bold">جدید</span>}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }
