@@ -549,7 +549,7 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
               </div>
 
               <p className="text-center text-muted-foreground text-xs leading-relaxed opacity-60">
-                این تست جنبه ��طلاعاتی و آموزشی دارد. توصیه سرمایه‌گذاری محسوب نمی‌شود.
+                این تست جنبه اطلاعاتی و آموزشی دارد. توصیه سرمایه‌گذاری محسوب نمی‌شود.
               </p>
             </motion.div>
           )}
