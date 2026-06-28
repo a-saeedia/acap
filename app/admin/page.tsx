@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [sugProfit, setSugProfit] = useState('')
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isPending && !session) router.push('/')
@@ -38,6 +39,16 @@ export default function AdminPage() {
   async function loadTickets() {
     const t = await getTickets()
     setTickets(t)
+  }
+
+  async function handleDelete(suggestionId: string) {
+    if (!confirm('آیا از حذف این پیشنهاد اطمینان دارید؟')) return
+    setDeletingId(suggestionId)
+    try {
+      await deleteSuggestion(suggestionId)
+      if (selectedUser) loadHistory(selectedUser.id)
+    } catch { }
+    setDeletingId(null)
   }
 
   async function loadHistory(userId: string) {
@@ -193,6 +204,13 @@ export default function AdminPage() {
                           <div className="text-left flex-shrink-0">
                             <p className="text-gray-500 text-xs">{new Date(h.createdAt).toLocaleDateString('fa-IR')}</p>
                             {h.profitAmount && <p className="text-emerald-400 text-xs mt-1">+{h.profitAmount.toLocaleString('fa-IR')} تومان</p>}
+                            <button
+                              onClick={() => handleDelete(h.id)}
+                              disabled={deletingId === h.id}
+                              className="text-red-400 hover:text-red-300 text-xs mt-2 underline underline-offset-2 disabled:opacity-50"
+                            >
+                              {deletingId === h.id ? '...' : 'حذف'}
+                            </button>
                           </div>
                         </div>
                       </div>

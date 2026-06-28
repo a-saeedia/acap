@@ -86,6 +86,11 @@ export async function markSuggestionRead(suggestionId: string) {
   await db.update(suggestion).set({ isRead: true, readAt: new Date() }).where(eq(suggestion.id, suggestionId))
 }
 
+export async function deleteSuggestion(suggestionId: string) {
+  const admin = await requireAdmin()
+  await db.delete(suggestion).where(eq(suggestion.id, suggestionId))
+}
+
 export async function getSentSuggestions(userId: string) {
   const admin = await requireAdmin()
   const rows = await db.select().from(suggestion).where(eq(suggestion.userId, userId)).orderBy(desc(suggestion.createdAt))
