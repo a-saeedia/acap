@@ -136,15 +136,17 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   </div>
                 ) : (
                   <>
-                    <input value={email} onChange={e => setEmail(e.target.value)} placeholder="ایمیل *" type="email" className="input-field w-full" />
-                    {error && <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">{error}</div>}
+                    <form onSubmit={e => { e.preventDefault(); handleForgotPassword() }}>
+                    <input value={email} onChange={e => setEmail(e.target.value)} placeholder="ایمیل *" type="email" autoComplete="email" className="input-field w-full" />
+                    {error && <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2 mt-2">{error}</div>}
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                      onClick={handleForgotPassword} disabled={loading}
-                      className="btn-primary w-full py-3 rounded-xl font-black text-base flex items-center justify-center gap-2"
+                      type="submit" disabled={loading}
+                      className="btn-primary w-full py-3 rounded-xl font-black text-base flex items-center justify-center gap-2 mt-3"
                     >
                       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                       ارسال لینک بازیابی
                     </motion.button>
+                  </form>
                   </>
                 )}
               </div>
@@ -160,18 +162,18 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   ))}
                 </div>
 
-                <div className="space-y-3">
+                <form onSubmit={e => { e.preventDefault(); mode === 'sign-in' ? handleSignIn() : handleSignUp() }} className="space-y-3">
                   {mode === 'sign-up' && (
                     <>
-                      <input value={name} onChange={e => setName(e.target.value)} placeholder="نام و نام خانوادگی *" className="input-field w-full" />
-                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="شماره موبایل *" type="tel" className="input-field w-full" />
+                      <input value={name} onChange={e => setName(e.target.value)} placeholder="نام و نام خانوادگی *" autoComplete="name" className="input-field w-full" />
+                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="شماره موبایل *" type="tel" autoComplete="tel" className="input-field w-full" />
                       {phone && !validatePhone(phone) && <p className="text-xs text-red-400">شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد</p>}
                     </>
                   )}
-                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="ایمیل *" type="email" className="input-field w-full" />
+                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="ایمیل *" type="email" autoComplete={mode === 'sign-in' ? 'email' : 'email'} className="input-field w-full" />
                   <div className="relative">
-                    <input value={password} onChange={e => setPassword(e.target.value)} placeholder="رمز عبور *" type={showPass ? 'text' : 'password'} className="input-field w-full pl-10" />
-                    <button onClick={() => setShowPass(s => !s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <input value={password} onChange={e => setPassword(e.target.value)} placeholder="رمز عبور *" type={showPass ? 'text' : 'password'} autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} className="input-field w-full pl-10" />
+                    <button type="button" onClick={() => setShowPass(s => !s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -179,7 +181,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   {error && <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">{error}</div>}
 
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    onClick={mode === 'sign-in' ? handleSignIn : handleSignUp} disabled={loading}
+                    type="submit" disabled={loading}
                     className="btn-primary w-full py-3 rounded-xl font-black text-base flex items-center justify-center gap-2"
                   >
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -187,7 +189,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   </motion.button>
 
                   {mode === 'sign-in' && (
-                    <button onClick={() => switchMode('forgot-password')} className="block w-full text-center text-sm text-primary/80 hover:text-primary underline underline-offset-2">
+                    <button type="button" onClick={() => switchMode('forgot-password')} className="block w-full text-center text-sm text-primary/80 hover:text-primary underline underline-offset-2">
                       فراموشی رمز عبور؟
                     </button>
                   )}
@@ -195,7 +197,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   <p className="text-center text-xs text-muted-foreground pt-1">
                     اطلاعات شما کاملاً نزد ما محفوظ و رمزنگاری‌شده است 🔒
                   </p>
-                </div>
+                </form>
               </>
             )}
           </motion.div>

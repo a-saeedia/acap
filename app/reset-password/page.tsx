@@ -44,24 +44,24 @@ function ResetForm() {
   )
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={e => { e.preventDefault(); handleReset() }} className="space-y-4">
       <h2 className="text-xl font-black text-center">تنظیم رمز عبور جدید</h2>
       <div className="relative">
-        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="رمز عبور جدید *" type={showPass ? 'text' : 'password'} className="input-field w-full pl-10" />
-        <button onClick={() => setShowPass(s => !s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="رمز عبور جدید *" type={showPass ? 'text' : 'password'} autoComplete="new-password" className="input-field w-full pl-10" />
+        <button type="button" onClick={() => setShowPass(s => !s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
           {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
-      <input value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="تکرار رمز عبور *" type="password" className="input-field w-full" />
+      <input value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="تکرار رمز عبور *" type="password" autoComplete="new-password" className="input-field w-full" />
       {error && <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">{error}</div>}
       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-        onClick={handleReset} disabled={loading}
+        type="submit" disabled={loading}
         className="btn-primary w-full py-3 rounded-xl font-black text-base flex items-center justify-center gap-2"
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         تغییر رمز عبور
       </motion.button>
-    </div>
+    </form>
   )
 }
 
