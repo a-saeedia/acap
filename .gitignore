@@ -19,3 +19,5 @@ node_modules
 pnpm-lock.yaml
 
 .vercel
+
+.env.vercel

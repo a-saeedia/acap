@@ -8,9 +8,10 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import {
   User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X
+  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, Bell, Eye, EyeOff
 } from 'lucide-react'
 import { saveProfile } from '@/app/actions/profile'
+import { markSuggestionRead } from '@/app/actions/admin'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
@@ -19,6 +20,19 @@ const TYPE_MAP: Record<InvestorKey, { name: string; emoji: string; color: string
   balanced: { name: 'متعادل', emoji: '⚖️', color: '#3B82F6' },
   growth: { name: 'رشدگرا', emoji: '🚀', color: '#1D9BF0' },
   aggressive: { name: 'تهاجمی', emoji: '🔥', color: '#EF4444' },
+}
+
+type SuggestionRow = {
+  id: string
+  userId: string
+  adminId: string | null
+  title: string
+  content: string
+  isRead: boolean | null
+  readAt: Date | null
+  profitAmount: number | null
+  profitCurrency: string | null
+  createdAt: Date
 }
 
 interface Props {
@@ -36,6 +50,7 @@ interface Props {
       phone: string | null
       createdAt: Date
     }[]
+    suggestions: SuggestionRow[]
   }
 }
 
@@ -46,7 +61,8 @@ function formatDate(d: Date) {
 export function DashboardClient({ data }: Props) {
   const router = useRouter()
   const { theme } = useTheme()
-  const { user, profile, quizResults } = data
+  const { user, profile, quizResults, suggestions } = data
+  const unreadCount = suggestions.filter(s => !s.isRead).length
   const latest = quizResults[quizResults.length - 1]
   const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
   const phone = profile?.phone || quizResults.find(r => r.phone)?.phone || ''
@@ -54,10 +70,19 @@ export function DashboardClient({ data }: Props) {
   const [phoneInput, setPhoneInput] = useState('')
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [localSuggestions, setLocalSuggestions] = useState(suggestions)
 
   useEffect(() => {
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
   }, [])
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await markSuggestionRead(id)
+      setLocalSuggestions(prev => prev.map(s => s.id === id ? { ...s, isRead: true, readAt: new Date() } : s))
+    } catch {}
+  }
 
   const handleSavePhone = async () => {
     if (!/^0\d{10}$/.test(phoneInput)) { setPhoneMsg('شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد'); return }
@@ -290,11 +315,16 @@ export function DashboardClient({ data }: Props) {
               <h3 className="font-black text-lg text-foreground mb-4">اقدامات سریع</h3>
               <div className="space-y-2">
                 <button
-                  onClick={() => router.push('/acap-plus')}
-                  className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors text-sm font-semibold text-amber-400"
+                  onClick={() => { setShowSuggestions(true); suggestions.filter(s => !s.isRead).forEach(s => handleMarkRead(s.id)) }}
+                  className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors text-sm font-semibold text-amber-400 relative"
                 >
                   <Crown className="w-4 h-4 flex-shrink-0" />
-                  A|CAP+ (پیشنهادات اختصاصی)
+                  <span>پیشنهادات A|CAP</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg shadow-red-500/30">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
                 <button
                   onClick={() => router.push('/tickets')}
@@ -327,6 +357,71 @@ export function DashboardClient({ data }: Props) {
           </div>
         </div>
       </main>
+
+      {/* Suggestions panel */}
+      {showSuggestions && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowSuggestions(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="glass border border-border rounded-3xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Crown className="w-5 h-5 text-amber-400" />
+                <h3 className="font-black text-lg text-foreground">پیشنهادات A|CAP</h3>
+              </div>
+              <button onClick={() => setShowSuggestions(false)} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+            {localSuggestions.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="text-4xl mb-4">📋</div>
+                <p className="text-muted-foreground">هنوز پیشنهادی برای شما ثبت نشده</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {localSuggestions.map((s, i) => (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className={`rounded-2xl p-4 border transition-all ${!s.isRead ? 'bg-amber-500/5 border-amber-500/20' : 'bg-accent/30 border-border'}`}
+                    onClick={() => { if (!s.isRead) handleMarkRead(s.id) }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-sm text-foreground">{s.title}</span>
+                          {!s.isRead && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{s.content}</p>
+                        {s.profitAmount && (
+                          <p className="text-emerald-400 text-xs font-bold mt-2">
+                            +{s.profitAmount.toLocaleString('fa-IR')} {s.profitCurrency === 'IRR' ? 'تومان' : s.profitCurrency}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-left flex-shrink-0">
+                        <p className="text-muted-foreground text-xs">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</p>
+                        {s.isRead && <p className="text-muted-foreground/50 text-[10px] mt-1">مطالعه شده</p>}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }

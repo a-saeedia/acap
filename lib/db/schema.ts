@@ -87,8 +87,13 @@ export const subscription = pgTable('subscription', {
 export const suggestion = pgTable('suggestion', {
   id: text('id').primaryKey(),
   userId: text('userId').notNull(),
+  adminId: text('adminId'),
   title: text('title').notNull(),
   content: text('content').notNull(),
+  isRead: boolean('isRead').notNull().default(false),
+  readAt: timestamp('readAt'),
+  profitAmount: bigint('profitAmount', { mode: 'number' }),
+  profitCurrency: text('profitCurrency').default('IRR'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 

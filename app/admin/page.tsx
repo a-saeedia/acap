@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
@@ -20,6 +20,12 @@ export default function AdminPage() {
   const [sugContent, setSugContent] = useState('')
   const [replyMsg, setReplyMsg] = useState('')
   const [msgs, setMsgs] = useState<any[]>([])
+  const [sugSending, setSugSending] = useState(false)
+  const [sugError, setSugError] = useState('')
+  const [sugSuccess, setSugSuccess] = useState('')
+  const [sugProfit, setSugProfit] = useState('')
+  const [history, setHistory] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) router.push('/')
@@ -34,6 +40,20 @@ export default function AdminPage() {
     setTickets(t)
   }
 
+  async function loadHistory(userId: string) {
+    setHistoryLoading(true)
+    try {
+      const h = await getSentSuggestions(userId)
+      setHistory(h)
+    } catch { } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedUser) loadHistory(selectedUser.id)
+  }, [selectedUser])
+
   async function handleToggle(userId: string, current: boolean) {
     await toggleAcapPlus(userId, !current)
     setUsers(users.map(u => u.id === userId ? {
@@ -46,9 +66,27 @@ export default function AdminPage() {
   }
 
   async function handleSuggestion(userId: string) {
-    await sendSuggestion(userId, sugTitle, sugContent)
-    setSugTitle('')
-    setSugContent('')
+    if (!sugTitle.trim() || !sugContent.trim()) {
+      setSugError('عنوان و متن پیشنهاد را وارد کنید')
+      setSugSuccess('')
+      return
+    }
+    setSugSending(true)
+    setSugError('')
+    setSugSuccess('')
+    try {
+      const profit = sugProfit ? parseInt(sugProfit) : undefined
+      await sendSuggestion(userId, sugTitle, sugContent, profit)
+      setSugTitle('')
+      setSugContent('')
+      setSugProfit('')
+      setSugSuccess('پیشنهاد با موفقیت ارسال شد')
+      loadHistory(userId)
+    } catch (e) {
+      setSugError(e instanceof Error ? e.message : 'خطا در ارسال پیشنهاد')
+    } finally {
+      setSugSending(false)
+    }
   }
 
   async function openTicket(ticketId: string) {
@@ -121,12 +159,46 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <h3 className="font-semibold mb-3">ارسال پیشنهاد</h3>
+                <h3 className="font-semibold mb-3">ارسال پیشنهاد جدید</h3>
                 <div className="space-y-2">
                   <input value={sugTitle} onChange={e => setSugTitle(e.target.value)} placeholder="عنوان پیشنهاد" className="w-full p-2 rounded bg-gray-800 border border-gray-700" />
                   <textarea value={sugContent} onChange={e => setSugContent(e.target.value)} placeholder="متن پیشنهاد" rows={3} className="w-full p-2 rounded bg-gray-800 border border-gray-700" />
-                  <button onClick={() => handleSuggestion(selectedUser.id)} className="px-4 py-2 bg-emerald-600 rounded">ارسال پیشنهاد</button>
+                  <input value={sugProfit} onChange={e => setSugProfit(e.target.value.replace(/\D/g,''))} placeholder="سود حاصل از پیشنهاد (تومان) - اختیاری" type="text" inputMode="numeric" className="w-full p-2 rounded bg-gray-800 border border-gray-700" />
+                  {sugError && <p className="text-red-400 text-sm">{sugError}</p>}
+                  {sugSuccess && <p className="text-emerald-400 text-sm">{sugSuccess}</p>}
+                  <button onClick={() => handleSuggestion(selectedUser.id)} disabled={sugSending} className="px-4 py-2 bg-emerald-600 rounded disabled:opacity-50">{sugSending ? 'در حال ارسال...' : 'ارسال پیشنهاد'}</button>
                 </div>
+
+                <h3 className="font-semibold mt-8 mb-3">تاریخچه پیشنهادات ارسالی</h3>
+                {historyLoading ? (
+                  <p className="text-gray-500 text-sm">در حال بارگذاری...</p>
+                ) : history.length === 0 ? (
+                  <p className="text-gray-500 text-sm">تاکنون پیشنهادی ارسال نشده</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {history.map(h => (
+                      <div key={h.id} className="bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-sm">{h.title}</p>
+                              {h.isRead ? (
+                                <span className="text-xs text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">خوانده شده</span>
+                              ) : (
+                                <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">ارسال شده</span>
+                              )}
+                            </div>
+                            <p className="text-gray-400 text-xs mt-1">{h.content}</p>
+                          </div>
+                          <div className="text-left flex-shrink-0">
+                            <p className="text-gray-500 text-xs">{new Date(h.createdAt).toLocaleDateString('fa-IR')}</p>
+                            {h.profitAmount && <p className="text-emerald-400 text-xs mt-1">+{h.profitAmount.toLocaleString('fa-IR')} تومان</p>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-64 text-gray-500">روی یک کاربر کلیک کنید</div>

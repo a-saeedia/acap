@@ -5,6 +5,7 @@ import { userProfile, quizResult } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -18,8 +19,9 @@ export async function saveProfile(data: {
   investmentCapital?: number
 }) {
   const userId = await getUserId()
+  if (!data.phone || !/^0\d{10}$/.test(data.phone)) throw new Error('Invalid phone')
   const existing = await db.select().from(userProfile).where(eq(userProfile.userId, userId))
-  const id = crypto.randomUUID()
+  const id = randomUUID()
   if (existing.length === 0) {
     await db.insert(userProfile).values({ id, userId, phone: data.phone, age: data.age, investmentCapital: data.investmentCapital })
   } else {

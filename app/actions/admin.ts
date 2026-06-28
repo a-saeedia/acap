@@ -5,6 +5,7 @@ import { user, userProfile, subscription, suggestion, quizResult, ticket, ticket
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -33,7 +34,7 @@ export async function toggleAcapPlus(userId: string, enabled: boolean) {
   const existing = await db.select().from(subscription).where(eq(subscription.userId, userId))
   if (existing.length === 0) {
     await db.insert(subscription).values({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       userId,
       acapPlus: enabled,
       acapPlusSince: enabled ? new Date() : null,
@@ -49,14 +50,49 @@ export async function toggleAcapPlus(userId: string, enabled: boolean) {
   }
 }
 
-export async function sendSuggestion(userId: string, title: string, content: string) {
-  await requireAdmin()
+function sanitize(str: string, maxLen = 2000) {
+  return str.replace(/[<>]/g, '').trim().slice(0, maxLen)
+}
+
+export async function sendSuggestion(userId: string, title: string, content: string, profitAmount?: number) {
+  const admin = await requireAdmin()
+  if (!userId || !title || !content) throw new Error('All fields required')
   await db.insert(suggestion).values({
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     userId,
-    title,
-    content,
+    adminId: admin.id,
+    title: sanitize(title, 200),
+    content: sanitize(content),
+    profitAmount: profitAmount && profitAmount > 0 ? profitAmount : null,
   })
+}
+
+export async function getUserSuggestions() {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Unauthorized')
+  return db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)).orderBy(desc(suggestion.createdAt))
+}
+
+export async function getUnreadSuggestionCount() {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) return 0
+  const rows = await db.select().from(suggestion).where(eq(suggestion.userId, session.user.id))
+  return rows.filter(s => !s.isRead).length
+}
+
+export async function markSuggestionRead(suggestionId: string) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Unauthorized')
+  await db.update(suggestion).set({ isRead: true, readAt: new Date() }).where(eq(suggestion.id, suggestionId))
+}
+
+export async function getSentSuggestions(userId: string) {
+  const admin = await requireAdmin()
+  const rows = await db.select().from(suggestion).where(eq(suggestion.userId, userId)).orderBy(desc(suggestion.createdAt))
+  return rows.map(s => ({
+    ...s,
+    isRead: s.isRead ?? false,
+  }))
 }
 
 export async function getTickets() {
@@ -71,11 +107,12 @@ export async function getTicketMessages(ticketId: string) {
 
 export async function replyToTicket(ticketId: string, message: string) {
   const admin = await requireAdmin()
+  if (!ticketId || !message) throw new Error('All fields required')
   await db.insert(ticketMessage).values({
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     ticketId,
     userId: admin.id,
-    message,
+    message: sanitize(message),
   })
   await db.update(ticket).set({ updatedAt: new Date() }).where(eq(ticket.id, ticketId))
 }
@@ -83,8 +120,4 @@ export async function replyToTicket(ticketId: string, message: string) {
 export async function closeTicket(ticketId: string) {
   await requireAdmin()
   await db.update(ticket).set({ status: 'closed', updatedAt: new Date() }).where(eq(ticket.id, ticketId))
-}
-
-export async function getSuggestions(userId: string) {
-  return db.select().from(suggestion).where(eq(suggestion.userId, userId)).orderBy(desc(suggestion.createdAt))
 }
