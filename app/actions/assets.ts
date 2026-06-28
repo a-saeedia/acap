@@ -5,6 +5,7 @@ import { asset, assetPrice } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc, and } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -22,7 +23,7 @@ export async function createAsset(data: {
   notes?: string
 }) {
   const userId = await getUserId()
-  const id = crypto.randomUUID()
+  const id = randomUUID()
   await db.insert(asset).values({
     id,
     userId,

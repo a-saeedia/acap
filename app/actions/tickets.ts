@@ -5,11 +5,12 @@ import { ticket, ticketMessage } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 export async function createTicket(subject: string) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) throw new Error('Unauthorized')
-  const id = crypto.randomUUID()
+  const id = randomUUID()
   await db.insert(ticket).values({ id, userId: session.user.id, subject })
   return id
 }
@@ -34,7 +35,7 @@ export async function addMessage(ticketId: string, message: string) {
   const t = await db.select().from(ticket).where(eq(ticket.id, ticketId)).limit(1)
   if (t[0]?.userId !== session.user.id) throw new Error('Forbidden')
   await db.insert(ticketMessage).values({
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     ticketId,
     userId: session.user.id,
     message,

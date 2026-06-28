@@ -5,6 +5,7 @@ import { quizResult, userProfile } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 export async function saveQuizResult(data: {
   name: string
@@ -16,7 +17,7 @@ export async function saveQuizResult(data: {
   const session = await auth.api.getSession({ headers: await headers() })
   const userId = session?.user?.id ?? null
 
-  const id = crypto.randomUUID()
+  const id = randomUUID()
   await db.insert(quizResult).values({
     id,
     userId,
@@ -31,7 +32,7 @@ export async function saveQuizResult(data: {
     const existing = await db.select().from(userProfile).where(eq(userProfile.userId, userId)).limit(1)
     if (existing.length === 0) {
       await db.insert(userProfile).values({
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         userId,
         phone: data.phone,
       })

@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { assetPrice } from '@/lib/db/schema'
 import { fetchAllPrices } from '@/lib/prices'
 import { eq } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 export async function GET() {
   const prices = await fetchAllPrices()
@@ -10,7 +11,7 @@ export async function GET() {
     const existing = await db.select().from(assetPrice).where(eq(assetPrice.symbol, symbol)).limit(1)
     if (existing.length === 0) {
       await db.insert(assetPrice).values({
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         type,
         symbol,
         price: data.price,
