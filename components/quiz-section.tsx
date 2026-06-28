@@ -277,6 +277,7 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
   }
 
   const restart = () => {
+    setSaving(false)
     setStep('intro'); setCurrent(0); setAnswers({})
     setAgreed(false); setSelected(null); setResult(null)
     setScores({ risk: 0, emotional: 0, maturity: 0 })

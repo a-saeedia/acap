@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from './theme-provider'
-import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle } from 'lucide-react'
+import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle, GraduationCap } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 
 const navItems: { label: string; href: string; highlight?: boolean }[] = [
+  { label: 'آکادمی', href: '/education' },
   { label: 'درباره ما', href: '#about' },
   { label: 'تست مالی', href: '#quiz' },
   { label: 'A|CAP+', href: '#services', highlight: true },
@@ -38,8 +39,12 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
 
   const scrollTo = (href: string) => {
     setMenuOpen(false)
-    const el = document.querySelector(href)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    if (href.startsWith('/')) {
+      router.push(href)
+    } else {
+      const el = document.querySelector(href)
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   return (
@@ -113,6 +118,13 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                       مدیریت
                     </button>
                   )}
+                  <button
+                    onClick={() => router.push('/education')}
+                    className="flex items-center gap-1.5 glass border border-border hover:border-primary/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-all"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    آکادمی
+                  </button>
                   <button
                     onClick={() => router.push('/tickets')}
                     className="flex items-center gap-1.5 glass border border-border hover:border-blue-400/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-blue-400 transition-all"

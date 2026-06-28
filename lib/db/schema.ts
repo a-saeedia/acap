@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, integer, bigint, jsonb } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, timestamp, integer, bigint, jsonb, real } from 'drizzle-orm/pg-core'
 
 // Better Auth required tables
 export const user = pgTable('user', {
@@ -92,8 +92,8 @@ export const suggestion = pgTable('suggestion', {
   content: text('content').notNull(),
   isRead: boolean('isRead').notNull().default(false),
   readAt: timestamp('readAt'),
-  profitAmount: bigint('profitAmount', { mode: 'number' }),
-  profitCurrency: text('profitCurrency').default('IRR'),
+  profitPercent: real('profitPercent'),
+  profitMessage: text('profitMessage'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 

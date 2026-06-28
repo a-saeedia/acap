@@ -54,7 +54,7 @@ function sanitize(str: string, maxLen = 2000) {
   return str.replace(/[<>]/g, '').trim().slice(0, maxLen)
 }
 
-export async function sendSuggestion(userId: string, title: string, content: string, profitAmount?: number) {
+export async function sendSuggestion(userId: string, title: string, content: string, profitPercent?: number, profitMessage?: string) {
   const admin = await requireAdmin()
   if (!userId || !title || !content) throw new Error('All fields required')
   await db.insert(suggestion).values({
@@ -63,7 +63,8 @@ export async function sendSuggestion(userId: string, title: string, content: str
     adminId: admin.id,
     title: sanitize(title, 200),
     content: sanitize(content),
-    profitAmount: profitAmount && profitAmount > 0 ? profitAmount : null,
+    profitPercent: profitPercent && profitPercent > 0 ? profitPercent : null,
+    profitMessage: profitMessage ? sanitize(profitMessage, 500) : null,
   })
 }
 

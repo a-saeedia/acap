@@ -163,29 +163,29 @@ export default function AcapPlusPage() {
                 )}
                 <div className="relative flex items-start justify-between gap-4 p-5">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
-                         style={{ 
-                           backgroundColor: !s.isRead ? 'rgba(251, 191, 36, 0.15)' : 'rgba(148, 163, 184, 0.1)',
-                           color: !s.isRead ? '#FBBF24' : '#94A3B8'
-                         }}>
-                      <Crown className="w-6 h-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className={`font-bold text-base truncate ${!s.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {s.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-xs text-muted-foreground/60">
-                          {new Date(s.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}
-                        </span>
-                        {s.profitAmount && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                            <TrendingUp className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400 text-xs font-bold">+{s.profitAmount.toLocaleString('fa-IR')}</span>
-                          </span>
-                        )}
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
+                           style={{ 
+                             backgroundColor: !s.isRead ? 'rgba(251, 191, 36, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+                             color: !s.isRead ? '#FBBF24' : '#94A3B8'
+                           }}>
+                        <Crown className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                    </div>
+                      <div className="min-w-0">
+                        <h3 className={`font-bold text-sm sm:text-base truncate ${!s.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {s.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className="text-xs text-muted-foreground/60">
+                            {new Date(s.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}
+                          </span>
+                          {s.profitPercent && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                              <TrendingUp className="w-3 h-3 text-emerald-400" />
+                              <span className="text-emerald-400 text-xs font-bold">+{s.profitPercent}%</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
                   </div>
                   <div className="flex items-center flex-shrink-0">
                     {!s.isRead && (
@@ -260,7 +260,7 @@ export default function AcapPlusPage() {
                 <p className="text-foreground/90 leading-relaxed text-sm whitespace-pre-wrap">{selectedSug.content}</p>
               </div>
 
-              {selectedSug.profitAmount && (
+              {selectedSug.profitPercent && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
@@ -268,7 +268,10 @@ export default function AcapPlusPage() {
                     </div>
                     <div>
                       <p className="text-xs text-emerald-400/70 font-medium">سود حاصل از پیشنهاد</p>
-                      <p className="text-emerald-400 text-lg font-black">+{selectedSug.profitAmount.toLocaleString('fa-IR')} تومان</p>
+                      <p className="text-emerald-400 text-lg font-black">+{selectedSug.profitPercent}%</p>
+                      {selectedSug.profitMessage && (
+                        <p className="text-emerald-400/80 text-xs mt-1">{selectedSug.profitMessage}</p>
+                      )}
                     </div>
                   </div>
                 </div>

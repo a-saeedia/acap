@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import {
   User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X
+  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap
 } from 'lucide-react'
 import { saveProfile } from '@/app/actions/profile'
 
@@ -29,8 +29,8 @@ type SuggestionRow = {
   content: string
   isRead: boolean | null
   readAt: Date | null
-  profitAmount: number | null
-  profitCurrency: string | null
+  profitPercent: number | null
+  profitMessage: string | null
   createdAt: Date
 }
 
@@ -304,6 +304,13 @@ export function DashboardClient({ data }: Props) {
             >
               <h3 className="font-black text-lg text-foreground mb-4">اقدامات سریع</h3>
               <div className="space-y-2">
+                <button
+                  onClick={() => router.push('/education')}
+                  className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
+                >
+                  <GraduationCap className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                  آکادمی A|CAP
+                </button>
                 <button
                   onClick={() => router.push('/acap-plus')}
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors text-sm font-semibold text-amber-400 relative"
