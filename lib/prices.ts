@@ -1,5 +1,5 @@
 const COINGECKO = 'https://api.coingecko.com/api/v3'
-const METALS = 'https://api.metals.live/v1/spot/gold'
+const FETCH_OPTS = { signal: AbortSignal.timeout(8000) }
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -16,7 +16,7 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
 
   const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd`
   try {
-    const res = await fetch(url, { next: { revalidate: 120 } })
+    const res = await fetch(url, { ...FETCH_OPTS, next: { revalidate: 120 } })
     const data = await res.json()
     const result: PriceMap = {}
     for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
@@ -28,7 +28,7 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
 
 export async function fetchNobitexPrices(): Promise<PriceMap> {
   try {
-    const res = await fetch('https://api.nobitex.ir/market/stats', { next: { revalidate: 120 } })
+    const res = await fetch('https://api.nobitex.ir/market/stats', { ...FETCH_OPTS, next: { revalidate: 120 } })
     const data = await res.json()
     const result: PriceMap = {}
     if (data.stats) {
@@ -45,11 +45,16 @@ export async function fetchNobitexPrices(): Promise<PriceMap> {
 
 export async function fetchGoldPrices(): Promise<PriceMap> {
   try {
-    const res = await fetch(METALS, { next: { revalidate: 300 } })
+    const res = await fetch('https://api.coinbase.com/v2/prices/XAU-USD/spot', { ...FETCH_OPTS, next: { revalidate: 120 } })
     const data = await res.json()
-    if (data?.gold?.price) {
-      return { GOLD: { price: data.gold.price, currency: 'USD' } }
-    }
+    const price = parseFloat(data?.data?.amount)
+    if (price > 0) return { GOLD: { price, currency: 'USD' } }
+  } catch {}
+  try {
+    const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json', { ...FETCH_OPTS, next: { revalidate: 300 } })
+    const data = await res.json()
+    const price = data?.xau?.usd
+    if (price > 0) return { GOLD: { price, currency: 'USD' } }
   } catch {}
   return {}
 }

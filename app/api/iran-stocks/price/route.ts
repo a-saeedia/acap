@@ -4,16 +4,6 @@ const BASE_PRICES: Record<string, number> = {
   شپنا: 35000, شتران: 28000, خساپا: 6000, وبصادر: 4500, رمپنا: 20000,
 }
 
-function hashSymbol(symbol: string): number {
-  let hash = 0
-  for (let i = 0; i < symbol.length; i++) {
-    const char = symbol.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  return Math.abs(hash)
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const symbol = searchParams.get('symbol')
@@ -23,10 +13,12 @@ export async function GET(request: Request) {
   }
 
   const base = BASE_PRICES[symbol] ?? 20000
-  const h = hashSymbol(symbol)
-  const variation = 1 + ((h % 1001) - 500) / 10000
+  const now = Date.now()
+  const timeFactor = Math.sin(now / 10000 + symbol.charCodeAt(0) * 10) * 0.03
+  const noise = Math.sin(now / 3000 + symbol.length * 50) * 0.01
+  const variation = 1 + timeFactor + noise
   const price = Math.round(base * variation)
-  const change = Math.round(((h % 301) - 150) * 100) / 10000
+  const change = Math.round((timeFactor + noise) * 10000) / 100
 
   return Response.json({ symbol, price, currency: 'IRR', change })
 }
