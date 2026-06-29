@@ -6,7 +6,7 @@ import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset } from '@/app/actions/assets'
 import {
   Plus, Trash2, Edit3, X, Search, RefreshCw,
-  TrendingUp, TrendingDown, Wallet, Loader2, Clock, Bitcoin, PieChart,
+  TrendingUp, TrendingDown, Wallet, Loader2, Clock, Bitcoin, PieChart, Crown,
 } from 'lucide-react'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
@@ -38,6 +38,8 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; 
   currency: { label: 'ارز', icon: '💵', color: '#10B981', gradient: 'from-emerald-500/20 to-green-600/10' },
   other: { label: 'سایر', icon: '💰', color: '#8B5CF6', gradient: 'from-purple-500/20 to-violet-600/10' },
 }
+
+const DONUT_COLORS = ['#F59E0B', '#2979FF', '#FF6B35', '#10B981', '#8B5CF6']
 
 const ASSET_TYPES = [
   { value: 'crypto', label: 'رمز ارز' },
@@ -135,25 +137,191 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
   return <>{Math.round(display).toLocaleString('fa-IR')}</>
 }
 
-function InvestorTypeBadge({ type }: { type: string }) {
-  const cfg = TYPE_CONFIG[type]
-  if (!cfg) return null
+function DonutChart({ segments }: { segments: { label: string; value: number; color: string }[] }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0)
+  const [hovered, setHovered] = useState<number | null>(null)
+  const [animated, setAnimated] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 200)
+    return () => clearTimeout(t)
+  }, [])
+
+  const radius = 70
+  const strokeWidth = 24
+  const cx = 100
+  const cy = 100
+  const circumference = 2 * Math.PI * radius
+
+  let cumulative = 0
+  const arcs = segments.map((seg, i) => {
+    const pct = total > 0 ? seg.value / total : 0
+    const offset = cumulative * circumference
+    const length = pct * circumference
+    cumulative += pct
+    return { ...seg, pct, offset, length, index: i }
+  })
+
   return (
-    <span
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold"
-      style={{ background: `${cfg.color}18`, color: cfg.color, border: `1px solid ${cfg.color}30` }}
-    >
-      <span className="text-sm">{cfg.icon}</span>
-      {cfg.label}
-    </span>
+    <div className="flex flex-col items-center gap-4">
+      <svg width="200" height="200" viewBox="0 0 200 200" className="rtl-flip">
+        {arcs.map(a => (
+          <circle
+            key={a.index}
+            cx={cx}
+            cy={cy}
+            r={radius}
+            fill="none"
+            stroke={a.color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${animated ? a.length : 0} ${circumference - (animated ? a.length : 0)}`}
+            strokeDashoffset={-a.offset}
+            strokeLinecap="round"
+            opacity={hovered === null || hovered === a.index ? 1 : 0.25}
+            onMouseEnter={() => setHovered(a.index)}
+            onMouseLeave={() => setHovered(null)}
+            style={{
+              transition: 'stroke-dasharray 1.2s ease-out, stroke-dashoffset 1.2s ease-out, opacity 0.2s',
+              transform: 'rotate(-90deg)',
+              transformOrigin: '100px 100px',
+              cursor: 'pointer',
+            }}
+          />
+        ))}
+        <text
+          x={cx}
+          y={cy - 6}
+          textAnchor="middle"
+          className="fill-foreground font-black"
+          fontSize="22"
+        >
+          {total > 0 ? `${(hovered !== null ? arcs[hovered].pct * 100 : 100).toFixed(0)}%` : '—'}
+        </text>
+        <text
+          x={cx}
+          y={cy + 14}
+          textAnchor="middle"
+          className="fill-muted-foreground"
+          fontSize="11"
+        >
+          {hovered !== null ? arcs[hovered].label : 'مجموع'}
+        </text>
+      </svg>
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+        {arcs.map(a => (
+          <div
+            key={a.index}
+            className="flex items-center gap-1.5 text-xs cursor-pointer"
+            onMouseEnter={() => setHovered(a.index)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block"
+              style={{ background: a.color }}
+            />
+            <span className="text-muted-foreground">{a.label}</span>
+            <span className="text-foreground font-bold">{(a.pct * 100).toFixed(1)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
-function typeIcon(type: string): string {
-  return TYPE_CONFIG[type]?.icon ?? '💰'
+function PerformanceBars({ assets, prices, stockPrices }: {
+  assets: Asset[]
+  prices: PriceMap
+  stockPrices: Record<string, number>
+}) {
+  const maxVal = Math.max(
+    ...assets.map(a => Math.abs(getCurrentValue(a, prices, stockPrices) - getTotalCost(a))),
+    1
+  )
+
+  return (
+    <div className="space-y-2.5" dir="ltr">
+      {assets.map(a => {
+        const val = getCurrentValue(a, prices, stockPrices)
+        const cost = getTotalCost(a)
+        const diff = val - cost
+        const isProfit = diff >= 0
+        const barWidth = maxVal > 0 ? (Math.abs(diff) / maxVal) * 100 : 0
+        const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
+        return (
+          <motion.div
+            key={a.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-2 text-xs"
+          >
+            <span
+              className="w-16 sm:w-20 truncate font-semibold text-foreground text-right shrink-0"
+              style={{ direction: 'rtl' }}
+            >
+              {a.label}
+            </span>
+            <div className="flex-1 h-5 relative flex items-center">
+              {isProfit ? (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${barWidth}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  className="h-3 rounded-sm"
+                  style={{ background: 'linear-gradient(90deg, #10B98140, #10B981)' }}
+                />
+              ) : (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${barWidth}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  className="h-3 rounded-sm"
+                  style={{
+                    background: 'linear-gradient(90deg, #EF4444, #EF444440)',
+                    marginInlineStart: `${100 - barWidth}%`,
+                  }}
+                />
+              )}
+            </div>
+            <span
+              className={`w-20 sm:w-24 text-left font-bold shrink-0 font-mono ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}
+            >
+              {isProfit ? '+' : ''}{formatCurrency(Math.round(diff))}
+            </span>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
 }
 
-export function PortfolioDashboard() {
+function SparklineBars({ values, color }: { values: number[]; color: string }) {
+  if (values.length === 0) return null
+  const max = Math.max(...values, 1)
+  return (
+    <svg width="100%" height="24" viewBox="0 0 100 24" className="mt-1.5 opacity-40">
+      {values.map((v, i) => {
+        const h = (v / max) * 20
+        return (
+          <motion.rect
+            key={i}
+            x={i * (100 / values.length)}
+            y={20 - h}
+            width={Math.max(100 / values.length - 1, 2)}
+            height={h}
+            rx={1}
+            fill={color}
+            initial={{ height: 0, y: 20 }}
+            animate={{ height: h, y: 20 - h }}
+            transition={{ duration: 0.5, delay: i * 0.03 }}
+          />
+        )
+      })}
+    </svg>
+  )
+}
+
+export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
   const { data: session, isPending } = useSession()
   const [assets, setAssets] = useState<Asset[]>([])
   const [prices, setPrices] = useState<PriceMap>({})
@@ -262,6 +430,11 @@ export function PortfolioDashboard() {
     byType[a.type].cost += getTotalCost(a)
   }
 
+  const allValues = assets.map(a => getCurrentValue(a, prices, stockPrices))
+  const sparklineValues = allValues.length > 0
+    ? allValues
+    : [0, 0, 0, 0, 0]
+
   function openAdd() {
     setForm(INITIAL_FORM)
     setEditingId(null)
@@ -331,9 +504,70 @@ export function PortfolioDashboard() {
     )
   }
 
+  if (!isPlus) {
+    return (
+      <div dir="rtl" className="flex items-center justify-center py-8 sm:py-16 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="relative w-full max-w-lg overflow-hidden rounded-3xl"
+          style={{
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(217,119,6,0.15) 50%, rgba(180,83,9,0.08) 100%)',
+            border: '1px solid rgba(245,158,11,0.2)',
+            boxShadow: '0 0 60px rgba(245,158,11,0.08), inset 0 1px 0 rgba(245,158,11,0.1)',
+          }}
+        >
+          <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)' }} />
+          <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full" style={{ background: 'radial-gradient(circle, rgba(217,119,6,0.1) 0%, transparent 70%)' }} />
+          <div className="relative p-8 sm:p-10 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3))',
+                border: '2px solid rgba(245,158,11,0.3)',
+              }}
+            >
+              <Crown className="w-10 h-10" style={{ color: '#F59E0B' }} />
+            </motion.div>
+            <h2
+              className="text-2xl sm:text-3xl font-black mb-3"
+              style={{
+                background: 'linear-gradient(135deg, #F59E0B, #D97706, #F59E0B)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              پرتفوی اختصاصی
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base mb-8 leading-relaxed max-w-sm mx-auto">
+              این قابلیت فقط برای کاربران A|CAP+ در دسترس است
+            </p>
+            <a
+              href="/acap-plus"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-bold text-white transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                boxShadow: '0 0 30px rgba(245,158,11,0.3)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 50px rgba(245,158,11,0.5)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 0 30px rgba(245,158,11,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <Crown className="w-4 h-4" />
+              خرید اشتراک A|CAP+
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div dir="rtl">
-      {/* Summary Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -349,6 +583,7 @@ export function PortfolioDashboard() {
             <AnimatedNumber value={totalValue} />
           </div>
           <div className="text-[10px] text-muted-foreground mt-0.5">تومان</div>
+          <SparklineBars values={sparklineValues} color="#3B82F6" />
         </div>
 
         <div className="glass border border-border rounded-2xl p-4 sm:p-5 relative overflow-hidden">
@@ -361,6 +596,7 @@ export function PortfolioDashboard() {
             {profit >= 0 ? '+' : ''}<AnimatedNumber value={Math.abs(profit)} />
           </div>
           <div className="text-[10px] text-muted-foreground mt-0.5">تومان</div>
+          <SparklineBars values={sparklineValues.map(v => Math.abs(v - totalCost / assets.length || 0))} color={profit >= 0 ? '#10B981' : '#EF4444'} />
         </div>
 
         <div className="glass border border-border rounded-2xl p-4 sm:p-5">
@@ -371,6 +607,7 @@ export function PortfolioDashboard() {
           <div className="text-[10px] text-muted-foreground mt-0.5">
             {totalCost > 0 ? 'از مجموع خرید' : '—'}
           </div>
+          <SparklineBars values={[profitPercent, profitPercent * 0.8, profitPercent * 1.2, profitPercent * 0.6, profitPercent * 0.9].map(v => Math.abs(v))} color={profitPercent >= 0 ? '#10B981' : '#EF4444'} />
         </div>
 
         <div className="glass border border-border rounded-2xl p-4 sm:p-5">
@@ -381,12 +618,56 @@ export function PortfolioDashboard() {
           <div className="text-[10px] text-muted-foreground mt-0.5">
             در {Object.keys(byType).length} دسته
           </div>
+          <SparklineBars values={Object.values(byType).map(d => d.count)} color="#3B82F6" />
         </div>
       </motion.div>
 
-      {/* Second row: Allocation + Assets header */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass border border-border rounded-3xl p-5 sm:p-6"
+        >
+          <div className="flex items-center gap-2.5 mb-5">
+            <PieChart className="w-5 h-5 text-primary" />
+            <h3 className="font-black text-base text-foreground">توزیع دارایی‌ها</h3>
+          </div>
+          {Object.keys(byType).length === 0 ? (
+            <div className="py-6">
+              <DonutChart segments={[]} />
+              <p className="text-muted-foreground text-sm text-center mt-4">هنوز دارایی ثبت نشده</p>
+            </div>
+          ) : (
+            <DonutChart
+              segments={Object.entries(byType).map(([type, data], i) => ({
+                label: TYPE_CONFIG[type]?.label ?? 'سایر',
+                value: data.value,
+                color: DONUT_COLORS[i] ?? '#8B5CF6',
+              }))}
+            />
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="glass border border-border rounded-3xl p-5 sm:p-6"
+        >
+          <div className="flex items-center gap-2.5 mb-5">
+            {profit >= 0 ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
+            <h3 className="font-black text-base text-foreground">عملکرد دارایی‌ها</h3>
+          </div>
+          {assets.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-6">دارایی‌ای برای نمایش وجود ندارد</p>
+          ) : (
+            <PerformanceBars assets={assets} prices={prices} stockPrices={stockPrices} />
+          )}
+        </motion.div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Allocation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -439,9 +720,7 @@ export function PortfolioDashboard() {
           )}
         </motion.div>
 
-        {/* Quick actions + price indicator */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Header actions */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -462,7 +741,6 @@ export function PortfolioDashboard() {
               </button>
             </div>
 
-            {/* Price refresh indicator */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3 h-3" />
@@ -483,7 +761,6 @@ export function PortfolioDashboard() {
             </div>
           </motion.div>
 
-          {/* Tips */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -504,7 +781,6 @@ export function PortfolioDashboard() {
         </div>
       </div>
 
-      {/* Assets List */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -526,7 +802,7 @@ export function PortfolioDashboard() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <AnimatePresence mode="popLayout">
               {assets.map((a, i) => {
                 const price = getAssetPriceIr(a.symbol, prices, stockPrices)
@@ -542,12 +818,18 @@ export function PortfolioDashboard() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ delay: i * 0.04, duration: 0.3 }}
-                    className="glass border border-border rounded-2xl p-4 sm:p-5 hover:border-primary/20 transition-all group"
+                    className="bg-gradient-to-br rounded-2xl p-4 sm:p-5 border transition-all duration-200 group hover:-translate-y-1 hover:shadow-xl"
+                    style={{
+                      background: `linear-gradient(135deg, ${cfg.color}08, ${cfg.color}02)`,
+                      borderColor: `rgba(255,255,255,0.06)`,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${cfg.color}40` }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                          className="w-11 h-11 rounded-xl flex items-center justify-center text-lg"
                           style={{ background: `${cfg.color}18`, border: `1px solid ${cfg.color}30` }}
                         >
                           {cfg.icon}
@@ -575,7 +857,14 @@ export function PortfolioDashboard() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="mb-3">
+                      <div className="text-xl sm:text-2xl font-black text-foreground" dir="ltr" style={{ textAlign: 'start' }}>
+                        {formatCurrency(value)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">تومان</div>
+                    </div>
+
+                    <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">تعداد</span>
                         <span className="text-foreground font-semibold font-mono" dir="ltr">
@@ -583,26 +872,29 @@ export function PortfolioDashboard() {
                         </span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">قیمت هر واحد</span>
+                        <span className="text-muted-foreground">قیمت واحد</span>
                         <span className="text-foreground font-semibold font-mono" dir="ltr">
                           {price > 0 ? price.toLocaleString('fa-IR') : '—'}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">ارزش کل</span>
-                        <span className="text-foreground font-bold font-mono" dir="ltr">
-                          {formatCurrency(value)}
-                        </span>
-                      </div>
                       {cost > 0 && (
-                        <div className="flex justify-between text-xs pt-1 border-t border-border/40">
+                        <div className="flex justify-between text-xs pt-1.5 border-t border-border/40">
                           <span className="text-muted-foreground">سود/زیان</span>
-                          <span
-                            className="font-bold"
+                          <motion.span
+                            className="font-bold inline-flex items-center gap-1"
                             style={{ color: pnl >= 0 ? '#10B981' : '#EF4444' }}
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
                           >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full inline-block"
+                              style={{
+                                background: pnl >= 0 ? '#10B981' : '#EF4444',
+                                boxShadow: `0 0 6px ${pnl >= 0 ? '#10B981' : '#EF4444'}`,
+                              }}
+                            />
                             {pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
-                          </span>
+                          </motion.span>
                         </div>
                       )}
                     </div>
@@ -621,14 +913,13 @@ export function PortfolioDashboard() {
         )}
       </motion.div>
 
-      {/* Add/Edit Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm overflow-y-auto"
             onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); setForm(INITIAL_FORM) } }}
           >
             <motion.div
@@ -636,7 +927,7 @@ export function PortfolioDashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="glass border border-border rounded-3xl p-6 sm:p-7 w-full max-w-lg mx-auto shadow-2xl"
+              className="glass border border-border rounded-3xl p-6 sm:p-7 w-full max-w-lg mx-auto shadow-2xl max-h-[90dvh] overflow-y-auto sm:max-h-none"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
@@ -652,15 +943,14 @@ export function PortfolioDashboard() {
               </div>
 
               <div className="space-y-5">
-                {/* Type selector */}
                 <div>
                   <label className="text-xs text-muted-foreground font-semibold mb-2 block">نوع دارایی</label>
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-5">
                     {ASSET_TYPES.map(t => (
                       <button
                         key={t.value}
                         onClick={() => setForm(prev => ({ ...INITIAL_FORM, type: t.value }))}
-                        className={`px-2 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-all sm:px-2 ${
                           form.type === t.value
                             ? 'bg-primary/20 text-primary border border-primary/30'
                             : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
@@ -673,16 +963,15 @@ export function PortfolioDashboard() {
                   </div>
                 </div>
 
-                {/* Quick-add symbols */}
                 {form.type === 'crypto' && (
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-2 block">انتخاب سریع رمز ارز</label>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap">
                       {QUICK_CRYPTO.map(sym => (
                         <button
                           key={sym}
                           onClick={() => handleQuickSymbol(sym)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                             form.symbol === sym
                               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                               : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
@@ -698,12 +987,12 @@ export function PortfolioDashboard() {
                 {form.type === 'currency' && (
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-2 block">انتخاب سریع ارز</label>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap">
                       {QUICK_CURRENCY.map(sym => (
                         <button
                           key={sym}
                           onClick={() => handleQuickSymbol(sym)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                             form.symbol === sym
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                               : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
@@ -719,12 +1008,12 @@ export function PortfolioDashboard() {
                 {form.type === 'gold' && (
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-2 block">انتخاب سریع</label>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap">
                       {QUICK_GOLD.map(g => (
                         <button
                           key={g.symbol}
                           onClick={() => handleQuickSymbol(g.symbol, g.label)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                             form.symbol === g.symbol
                               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                               : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
@@ -737,7 +1026,6 @@ export function PortfolioDashboard() {
                   </div>
                 )}
 
-                {/* Stock search */}
                 {form.type === 'stock' && (
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-2 block">جستجوی سهام بورس ایران</label>
@@ -782,7 +1070,6 @@ export function PortfolioDashboard() {
                   </div>
                 )}
 
-                {/* Symbol + Label */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">نماد</label>
@@ -806,7 +1093,6 @@ export function PortfolioDashboard() {
                   </div>
                 </div>
 
-                {/* Quantity + Purchase price */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">تعداد *</label>
@@ -835,7 +1121,6 @@ export function PortfolioDashboard() {
                   </div>
                 </div>
 
-                {/* Date + Notes */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">تاریخ خرید</label>
@@ -857,7 +1142,6 @@ export function PortfolioDashboard() {
                   </div>
                 </div>
 
-                {/* Submit */}
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={handleSubmit}

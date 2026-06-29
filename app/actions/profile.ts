@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { userProfile, quizResult } from '@/lib/db/schema'
+import { userProfile, quizResult, subscription } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
@@ -39,9 +39,15 @@ export async function getDashboardData() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) return null
   const userId = session.user.id
-  const [profiles, results] = await Promise.all([
+  const [profiles, results, subs] = await Promise.all([
     db.select().from(userProfile).where(eq(userProfile.userId, userId)),
     db.select().from(quizResult).where(eq(quizResult.userId, userId)),
+    db.select().from(subscription).where(eq(subscription.userId, userId)),
   ])
-  return { user: session.user, profile: profiles[0] ?? null, quizResults: results }
+  return {
+    user: session.user,
+    profile: profiles[0] ?? null,
+    quizResults: results,
+    subscription: subs[0] ?? null,
+  }
 }

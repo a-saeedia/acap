@@ -2,18 +2,15 @@
 
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
-import { useTheme } from '@/components/theme-provider'
 import {
-  User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap, Loader2, Wallet, BarChart3
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap, Loader2, BarChart3, LogOut, Home
 } from 'lucide-react'
-import { saveProfile } from '@/app/actions/profile'
-import { getDashboardData } from '@/app/actions/profile'
+import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { getUserSuggestions } from '@/app/actions/admin'
 import { PortfolioDashboard } from '@/components/portfolio-dashboard'
+import { OnboardingTasks } from '@/components/onboarding-tasks'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
@@ -24,26 +21,12 @@ const TYPE_MAP: Record<InvestorKey, { name: string; emoji: string; color: string
   aggressive: { name: 'تهاجمی', emoji: '🔥', color: '#EF4444' },
 }
 
-type SuggestionRow = {
-  id: string
-  userId: string
-  adminId: string | null
-  title: string
-  content: string
-  isRead: boolean | null
-  readAt: Date | null
-  profitPercent: number | null
-  profitMessage: string | null
-  createdAt: Date
-}
-
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(d))
 }
 
 export function DashboardClient() {
   const router = useRouter()
-  const { theme } = useTheme()
   const { data: session, isPending } = useSession()
   const [loading, setLoading] = useState(true)
   const [dashData, setDashData] = useState<any>(null)
@@ -52,6 +35,7 @@ export function DashboardClient() {
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
   const [showPortfolio, setShowPortfolio] = useState(false)
+  const [assetsCount, setAssetsCount] = useState(0)
 
   useEffect(() => {
     if (isPending) return
@@ -67,6 +51,11 @@ export function DashboardClient() {
     }).catch(() => { router.push('/') })
   }, [session, isPending, router])
 
+  useEffect(() => {
+    if (!dashData) return
+    import('@/app/actions/assets').then(m => m.getMyAssets()).then(a => setAssetsCount(a.length)).catch(() => {})
+  }, [dashData])
+
   if (isPending || loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -74,7 +63,8 @@ export function DashboardClient() {
   )
   if (!dashData) return null
 
-  const { user, profile, quizResults, suggestions } = dashData
+  const { user, profile, quizResults, suggestions, subscription } = dashData
+  const isPlus = subscription?.acapPlus ?? false
   const unreadCount = suggestions.filter((s: any) => !s.isRead).length
   const latest = quizResults?.[quizResults.length - 1]
   const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
@@ -88,6 +78,11 @@ export function DashboardClient() {
     setTimeout(() => window.location.reload(), 1500)
   }
 
+  const handlePortfolioClick = () => {
+    if (!isPlus) { router.push('/acap-plus'); return }
+    setShowPortfolio(!showPortfolio)
+  }
+
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
@@ -96,11 +91,12 @@ export function DashboardClient() {
 
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
-      {/* Top bar */}
       <header className="glass border-b border-border sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push('/')} className="flex items-center gap-2">
-            <Image src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'} alt="A Capital" width={140} height={42} className="h-8 w-auto object-contain" />
+          <button onClick={() => router.push('/')} className="flex items-center gap-2 group">
+            <span className="font-black text-xl sm:text-2xl tracking-widest text-foreground group-hover:text-primary transition-colors">
+              A <span className="text-primary">|</span> CAP
+            </span>
           </button>
           <div className="flex items-center gap-2">
             {isAdmin && (
@@ -128,15 +124,24 @@ export function DashboardClient() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Welcome */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-black text-foreground mb-1">
-            خوش آمدی، {user.name.split(' ')[0]} 👋
-          </h1>
-          <p className="text-muted-foreground text-sm">{user.email}</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-black text-foreground mb-1">
+              خوش آمدی، {user.name.split(' ')[0]} 👋
+            </h1>
+            <p className="text-muted-foreground text-sm">{user.email}</p>
+            <div className="flex items-center gap-2 mt-2">
+              {isPlus && (
+                <span className="inline-flex items-center gap-1 text-[11px] bg-amber-500/15 text-amber-400 font-bold px-2.5 py-1 rounded-full border border-amber-500/20">
+                  <Crown className="w-3 h-3" />
+                  A|CAP+
+                </span>
+              )}
+            </div>
+          </div>
+          <OnboardingTasks profile={profile} quizResults={quizResults} assetsCount={assetsCount} subscription={subscription} />
         </motion.div>
 
-        {/* Phone warning banner */}
         {!phone && !dismissBanner && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6"
@@ -159,7 +164,6 @@ export function DashboardClient() {
           </motion.div>
         )}
 
-        {/* Stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {[
             { label: 'تعداد تست', value: quizResults.length, icon: Trophy, color: '#2979FF' },
@@ -172,18 +176,19 @@ export function DashboardClient() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.08 }}
-              className="glass border border-border rounded-2xl p-4 text-center"
+              className="glass border border-border rounded-2xl p-4 text-center relative overflow-hidden"
             >
-              <div className="text-2xl font-black mb-1" style={{ color: stat.color }}>{stat.value}</div>
-              <div className="text-muted-foreground text-xs">{stat.label}</div>
+              <div className="relative z-10">
+                <div className="text-2xl font-black mb-1" style={{ color: stat.color }}>{stat.value}</div>
+                <div className="text-muted-foreground text-xs">{stat.label}</div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, transparent, ${stat.color}40, transparent)` }} />
             </motion.div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Profile + Latest result */}
           <div className="lg:col-span-2 space-y-5">
-            {/* Latest investor type */}
             {typeInfo && latest && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -202,7 +207,6 @@ export function DashboardClient() {
                     </div>
                   </div>
                 </div>
-                {/* Score bar */}
                 <div>
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-muted-foreground">امتیاز ریسک‌پذیری</span>
@@ -221,7 +225,6 @@ export function DashboardClient() {
               </motion.div>
             )}
 
-            {/* Quiz history */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -274,7 +277,6 @@ export function DashboardClient() {
             </motion.div>
           </div>
 
-          {/* Right: Account info */}
           <div className="space-y-5">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -301,7 +303,6 @@ export function DashboardClient() {
               </div>
             </motion.div>
 
-            {/* Quick actions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -310,15 +311,13 @@ export function DashboardClient() {
             >
               <h3 className="font-black text-lg text-foreground mb-4">اقدامات سریع</h3>
               <div className="space-y-2">
-                <button
-                  onClick={() => router.push('/education')}
+                <button onClick={() => router.push('/education')}
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
                 >
                   <GraduationCap className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                   آکادمی A|CAP
                 </button>
-                <button
-                  onClick={() => router.push('/acap-plus')}
+                <button onClick={() => router.push('/acap-plus')}
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors text-sm font-semibold text-amber-400 relative"
                 >
                   <Crown className="w-4 h-4 flex-shrink-0" />
@@ -329,8 +328,7 @@ export function DashboardClient() {
                     </span>
                   )}
                 </button>
-                <button
-                  onClick={() => router.push('/tickets')}
+                <button onClick={() => router.push('/tickets')}
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-blue-400/30 transition-colors text-sm font-semibold text-blue-400"
                 >
                   <HelpCircle className="w-4 h-4 flex-shrink-0" />
@@ -342,15 +340,13 @@ export function DashboardClient() {
                   <User className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                   لینک سفیر من
                 </a>
-                <button
-                  onClick={() => router.push('/#quiz')}
+                <button onClick={() => router.push('/#quiz')}
                   className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
                 >
                   <Trophy className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                   تست مجدد شخصیت مالی
                 </button>
-                <button
-                  onClick={() => setShowPortfolio(!showPortfolio)}
+                <button onClick={handlePortfolioClick}
                   className={`flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl transition-colors text-sm font-semibold ${
                     showPortfolio
                       ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400'
@@ -365,7 +361,6 @@ export function DashboardClient() {
           </div>
         </div>
 
-        {/* Portfolio section */}
         {showPortfolio && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -373,7 +368,7 @@ export function DashboardClient() {
             transition={{ delay: 0.1 }}
             className="mt-8"
           >
-            <PortfolioDashboard />
+            <PortfolioDashboard isPlus={isPlus} />
           </motion.div>
         )}
       </main>
