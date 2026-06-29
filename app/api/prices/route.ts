@@ -1,47 +1,36 @@
-import { db } from '@/lib/db'
-import { assetPrice, iranStock } from '@/lib/db/schema'
+import { pool } from '@/lib/db'
 import { fetchAllPrices, calcStockPrice, DEFAULT_STOCKS } from '@/lib/prices'
-import { eq, desc } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-
-const ALL_CRYPTO = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX']
 
 export async function GET() {
   const prices = await fetchAllPrices()
 
   for (const [symbol, data] of Object.entries(prices)) {
-    const type = ALL_CRYPTO.includes(symbol)
-      ? 'crypto'
-      : symbol.endsWith('-IRR') ? 'crypto' : 'other'
-
     try {
-      const existing = await db.select().from(assetPrice).where(eq(assetPrice.symbol, symbol)).limit(1)
-      if (existing.length === 0) {
-        await db.insert(assetPrice).values({
-          id: randomUUID(),
-          type,
-          symbol,
-          price: data.price,
-          currency: data.currency,
-          source: 'api',
-        })
+      const exists = await pool.query('SELECT id FROM asset_price WHERE symbol = $1 LIMIT 1', [symbol])
+      if (exists.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+          [randomUUID(), 'crypto', symbol, data.price, data.currency, 'api']
+        )
       } else {
-        await db.update(assetPrice).set({ price: data.price, updatedAt: new Date() }).where(eq(assetPrice.symbol, symbol))
+        await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [data.price, symbol])
       }
     } catch (e) { console.error(`price store error for ${symbol}:`, e) }
   }
 
   if (!prices['USDT-IRR']) {
     try {
-      const last = await db.select().from(assetPrice).where(eq(assetPrice.symbol, 'USDT-IRR')).orderBy(desc(assetPrice.updatedAt)).limit(1)
-      if (last.length > 0 && last[0].price > 0) {
-        prices['USDT-IRR'] = { price: last[0].price, currency: 'IRR' }
-        prices['USD-IRR'] = { price: last[0].price, currency: 'IRR' }
+      const r = await pool.query(`SELECT price FROM asset_price WHERE symbol = 'USDT-IRR' ORDER BY "updatedAt" DESC LIMIT 1`)
+      if (r.rows.length > 0 && r.rows[0].price > 0) {
+        const rate = r.rows[0].price
+        prices['USDT-IRR'] = { price: rate, currency: 'IRR' }
+        prices['USD-IRR'] = { price: rate, currency: 'IRR' }
         if (prices['BTC']?.price) {
-          prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * last[0].price), currency: 'IRR' }
+          prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * rate), currency: 'IRR' }
         }
         if (prices['GOLD']?.price) {
-          prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * last[0].price / 31.1), currency: 'IRR' }
+          prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * rate / 31.1), currency: 'IRR' }
         }
       }
     } catch (e) { console.error('USDT-IRR DB fallback error:', e) }
@@ -49,14 +38,18 @@ export async function GET() {
 
   let stocks: any[] = []
   try {
-    stocks = await db.select().from(iranStock)
+    const r = await pool.query('SELECT symbol, name, sector FROM iran_stock')
+    stocks = r.rows
   } catch (e) { console.error('fetch stocks error:', e) }
 
   if (stocks.length === 0) {
     try {
-      await db.insert(iranStock).values(
-        DEFAULT_STOCKS.map(s => ({ id: randomUUID(), ...s }))
-      ).onConflictDoNothing()
+      for (const s of DEFAULT_STOCKS) {
+        await pool.query(
+          'INSERT INTO iran_stock (id, symbol, name, sector) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+          [randomUUID(), s.symbol, s.name, s.sector]
+        )
+      }
       stocks = DEFAULT_STOCKS
     } catch (e) { console.error('seed stocks error:', e) }
   }
@@ -65,20 +58,15 @@ export async function GET() {
   for (const stock of stocks) {
     const sp = calcStockPrice(stock.symbol)
     stockPrices[stock.symbol] = sp
-
     try {
-      const existing = await db.select().from(assetPrice).where(eq(assetPrice.symbol, stock.symbol)).limit(1)
-      if (existing.length === 0) {
-        await db.insert(assetPrice).values({
-          id: randomUUID(),
-          type: 'iran-stock',
-          symbol: stock.symbol,
-          price: sp.price,
-          currency: 'IRR',
-          source: 'api',
-        })
+      const exists = await pool.query('SELECT id FROM asset_price WHERE symbol = $1 LIMIT 1', [stock.symbol])
+      if (exists.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+          [randomUUID(), 'iran-stock', stock.symbol, sp.price, 'IRR', 'api']
+        )
       } else {
-        await db.update(assetPrice).set({ price: sp.price, updatedAt: new Date() }).where(eq(assetPrice.symbol, stock.symbol))
+        await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [sp.price, stock.symbol])
       }
     } catch (e) { console.error(`stock price store error for ${stock.symbol}:`, e) }
   }
