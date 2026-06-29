@@ -314,6 +314,24 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
     }
   }
 
+  // DB fallback for ALL asset types when live APIs fail (e.g., Vercel IP blocked)
+  if (Object.keys(prices).length === 0 || tgju.irrRate === 0) {
+    try {
+      const { pool } = await import('@/lib/db')
+      const r = await pool.query(`SELECT symbol, price, currency FROM asset_price WHERE price > 0 ORDER BY "updatedAt" DESC`)
+      for (const row of r.rows) {
+        if (!prices[row.symbol]) {
+          prices[row.symbol] = { price: Number(row.price), currency: row.currency ?? 'IRR' }
+        }
+      }
+      // If still no USD-IRR rate, try to get from DB
+      if (tgju.irrRate === 0) {
+        const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
+        if (usdRow) tgju.irrRate = Number(usdRow.price)
+      }
+    } catch {}
+  }
+
   const stockPrices: Record<string, { price: number; change: number; closePrice: number }> = {}
 
   if (insCodeMap) {
