@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage } from '@/lib/db/schema'
+import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc } from 'drizzle-orm'
@@ -99,6 +99,10 @@ export async function getSentSuggestions(userId: string) {
     ...s,
     isRead: s.isRead ?? false,
   }))
+}
+
+export async function getUserAssets(userId: string) {
+  return db.select().from(asset).where(eq(asset.userId, userId)).orderBy(desc(asset.createdAt))
 }
 
 export async function getTickets() {

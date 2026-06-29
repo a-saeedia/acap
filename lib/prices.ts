@@ -1,5 +1,5 @@
 const COINGECKO = 'https://api.coingecko.com/api/v3'
-const NOBITEX = 'https://api.nobitex.ir'
+const METALS = 'https://api.metals.live/v1/spot/gold'
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -28,7 +28,7 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
 
 export async function fetchNobitexPrices(): Promise<PriceMap> {
   try {
-    const res = await fetch(`${NOBITEX}/market/stats`, { next: { revalidate: 120 } })
+    const res = await fetch('https://api.nobitex.ir/market/stats', { next: { revalidate: 120 } })
     const data = await res.json()
     const result: PriceMap = {}
     if (data.stats) {
@@ -45,11 +45,11 @@ export async function fetchNobitexPrices(): Promise<PriceMap> {
 
 export async function fetchGoldPrices(): Promise<PriceMap> {
   try {
-    const res = await fetch('https://api.currencyapi.com/v3/latest?apikey=cur_live_demo&base_currency=XAU', {
-      next: { revalidate: 3600 },
-    })
+    const res = await fetch(METALS, { next: { revalidate: 300 } })
     const data = await res.json()
-    if (data.data?.USD) return { GOLD: { price: Math.round(1 / data.data.USD.value * 100) / 100, currency: 'USD' } }
+    if (data?.gold?.price) {
+      return { GOLD: { price: data.gold.price, currency: 'USD' } }
+    }
   } catch {}
   return {}
 }
@@ -60,5 +60,25 @@ export async function fetchAllPrices(): Promise<PriceMap> {
     fetchNobitexPrices(),
     fetchGoldPrices(),
   ])
-  return { ...crypto, ...nobitex, ...gold }
+
+  const prices: PriceMap = { ...crypto, ...nobitex, ...gold }
+
+  const usdtIrr = nobitex['USDT']?.price
+
+  if (usdtIrr) {
+    prices['USDT'] = { price: 1, currency: 'USD' }
+    prices['USDT-IRR'] = { price: usdtIrr, currency: 'IRR' }
+    prices['USD'] = { price: 1, currency: 'USD' }
+    prices['USD-IRR'] = { price: usdtIrr, currency: 'IRR' }
+
+    if (prices['BTC']?.price) {
+      prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * usdtIrr), currency: 'IRR' }
+    }
+
+    if (prices['GOLD']?.price) {
+      prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * usdtIrr / 31.1), currency: 'IRR' }
+    }
+  }
+
+  return prices
 }

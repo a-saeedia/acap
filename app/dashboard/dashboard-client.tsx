@@ -8,11 +8,12 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import {
   User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap, Loader2
+  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap, Loader2, Wallet, BarChart3
 } from 'lucide-react'
 import { saveProfile } from '@/app/actions/profile'
 import { getDashboardData } from '@/app/actions/profile'
 import { getUserSuggestions } from '@/app/actions/admin'
+import { PortfolioDashboard } from '@/components/portfolio-dashboard'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
@@ -50,6 +51,7 @@ export function DashboardClient() {
   const [phoneInput, setPhoneInput] = useState('')
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
+  const [showPortfolio, setShowPortfolio] = useState(false)
 
   useEffect(() => {
     if (isPending) return
@@ -347,10 +349,33 @@ export function DashboardClient() {
                   <Trophy className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                   تست مجدد شخصیت مالی
                 </button>
+                <button
+                  onClick={() => setShowPortfolio(!showPortfolio)}
+                  className={`flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl transition-colors text-sm font-semibold ${
+                    showPortfolio
+                      ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400'
+                      : 'glass border border-border hover:border-primary/30 text-foreground'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4 flex-shrink-0" />
+                  مدیریت پرتفوی
+                </button>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* Portfolio section */}
+        {showPortfolio && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-8"
+          >
+            <PortfolioDashboard />
+          </motion.div>
+        )}
       </main>
     </div>
   )

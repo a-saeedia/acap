@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
@@ -29,6 +29,9 @@ export default function AdminPage() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showMobileList, setShowMobileList] = useState(true)
+  const [portfolioAssets, setPortfolioAssets] = useState<any[]>([])
+  const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
+  const [portfolioLoading, setPortfolioLoading] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) router.push('/')
@@ -63,8 +66,22 @@ export default function AdminPage() {
     }
   }
 
+  async function loadPortfolio(userId: string) {
+    setPortfolioLoading(true)
+    try {
+      const [a, p] = await Promise.all([
+        getUserAssets(userId),
+        fetch('/api/prices').then(r => r.json()),
+      ])
+      setPortfolioAssets(a)
+      setPrices(p)
+    } catch { } finally {
+      setPortfolioLoading(false)
+    }
+  }
+
   useEffect(() => {
-    if (selectedUser) loadHistory(selectedUser.id)
+    if (selectedUser) { loadHistory(selectedUser.id); loadPortfolio(selectedUser.id) }
   }, [selectedUser])
 
   async function handleToggle(userId: string, current: boolean) {
@@ -121,6 +138,10 @@ export default function AdminPage() {
     setSelectedTicket(null)
     loadTickets()
   }
+
+  const totalValue = portfolioAssets.reduce((sum, a) => sum + (prices[a.symbol]?.price ?? 0) * a.quantity, 0)
+  const totalInvested = portfolioAssets.reduce((sum, a) => sum + (a.purchasePrice ?? 0) * a.quantity, 0)
+  const pnl = totalValue - totalInvested
 
   if (isPending) return <div className="min-h-screen flex items-center justify-center text-white">...</div>
   if (!session) return null
@@ -289,6 +310,75 @@ export default function AdminPage() {
                             </div>
                           ))}
                         </div>
+                      )}
+                    </div>
+                    <div className="bg-gray-800/50 rounded-xl p-4 sm:p-5 border border-gray-700/50">
+                      <h3 className="font-semibold text-sm mb-3">پرتفوی کاربر</h3>
+                      {portfolioLoading ? (
+                        <p className="text-gray-500 text-sm">در حال بارگذاری...</p>
+                      ) : portfolioAssets.length === 0 ? (
+                        <p className="text-gray-500 text-sm">کاربر دارای دارایی نیست</p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                            <div className="bg-gray-800 rounded-lg p-3">
+                              <p className="text-gray-400 text-xs">تعداد دارایی‌ها</p>
+                              <p className="text-lg font-bold">{portfolioAssets.length}</p>
+                            </div>
+                            <div className="bg-gray-800 rounded-lg p-3">
+                              <p className="text-gray-400 text-xs">ارزش کل</p>
+                              <p className="text-lg font-bold text-emerald-400">{totalValue.toLocaleString()} تومان</p>
+                            </div>
+                            <div className="bg-gray-800 rounded-lg p-3">
+                              <p className="text-gray-400 text-xs">سرمایه‌گذاری</p>
+                              <p className="text-lg font-bold">{totalInvested.toLocaleString()} تومان</p>
+                            </div>
+                            <div className="bg-gray-800 rounded-lg p-3">
+                              <p className="text-gray-400 text-xs">سود/زیان</p>
+                              <p className={`text-lg font-bold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {pnl >= 0 ? '+' : ''}{pnl.toLocaleString()} تومان
+                              </p>
+                            </div>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-gray-400 border-b border-gray-700">
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">نماد</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">نام</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">نوع</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">مقدار</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">قیمت فعلی</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">ارزش</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">قیمت خرید</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">سود/زیان</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {portfolioAssets.map(a => {
+                                  const price = prices[a.symbol]?.price ?? 0
+                                  const currentValue = price * a.quantity
+                                  const costBasis = a.purchasePrice ? a.purchasePrice * a.quantity : null
+                                  const assetPnl = costBasis !== null ? currentValue - costBasis : null
+                                  return (
+                                    <tr key={a.id} className="border-b border-gray-800">
+                                      <td className="py-2 px-2 font-medium">{a.symbol}</td>
+                                      <td className="py-2 px-2 text-gray-400">{a.label}</td>
+                                      <td className="py-2 px-2 text-gray-400">{a.type}</td>
+                                      <td className="py-2 px-2">{a.quantity}</td>
+                                      <td className="py-2 px-2">{price.toLocaleString()}</td>
+                                      <td className="py-2 px-2">{currentValue.toLocaleString()}</td>
+                                      <td className="py-2 px-2">{a.purchasePrice?.toLocaleString() ?? '—'}</td>
+                                      <td className={`py-2 px-2 ${assetPnl !== null ? (assetPnl >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>
+                                        {assetPnl !== null ? `${assetPnl >= 0 ? '+' : ''}${assetPnl.toLocaleString()}` : '—'}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

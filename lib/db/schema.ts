@@ -120,12 +120,21 @@ export const asset = pgTable('asset', {
   type: text('type').notNull(),
   symbol: text('symbol').notNull(),
   label: text('label').notNull(),
-  quantity: bigint('quantity', { mode: 'number' }).notNull().default(0),
-  purchasePrice: bigint('purchasePrice', { mode: 'number' }),
+  quantity: real('quantity').notNull().default(0),
+  purchasePrice: real('purchasePrice'),
   purchaseDate: timestamp('purchaseDate'),
   notes: text('notes'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const iranStock = pgTable('iran_stock', {
+  id: text('id').primaryKey(),
+  symbol: text('symbol').notNull().unique(),
+  name: text('name').notNull(),
+  sector: text('sector'),
+  tsetmcCode: text('tsetmcCode'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
 export const assetPrice = pgTable('asset_price', {
