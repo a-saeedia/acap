@@ -14,34 +14,39 @@ export async function saveQuizResult(data: {
   investorType: string
   answers: Record<string, number>
 }) {
-  const session = await auth.api.getSession({ headers: await headers() })
-  const userId = session?.user?.id ?? null
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    const userId = session?.user?.id ?? null
 
-  const id = randomUUID()
-  await db.insert(quizResult).values({
-    id,
-    userId,
-    name: data.name,
-    phone: data.phone,
-    score: data.score,
-    investorType: data.investorType,
-    answers: data.answers,
-  })
+    const id = randomUUID()
+    await db.insert(quizResult).values({
+      id,
+      userId,
+      name: data.name,
+      phone: data.phone,
+      score: data.score,
+      investorType: data.investorType,
+      answers: data.answers,
+    })
 
-  if (userId && data.phone) {
-    const existing = await db.select().from(userProfile).where(eq(userProfile.userId, userId)).limit(1)
-    if (existing.length === 0) {
-      await db.insert(userProfile).values({
-        id: randomUUID(),
-        userId,
-        phone: data.phone,
-      })
-    } else {
-      await db.update(userProfile).set({ phone: data.phone }).where(eq(userProfile.userId, userId))
+    if (userId && data.phone) {
+      const existing = await db.select().from(userProfile).where(eq(userProfile.userId, userId)).limit(1)
+      if (existing.length === 0) {
+        await db.insert(userProfile).values({
+          id: randomUUID(),
+          userId,
+          phone: data.phone,
+        })
+      } else {
+        await db.update(userProfile).set({ phone: data.phone }).where(eq(userProfile.userId, userId))
+      }
     }
-  }
 
-  return { id }
+    return { id }
+  } catch (e) {
+    console.error('saveQuizResult error:', e)
+    return { id: '' }
+  }
 }
 
 export async function getMyQuizResults() {
