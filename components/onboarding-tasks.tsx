@@ -238,7 +238,7 @@ export function OnboardingTasks({
             exit="exit"
             className="absolute top-full mt-3 left-1/2 -translate-x-1/2 w-72 z-50 overflow-hidden"
           >
-            <div className="glass rounded-3xl border border-border p-5 shadow-2xl relative">
+            <div className="glass rounded-3xl border border-border p-5 shadow-2xl relative bg-gray-900/95 backdrop-blur-xl">
               {allDone && <Confetti />}
 
               <div className="flex items-center justify-between mb-4">
