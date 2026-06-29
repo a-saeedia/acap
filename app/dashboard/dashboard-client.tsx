@@ -33,6 +33,7 @@ export function DashboardClient() {
   const [phoneInput, setPhoneInput] = useState('')
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
+  const [assetsCount, setAssetsCount] = useState(0)
 
   useEffect(() => {
     if (isPending) return
@@ -44,6 +45,11 @@ export function DashboardClient() {
       setLoading(false)
     }).catch(() => { router.push('/') })
   }, [session, isPending, router])
+
+  useEffect(() => {
+    if (!dashData) return
+    import('@/app/actions/assets').then(m => m.getMyAssets()).then(a => setAssetsCount(a.length)).catch(() => {})
+  }, [dashData])
 
   if (isPending || loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -133,7 +139,7 @@ export function DashboardClient() {
                 )}
               </div>
             </div>
-            <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} />
+            <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
 
           {/* Portfolio Dashboard — always at top */}
