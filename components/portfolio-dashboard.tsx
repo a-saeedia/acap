@@ -8,7 +8,7 @@ import {
   Plus, Trash2, Edit3, X, Search, RefreshCw,
   Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain, BarChart3,
 } from 'lucide-react'
-import { PortfolioAdvisor } from '@/components/portfolio-advisor'
+
 import { AISupport } from '@/components/ai-support'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
@@ -93,13 +93,13 @@ function getAssetPriceIr(
   const upper = symbol.toUpperCase()
   if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
   const irrKey = `${upper}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price / 10
+  if (prices[irrKey]) return prices[irrKey].price
   const direct = prices[upper] ?? prices[symbol]
   if (!direct) return null
-  if (direct.currency === 'IRR') return direct.price / 10
+  if (direct.currency === 'IRR') return direct.price
   if (direct.currency === 'USD') {
     const usdRate = prices['USDT-IRR']?.price
-    if (usdRate) return (direct.price * usdRate) / 10
+    if (usdRate) return direct.price * usdRate
     return direct.price
   }
   return null
@@ -118,7 +118,7 @@ function getCurrentValue(asset: Asset, prices: PriceMap, stockPrices: Record<str
 function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0)
   const prevRef = useRef(0)
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
     const start = prevRef.current
@@ -262,6 +262,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   const [stockPrices, setStockPrices] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [priceLoading, setPriceLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -269,7 +270,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   const [stockSearch, setStockSearch] = useState('')
   const [stockResults, setStockResults] = useState<IranStock[]>([])
   const [stockSearching, setStockSearching] = useState(false)
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
@@ -278,8 +279,9 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
     setTimeout(() => setToast(null), 3000)
   }
 
-  const fetchPrices = useCallback(async () => {
-    setPriceLoading(true)
+  const fetchPrices = useCallback(async (isUserAction = false) => {
+    if (isUserAction) setPriceLoading(true)
+    else setRefreshing(true)
     try {
       // Fetch general prices (crypto, forex, gold, USDT-IRR rate)
       const res = await fetch('/api/prices')
@@ -313,6 +315,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
       setLastUpdate(new Date())
     } catch (e) { console.error('fetchPrices error:', e) }
     setPriceLoading(false)
+    setRefreshing(false)
   }, [assets])
 
   const fetchAll = useCallback(async () => {
@@ -327,14 +330,14 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
     if (isPending) return
     ;(async () => {
       const a = await fetchAll()
-      await fetchPrices()
+      await fetchPrices(true)
       setLoading(false)
     })()
   }, [isPending, fetchAll, fetchPrices])
 
   useEffect(() => {
     if (loading) return
-    const interval = setInterval(() => fetchPrices(), 30000)
+    const interval = setInterval(() => fetchPrices(false), 30000)
     return () => clearInterval(interval)
   }, [loading, fetchPrices])
 
@@ -529,634 +532,261 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         </motion.div>
       )}
 
-      {/* Animated mesh gradient background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20 blur-3xl animate-mesh"
-          style={{ background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full opacity-15 blur-3xl animate-mesh"
-          style={{ animationDelay: '-4s', background: 'radial-gradient(circle, #8B5CF6 0%, transparent 70%)' }} />
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 rounded-full opacity-10 blur-3xl animate-mesh"
-          style={{ animationDelay: '-8s', background: 'radial-gradient(circle, #10B981 0%, transparent 70%)' }} />
-      </div>
 
-      {/* Polished Value Bar - High-end design */}
-      <div className="mb-3 p-3 rounded-2xl glass border border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <Wallet className="w-4 h-4 text-primary" />
+
+      {/* Dashboard */}
+      <div className="space-y-4">
+
+        {/* ── User Profile Card ── */}
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+              {session?.user?.name?.[0] || '?'}
             </div>
-            <div className="min-w-0">
-              <div className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">ارزش کل سبد</div>
-              <div className="text-lg sm:text-xl font-black text-foreground truncate">
-                <AnimatedNumber value={totalValue} /> <span className="text-xs font-normal text-muted-foreground">تومان</span>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-foreground truncate">{session?.user?.name || 'کاربر'}</div>
+              <div className="text-xs text-muted-foreground truncate">{session?.user?.email || ''}</div>
+            </div>
+            {lastUpdate && (
+              <div className="text-[11px] text-muted-foreground shrink-0 text-left leading-snug">
+                <div>بروزرسانی</div>
+                <div dir="ltr">{new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(lastUpdate)}</div>
               </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              {assets.length}
-            </span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              {Object.keys(byType).length}
-            </span>
-            {investorType && (
-              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
-                <Brain className="w-3 h-3" />
-              </span>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Stats Row - Clean & Compact */}
-      <div className="grid grid-cols-4 gap-1 mb-4">
-        {[
-          { label: 'دارایی', value: String(assets.length), sub: `${Object.keys(byType).length} دسته` },
-          {
-            label: 'بیشترین',
-            value: Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0]?.[0]
-              ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.icon ?? '—')
-              : '—',
-            sub: Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0]?.[0]
-              ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.label ?? '—')
-              : 'خالی',
-          },
-          { label: 'تنوع', value: `${Object.keys(byType).length}/۴`, sub: '' },
-          { label: 'تحلیل', value: investorType ? '✓' : '✗', sub: '' },
-        ].map((stat) => (
-          <div key={stat.label}
-            className="relative overflow-hidden rounded-xl p-2 glass border border-border/30 text-center bg-gradient-to-b from-transparent to-accent/20"
-          >
-            <div className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">{stat.label}</div>
-            <div className={`text-sm font-black ${stat.label === 'تحلیل' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
-              {stat.value}
-            </div>
-            <div className="text-[9px] text-muted-foreground truncate">{stat.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mb-4">
-        <PortfolioAdvisor
-          assets={assets}
-          prices={prices}
-          stockPrices={stockPrices}
-          investorType={investorType ?? null}
-          quizTaken={!!investorType}
-        />
-      </div>
-
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass border border-border/50 rounded-2xl p-4"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-primary/15 flex items-center justify-center">
-                <PieChart className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <h3 className="font-black text-sm text-foreground">توزیع سرمایه</h3>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {Object.keys(byType).length} دسته
+        {/* ── Portfolio Value ── */}
+        <div className="flex items-center justify-between bg-card border border-border rounded-2xl p-4">
+          <div>
+            <div className="text-xs text-muted-foreground font-medium">ارزش کل سبد</div>
+            <div className="text-2xl font-bold text-foreground mt-0.5 tracking-tight">
+              <AnimatedNumber value={totalValue} /> <span className="text-sm font-normal text-muted-foreground">تومان</span>
             </div>
           </div>
-          {Object.keys(byType).length === 0 ? (
-            <div className="py-6">
-              <DonutChart segments={[]} />
-              <p className="text-muted-foreground text-xs text-center mt-3">هنوز دارایی ثبت نشده</p>
-            </div>
-          ) : (
-            <div className="py-2">
-              <DonutChart
-                segments={Object.entries(byType).map(([type, data], i) => ({
-                  label: TYPE_CONFIG[type]?.label ?? 'سایر',
-                  value: data.value,
-                  color: DONUT_COLORS[i] ?? '#8B5CF6',
-                }))}
-              />
-            </div>
-          )}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="glass border border-border/50 rounded-2xl p-4"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-              <h3 className="font-black text-sm text-foreground">تفکیک دسته‌ها</h3>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {assets.length} دارایی
-            </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => fetchPrices(true)} disabled={priceLoading}
+              className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin' : refreshing ? 'animate-spin opacity-40' : ''}`} />
+            </button>
+            <button onClick={openAdd}
+              className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
-          {assets.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-6">دارایی‌ای برای نمایش وجود ندارد</p>
-          ) : (
+        </div>
+
+        {/* ── Quick Stats Row ── */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'تعداد دارایی‌ها', value: String(assets.length) },
+            { label: 'دسته‌بندی', value: String(Object.keys(byType).length) },
+            { label: 'سود / زیان', value: totalCost > 0 ? `${(((totalValue - totalCost) / totalCost) * 100).toFixed(1)}%` : '—' },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-card border border-border rounded-2xl py-3 px-3 text-center">
+              <div className="text-lg font-bold text-foreground">{stat.value}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Category Distribution ── */}
+        {Object.keys(byType).length > 0 && (
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <h3 className="text-sm font-bold text-foreground mb-3">توزیع سرمایه</h3>
             <div className="space-y-3">
-              {Object.entries(byType).map(([type, data]) => {
+              {Object.entries(byType).sort((a, b) => b[1].value - a[1].value).map(([type, data]) => {
                 const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0
                 const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
                 return (
-                  <motion.div
-                    key={type}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cfg.icon}</span>
-                        <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
-                      </div>
-                      <div className="text-left">
-                        <span className="text-sm font-bold text-foreground">{pct.toFixed(1)}%</span>
-                        <span className="text-[10px] text-muted-foreground ml-2">
-                          {formatCurrency(data.value)}
-                        </span>
-                      </div>
+                  <div key={type}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium text-foreground">{cfg.icon} {cfg.label}</span>
+                      <span className="text-muted-foreground">{pct.toFixed(0)}%</span>
                     </div>
-                    <div className="h-2 bg-accent rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-                        className="h-full rounded-full"
-                        style={{ background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}dd)` }}
-                      />
+                    <div className="h-1.5 bg-accent rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cfg.color }} />
                     </div>
-                  </motion.div>
+                  </div>
                 )
               })}
             </div>
-          )}
-</motion.div>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="glass border border-border/50 rounded-2xl p-4"
-      >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center">
-              <Bitcoin className="w-3 h-3 text-amber-400" />
-            </div>
-            <h3 className="font-black text-xs text-foreground">مدیریت سبد</h3>
-          </div>
-          <button onClick={openAdd} className="btn-primary px-2.5 py-1 rounded-lg text-xs gap-1 flex items-center">
-            <Plus className="w-2.5 h-2.5" />
-            <span>افزودن</span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="w-2.5 h-2.5" />
-            {lastUpdate ? (
-              <span>{new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(lastUpdate)}</span>
-            ) : (
-              <span>دریافت قیمت...</span>
-            )}
-          </div>
-          <button onClick={fetchPrices} disabled={priceLoading}
-            className="flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-2.5 h-2.5 ${priceLoading ? 'animate-spin' : ''}`} />
-            {priceLoading ? '...' : 'به‌روزرسانی'}
-          </button>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="glass border border-border/50 rounded-xl p-3"
-      >
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>💡</span>
-          <span>هر ۳۰ ثانیه از tgju.org و tsetmc.com به‌روز می‌شود</span>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-black text-sm text-foreground">دارایی‌های من</h3>
-          <span className="text-xs text-muted-foreground">{assets.length} مورد</span>
-        </div>
-
-        {assets.length === 0 ? (
-          <div className="glass border border-border/50 rounded-2xl p-8 text-center">
-            <div className="text-4xl mb-3">📦</div>
-            <p className="text-muted-foreground text-sm font-semibold mb-1">سبد شما خالی است</p>
-            <p className="text-muted-foreground text-xs mb-4">اولین دارایی را اضافه کنید</p>
-            <button onClick={openAdd} className="btn-primary px-5 py-2.5 rounded-xl text-xs font-bold gap-1.5 inline-flex items-center">
-              <Plus className="w-3.5 h-3.5" />
-              افزودن
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            <AnimatePresence mode="popLayout">
-              {assets.map((a, i) => {
-                const price = getAssetPriceIr(a.symbol, prices, stockPrices)
-                const value = getCurrentValue(a, prices, stockPrices)
-                const cost = getTotalCost(a)
-                const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
-                const pnlAbs = value - cost
-                const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
-                const hasPrice = price !== null
-                return (
-                  <motion.div
-                    key={a.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    transition={{ delay: i * 0.03, duration: 0.3 }}
-                    className="group relative rounded-2xl p-3 cursor-pointer border overflow-hidden transition-all duration-300"
-                    style={{
-                      background: `linear-gradient(135deg, ${cfg.color}0a, ${cfg.color}03)`,
-                      borderColor: 'rgba(255,255,255,0.06)',
-                    } as React.CSSProperties}
-                    onTouchStart={() => {}}
-                    whileHover={{
-                      y: -4,
-                      scale: 1.01,
-                      borderColor: `${cfg.color}60`,
-                      boxShadow: `
-                        0 20px 40px -12px ${cfg.color}30,
-                        0 0 0 1px ${cfg.color}30,
-                        0 0 30px -8px ${cfg.color}40,
-                        inset 0 1px 0 ${cfg.color}15
-                      `,
-                      transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {/* Accent border glow on hover */}
-                    <motion.div
-                      className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100"
-                      style={{
-                        background: `conic-gradient(from 0deg, ${cfg.color}00, ${cfg.color}60, ${cfg.color}00)`,
-                        mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                        maskComposite: 'exclude',
-                        WebkitMaskComposite: 'xor',
-                      }}
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                      initial={{ rotate: 0 }}
-                    />
-                    
-                    {/* Left accent bar */}
-                    <motion.div
-                      className="absolute right-0 top-1/2 w-1 h-0 rounded-full"
-                      style={{ background: cfg.color, boxShadow: `0 0 10px 2px ${cfg.color}80` }}
-                      initial={{ height: 0, y: '50%' }}
-                      animate={{ height: 'calc(100% - 8px)', y: '50%' }}
-                      transition={{ duration: 0.4, delay: 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    />
-
-                    <div className="relative flex items-start justify-between gap-2 z-10">
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div
-                          className="w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0"
-                          style={{ background: `${cfg.color}15`, border: `1px solid ${cfg.color}25` }}
-                          whileHover={{ scale: 1.1, rotateZ: 4 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                        >
-                          {cfg.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-sm text-foreground truncate group-hover:text-transparent group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)` }}>
-                            {a.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground">{a.symbol}</div>
-                        </div>
-                      </div>
-                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(a)}
-                          className="w-7 h-7 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-accent/50 hover:scale-110 active:scale-95 transition-all"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => handleDelete(a.id)}
-                          className="w-7 h-7 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 hover:scale-110 active:scale-95 transition-all"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="relative z-10 mt-3 flex items-baseline justify-between">
-                      <span className="text-lg font-black text-foreground" dir="ltr">
-                        {value > 0 ? formatCurrency(value) : '—'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">تومان</span>
-                    </div>
-
-                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/30 pt-2">
-                      <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
-                      <span>{hasPrice ? `${price!.toLocaleString('fa-IR')} تومان` : 'قیمت نامشخص'}</span>
-                      {a.purchaseDate && (
-                        <span className="hidden sm:flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5" />
-                          {new Intl.DateTimeFormat('fa-IR', { month: 'short', day: 'numeric' }).format(new Date(a.purchaseDate))}
-                        </span>
-                      )}
-                    </div>
-
-                    {cost > 0 && hasPrice && (
-                      <div className="mt-2 pt-2 border-t border-border/30">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className={`font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
-                          </span>
-                          <span className={`font-bold ${pnlAbs >= 0 ? 'text-emerald-400' : 'text-red-400'}`} dir="ltr">
-                            {pnlAbs >= 0 ? '+' : ''}{formatCurrency(Math.round(pnlAbs))}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                )
-              })}
-            </AnimatePresence>
           </div>
         )}
-      </motion.div>
 
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm overflow-y-auto"
-            onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); setForm(INITIAL_FORM) } }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="glass border border-border rounded-3xl p-6 sm:p-7 w-full max-w-lg mx-auto shadow-2xl max-h-[90dvh] overflow-y-auto sm:max-h-none"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg sm:text-xl font-black text-foreground">
-                  {editingId ? 'ویرایش دارایی' : 'افزودن دارایی جدید'}
-                </h2>
-                <button
-                  onClick={() => { setShowModal(false); setForm(INITIAL_FORM) }}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+        {/* ── Assets Grid ── */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-foreground">دارایی‌ها</h3>
+            <span className="text-xs text-muted-foreground">{assets.length} مورد</span>
+          </div>
 
-              <div className="space-y-5">
-                <div>
-                  <label className="text-xs text-muted-foreground font-semibold mb-2 block">نوع دارایی</label>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-5">
-                    {ASSET_TYPES.map(t => (
-                      <button
-                        key={t.value}
-                        onClick={() => setForm(prev => ({ ...INITIAL_FORM, type: t.value }))}
-                        className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-all sm:px-2 ${
-                          form.type === t.value
-                            ? 'bg-primary/20 text-primary border border-primary/30'
-                            : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
-                        }`}
+          {assets.length === 0 ? (
+            <div className="bg-card border border-border rounded-2xl p-8 text-center">
+              <p className="text-muted-foreground text-sm mb-3">سبد شما خالی است</p>
+              <button onClick={openAdd} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
+                + افزودن دارایی
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {[...assets]
+                .sort((a, b) => {
+                  const valA = getCurrentValue(a, prices, stockPrices)
+                  const valB = getCurrentValue(b, prices, stockPrices)
+                  return valB - valA
+                })
+                .map((a) => {
+                  const value = getCurrentValue(a, prices, stockPrices)
+                  const cost = getTotalCost(a)
+                  const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
+                  const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
+                  const diff = value - cost
+                  return (
+                    <div key={a.id} onClick={() => openEdit(a)}
+                      className="bg-card border border-border rounded-2xl p-3 text-center cursor-pointer hover:border-primary/30 transition-colors relative group"
+                    >
+                      <div className="text-2xl leading-none mb-1.5">{cfg.icon}</div>
+                      <div className="text-sm font-semibold text-foreground truncate leading-snug">{a.label}</div>
+                      <div className="text-xs text-muted-foreground truncate">{formatQuantity(a.quantity, a.symbol)}</div>
+                      <div className="text-sm font-bold text-foreground mt-1" dir="ltr">
+                        {value > 0 ? formatCurrency(value) : '—'}
+                      </div>
+                      {cost > 0 && (
+                        <div className={`text-xs font-semibold mt-0.5 ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {diff >= 0 ? '+' : ''}{pnl.toFixed(1)}%
+                        </div>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(a.id); }}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                       >
-                        <div className="text-base mb-0.5">{TYPE_CONFIG[t.value]?.icon}</div>
-                        {t.label}
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Asset Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
+          <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-md space-y-4 overflow-y-auto max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            <h2 className="text-base font-bold text-foreground">{editingId ? 'ویرایش دارایی' : 'افزودن دارایی جدید'}</h2>
+
+            {/* Type selector */}
+            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value, symbol: '', label: '' })}
+              className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none"
+            >
+              {ASSET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+
+            {/* Quick crypto symbols */}
+            {form.type === 'crypto' && (
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_CRYPTO.map(s => (
+                  <button key={s} onClick={() => handleQuickSymbol(s)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${form.symbol === s ? 'bg-primary text-white' : 'bg-accent text-muted-foreground hover:text-foreground'}`}
+                  >{s}</button>
+                ))}
+              </div>
+            )}
+
+            {/* Quick currency symbols */}
+            {form.type === 'currency' && (
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_CURRENCY.map(s => (
+                  <button key={s} onClick={() => handleQuickSymbol(s)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${form.symbol === s ? 'bg-primary text-white' : 'bg-accent text-muted-foreground hover:text-foreground'}`}
+                  >{s}</button>
+                ))}
+              </div>
+            )}
+
+            {/* Quick gold */}
+            {form.type === 'gold' && (
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_GOLD.map(g => (
+                  <button key={g.symbol} onClick={() => handleQuickSymbol(g.symbol, g.label)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${form.symbol === g.symbol ? 'bg-primary text-white' : 'bg-accent text-muted-foreground hover:text-foreground'}`}
+                  >{g.label}</button>
+                ))}
+              </div>
+            )}
+
+            {/* Stock search */}
+            {form.type === 'stock' && (
+              <div>
+                <input value={stockSearch} onChange={e => setStockSearch(e.target.value)} placeholder="جستجوی نماد بورسی..."
+                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none mb-2"
+                />
+                {stockSearching && <div className="text-xs text-muted-foreground text-center py-2">در حال جستجو...</div>}
+                {stockResults.length > 0 && (
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {stockResults.map(s => (
+                      <button key={s.id} onClick={() => selectStock(s)}
+                        className="w-full text-right px-3 py-2 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
+                      >
+                        <div className="text-xs font-semibold text-foreground">{s.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{s.symbol} · {s.sector}</div>
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {form.type === 'crypto' && (
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">انتخاب سریع رمز ارز</label>
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap">
-                      {QUICK_CRYPTO.map(sym => (
-                        <button
-                          key={sym}
-                          onClick={() => handleQuickSymbol(sym)}
-                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            form.symbol === sym
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                              : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
-                          }`}
-                        >
-                          {sym}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 )}
-
-                {form.type === 'currency' && (
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">انتخاب سریع ارز</label>
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap">
-                      {QUICK_CURRENCY.map(sym => (
-                        <button
-                          key={sym}
-                          onClick={() => handleQuickSymbol(sym)}
-                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            form.symbol === sym
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
-                          }`}
-                        >
-                          {sym}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {form.type === 'gold' && (
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">انتخاب سریع</label>
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 flex-nowrap sm:flex-wrap">
-                      {QUICK_GOLD.map(g => (
-                        <button
-                          key={g.symbol}
-                          onClick={() => handleQuickSymbol(g.symbol, g.label)}
-                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            form.symbol === g.symbol
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                              : 'bg-accent/30 text-muted-foreground border border-transparent hover:border-border'
-                          }`}
-                        >
-                          {g.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {form.type === 'stock' && (
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">جستجوی سهام بورس ایران</label>
-                    <div className="relative">
-                      <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                      <input
-                        value={stockSearch}
-                        onChange={e => setStockSearch(e.target.value)}
-                        placeholder="نام یا نماد سهم را جستجو کنید..."
-                        className="input-field pr-9"
-                      />
-                      {stockSearching && (
-                        <Loader2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
-                      )}
-                    </div>
-                    {stockResults.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface-elevated divide-y divide-border/40"
-                      >
-                        {stockResults.map(s => (
-                          <button
-                            key={s.id}
-                            onClick={() => selectStock(s)}
-                            className={`w-full text-right px-4 py-3 text-sm transition-colors hover:bg-accent/50 ${
-                              form.symbol === s.symbol ? 'bg-accent/30' : ''
-                            }`}
-                          >
-                            <div className="font-semibold text-foreground">{s.name}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
-                              <span>{s.symbol}</span>
-                              {s.sector && <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/50">{s.sector}</span>}
-                            </div>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                    {stockSearch && !stockSearching && stockResults.length === 0 && (
-                      <p className="text-xs text-muted-foreground mt-2">نتیجه‌ای یافت نشد</p>
-                    )}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">نماد</label>
-                    <input
-                      value={form.symbol}
-                      onChange={e => setForm(prev => ({ ...prev, symbol: e.target.value.toUpperCase() }))}
-                      placeholder="مثال: BTC"
-                      className="input-field"
-                      dir="ltr"
-                      style={{ textAlign: 'start' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">نام دارایی *</label>
-                    <input
-                      value={form.label}
-                      onChange={e => setForm(prev => ({ ...prev, label: e.target.value }))}
-                      placeholder="نام دارایی"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">تعداد *</label>
-                    <input
-                      value={form.quantity || ''}
-                      onChange={e => setForm(prev => ({ ...prev, quantity: Number(e.target.value) }))}
-                      placeholder="مثال: ۰.۵"
-                      type="number"
-                      step="any"
-                      className="input-field"
-                      dir="ltr"
-                      style={{ textAlign: 'start' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">قیمت خرید (تومان)</label>
-                    <input
-                      value={form.purchasePrice || ''}
-                      onChange={e => setForm(prev => ({ ...prev, purchasePrice: e.target.value ? Number(e.target.value) : undefined }))}
-                      placeholder="اختیاری"
-                      type="number"
-                      className="input-field"
-                      dir="ltr"
-                      style={{ textAlign: 'start' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">تاریخ خرید</label>
-                    <input
-                      value={form.purchaseDate}
-                      onChange={e => setForm(prev => ({ ...prev, purchaseDate: e.target.value }))}
-                      type="date"
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">یادداشت</label>
-                    <input
-                      value={form.notes ?? ''}
-                      onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="اختیاری"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting || !form.label || !form.quantity}
-                    className="flex-1 btn-primary py-3 rounded-xl text-sm font-bold gap-2 inline-flex items-center justify-center disabled:opacity-50"
-                  >
-                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {editingId ? 'ویرایش دارایی' : 'افزودن به سبد'}
-                  </button>
-                  <button
-                    onClick={() => { setShowModal(false); setForm(INITIAL_FORM) }}
-                    className="px-6 py-3 rounded-xl bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all text-sm font-semibold"
-                  >
-                    انصراف
-                  </button>
-                </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+
+            {/* Symbol + Label */}
+            <div className="grid grid-cols-2 gap-2">
+              <input value={form.symbol} onChange={e => setForm({ ...form, symbol: e.target.value })} placeholder="نماد (مثال: BTC)"
+                className="px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+              <input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} placeholder="نام دارایی *"
+                className="px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+            </div>
+
+            {/* Quantity + Price */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] text-muted-foreground mb-1 block">تعداد *</label>
+                <input value={form.quantity || ''} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} type="number"
+                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground mb-1 block">قیمت خرید (تومان)</label>
+                <input value={form.purchasePrice || ''} onChange={e => setForm({ ...form, purchasePrice: Number(e.target.value) })} type="number"
+                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+              </div>
+            </div>
+
+            {/* Date */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-1 block">تاریخ خرید</label>
+              <input value={form.purchaseDate} onChange={e => setForm({ ...form, purchaseDate: e.target.value })} type="date"
+                className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+            </div>
+
+            {/* Notes */}
+            <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="یادداشت" rows={2}
+              className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none resize-none" />
+
+            {/* Buttons */}
+            <div className="flex gap-2 pt-1">
+              <button onClick={handleSubmit} disabled={submitting}
+                className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : editingId ? 'ویرایش' : 'افزودن'}
+              </button>
+              <button onClick={() => setShowModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
+              >انصراف</button>
+            </div>
+          </div>
+        </div>
+      )}
       <AISupport />
     </div>
   )

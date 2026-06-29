@@ -8,7 +8,6 @@ import {
   User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, GraduationCap, Loader2, BarChart3, LogOut, Home
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
-import { PortfolioDashboard } from '@/components/portfolio-dashboard'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
@@ -142,9 +141,43 @@ export function DashboardClient() {
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
 
-          {/* Portfolio Dashboard — always at top */}
-          <motion.div variants={itemVariants}>
-            <PortfolioDashboard isPlus={isPlus} investorType={latest?.investorType ?? null} quizTaken={quizResults.length > 0} />
+          {/* Portfolio CTA — big orange card */}
+          <motion.div variants={itemVariants} className="mb-5">
+            <button onClick={() => router.push('/app/assets')}
+              className="w-full relative overflow-hidden rounded-3xl p-5 sm:p-6 text-right group cursor-pointer border-0"
+              style={{
+                background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 50%, #9A3412 100%)',
+                boxShadow: '0 8px 40px rgba(234,88,12,0.25)',
+              }}
+            >
+              <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 60%)' }} />
+              <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
+              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5" />
+              <div className="relative flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <BarChart3 className="w-5 h-5 text-white/90" />
+                    <h2 className="text-lg sm:text-xl font-black text-white">مدیریت سبد سرمایه</h2>
+                  </div>
+                  <p className="text-sm text-white/80 leading-relaxed">
+                    مشاهده و مدیریت دارایی‌ها، تحلیل پرتفوی، نمودارهای پیشرفته و ابزارهای هوشمند
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
+                      {assetsCount} دارایی
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
+                      <BarChart3 className="w-3 h-3" />
+                      ورود به سبد
+                    </span>
+                  </div>
+                </div>
+                <div className="shrink-0 w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <BarChart3 className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            </button>
           </motion.div>
 
           {/* Phone Number Banner */}
