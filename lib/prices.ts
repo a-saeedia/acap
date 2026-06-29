@@ -208,6 +208,11 @@ export async function fetchTsetmcSearch(symbol: string): Promise<string | null> 
     const encoded = encodeURIComponent(symbol)
     const res = await fetch(`${TSETMC_API}/Instrument/GetInstrumentSearch/${encoded}`, { ...FETCH_OPTS })
     if (!res.ok) return null
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      console.warn('TSETMC search returned non-JSON (likely blocked):', contentType)
+      return null
+    }
     const data = await res.json()
     if (data?.instrumentSearch?.length > 0) {
       // Exact match on lVal18AFC (short symbol) first
@@ -246,6 +251,11 @@ export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
   try {
     const res = await fetch(`${TSETMC_API}/ClosingPrice/GetClosingPriceInfo/${insCode}`, { ...FETCH_OPTS })
     if (!res.ok) return null
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      console.warn('TSETMC returned non-JSON (likely blocked):', contentType)
+      return null
+    }
     const data = await res.json()
     const info = data?.closingPriceInfo
     if (!info) return null
