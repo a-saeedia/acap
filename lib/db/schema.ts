@@ -92,8 +92,8 @@ export const suggestion = pgTable('suggestion', {
   content: text('content').notNull(),
   isRead: boolean('isRead').notNull().default(false),
   readAt: timestamp('readAt'),
-  profitPercent: real('profitPercent'),
-  profitMessage: text('profitMessage'),
+  profitPercent: real('profit_percent'),
+  profitMessage: text('profit_message'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
