@@ -5,10 +5,17 @@ import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
 
 export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) return Response.json({ isPlus: false, suggestions: [] })
-  const sub = await db.select().from(subscription).where(eq(subscription.userId, session.user.id)).limit(1)
-  const isPlus = sub[0]?.acapPlus ?? false
-  const suggestions = isPlus ? await db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)) : []
-  return Response.json({ isPlus, suggestions })
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return Response.json({ isPlus: false, suggestions: [] })
+    const sub = await db.select().from(subscription).where(eq(subscription.userId, session.user.id)).limit(1)
+    const isPlus = sub[0]?.acapPlus ?? false
+    let suggestions: any[] = []
+    if (isPlus) {
+      try { suggestions = await db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)) } catch {}
+    }
+    return Response.json({ isPlus, suggestions })
+  } catch {
+    return Response.json({ isPlus: false, suggestions: [] })
+  }
 }

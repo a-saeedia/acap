@@ -4,15 +4,15 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useTheme } from '@/components/theme-provider'
-import { GraduationCap, Code, Palette, ShoppingCart, TrendingUp, Globe, ArrowLeft, Sparkles, Zap, Target, Users, Rocket, Star, BookOpen, Award, Clock, CheckCircle, ChevronLeft } from 'lucide-react'
+import { GraduationCap, Code, Palette, ShoppingCart, TrendingUp, Globe, ArrowLeft, Sparkles, Zap, Target, Users, Rocket, BookOpen, Award, Clock, CheckCircle, ChevronLeft } from 'lucide-react'
 
 const paths = [
   { icon: Code, title: 'توسعه‌دهندگان', desc: 'Web3, AI, React, Python — از صفر تا حرفه‌ای با پروژه‌های واقعی', color: '#2979FF', level: 'مبتدی تا پیشرفته' },
   { icon: Palette, title: 'طراحان', desc: 'UI/UX, Motion, Product Design — با استانداردهای جهانی و منتورشیپ', color: '#AA00FF', level: '0 تا 100 طراحی' },
   { icon: ShoppingCart, title: 'فروشندگان', desc: 'Digital Marketing, E-commerce, Sales Funnel — افزایش فروش تضمینی', color: '#FF6D00', level: 'پیشرفته' },
   { icon: TrendingUp, title: 'سرمایه‌گذاران', desc: 'تحلیل بازار، مدیریت ریسک، هوش مصنوعی مالی — ترید هوشمند', color: '#00C853', level: 'حرفه‌ای' },
-  { icon: Globe, title: 'مسیر Google', desc: 'Google Ads, SEO, Analytics, Cloud — گواهی رسمی + ورود به بازار', color: '#FFD600', level: 'بین‌المللی' },
   { icon: Users, title: 'مدیریت محصول', desc: 'Product Management, Leadership, Strategy — رهبری تیم‌های محصول', color: '#FF1744', level: 'پیشرفته' },
+  { icon: Zap, title: 'هوش مصنوعی', desc: 'AI, Machine Learning, Data Science — ورود به دنیای آینده', color: '#8B5CF6', level: 'مبتدی تا پیشرفته' },
 ]
 
 const stats = [
@@ -23,8 +23,8 @@ const stats = [
 ]
 
 const mentors = [
-  { name: 'دکتر امیر کریمی', role: 'بنیانگذار A|CAP', desc: '۲۰ سال تجربه در حوزه مالی و فناوری', color: '#2979FF' },
-  { name: 'سارا محمدی', role: 'Google Lead Instructor', desc: 'متخصص گوگل با ۱۰ سال سابقه تدریس رسمی', color: '#FFD600' },
+  { name: 'علی برهان', role: 'بنیانگذار A|CAP', desc: 'کارآفرین، تحلیلگر بازارهای مالی و متخصص سبک ICT', color: '#2979FF' },
+  { name: 'آرمان سعیدی', role: 'هم‌بنیانگذار و مدیر فناوری', desc: 'متخصص هوش مصنوعی، Full-Stack و محصولات دیجیتال', color: '#60AFFF' },
   { name: 'علی رضایی', role: 'Senior Product Manager', desc: 'مدیر محصول در فین‌تک‌های برتر ایران', color: '#FF1744' },
   { name: 'مریم حسینی', role: 'AI & Data Science Lead', desc: 'پژوهشگر هوش مصنوعی و تحلیل داده', color: '#AA00FF' },
 ]
@@ -132,7 +132,7 @@ export default function EducationPage() {
           {[
             { icon: Zap, title: 'یادگیری با هوش مصنوعی', desc: 'سیستم هوشمند A|CAP مسیر یادگیری شما را بر اساس اهداف و سطح شما شخصی‌سازی می‌کند' },
             { icon: Users, title: 'منتورشیپ اختصاصی', desc: 'هر دانشجو یک منتور اختصاصی دارد — نه صرفاً یک مدرس، بلکه یک راهنما در مسیر شغلی' },
-            { icon: Award, title: 'گواهی معتبر جهانی', desc: 'گواهی‌های قابل استعلام با همکاری گوگل و شرکت‌های بین‌المللی فناوری' },
+            { icon: Award, title: 'گواهی معتبر جهانی', desc: 'گواهی‌های قابل استعلام با استانداردهای بین‌المللی' },
             { icon: Target, title: 'پروژه‌های واقعی', desc: 'به جای تئوری محض، روی پروژه‌های واقعی صنعت کار می‌کنید و پورتفولیو می‌سازید' },
             { icon: TrendingUp, title: 'ارتباط با سرمایه', desc: 'دانشجویان برتر به اکوسیستم سرمایه‌گذاری A|CAP و صندوق‌های خطرپذیر متصل می‌شوند' },
             { icon: Globe, title: 'دسترسی بین‌المللی', desc: 'دوره‌ها به دو زبان فارسی و انگلیسی — آمادگی برای بازار کار جهانی' },
@@ -179,33 +179,7 @@ export default function EducationPage() {
         </div>
       </section>
 
-      {/* Google+ Special */}
-      <section className="max-w-5xl mx-auto px-6 pb-20">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="relative overflow-hidden glass border border-amber-500/20 rounded-3xl p-8 sm:p-10 text-center"
-        >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-[80px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
 
-          <div className="relative z-10">
-            <Star className="w-10 h-10 text-amber-400 mx-auto mb-4" />
-            <h3 className="text-2xl sm:text-3xl font-black mb-4">مسیر ویژه Google+</h3>
-            <p className="text-muted-foreground text-sm max-w-xl mx-auto leading-relaxed mb-6">
-              انحصاری A|CAP — دوره‌های رسمی گوگل با مربیان معتبر بین‌المللی. شامل Google Ads, Google Analytics, SEO, Cloud Computing.
-              با دریافت گواهی رسمی گوگل و ارتباط مستقیم با بازار کار جهانی.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
-              {['Google Ads', 'SEO', 'Analytics', 'Cloud', 'AI Tools'].map(tag => (
-                <span key={tag} className="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">{tag}</span>
-              ))}
-            </div>
-            <div className="inline-flex items-center gap-2 bg-gradient-to-l from-amber-500/20 to-amber-500/5 border border-amber-500/20 rounded-2xl px-5 py-3">
-              <Zap className="w-5 h-5 text-amber-400" />
-              <span className="text-amber-400 text-sm font-bold">به زودی — اولین نفری باشید که مطلع می‌شود</span>
-            </div>
-          </div>
-        </motion.div>
-      </section>
 
       {/* Mentors */}
       <section className="max-w-5xl mx-auto px-6 pb-20">

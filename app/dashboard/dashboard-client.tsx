@@ -3,14 +3,16 @@
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { signOut } from '@/lib/auth-client'
+import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import {
   User, Shield, Target, TrendingUp, Flame,
-  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap
+  LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap, Loader2
 } from 'lucide-react'
 import { saveProfile } from '@/app/actions/profile'
+import { getDashboardData } from '@/app/actions/profile'
+import { getUserSuggestions } from '@/app/actions/admin'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
@@ -34,45 +36,47 @@ type SuggestionRow = {
   createdAt: Date
 }
 
-interface Props {
-  data: {
-    user: { id: string; name: string; email: string; image?: string | null }
-    profile: {
-      phone: string
-      age?: number | null
-      investmentCapital?: number | null
-    } | null
-    quizResults: {
-      id: string
-      score: number
-      investorType: string
-      phone: string | null
-      createdAt: Date
-    }[]
-    suggestions: SuggestionRow[]
-  }
-}
-
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(d))
 }
 
-export function DashboardClient({ data }: Props) {
+export function DashboardClient() {
   const router = useRouter()
   const { theme } = useTheme()
-  const { user, profile, quizResults, suggestions } = data
-  const unreadCount = suggestions.filter(s => !s.isRead).length
-  const latest = quizResults[quizResults.length - 1]
-  const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
-  const phone = profile?.phone || quizResults.find(r => r.phone)?.phone || ''
+  const { data: session, isPending } = useSession()
+  const [loading, setLoading] = useState(true)
+  const [dashData, setDashData] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [phoneInput, setPhoneInput] = useState('')
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
 
   useEffect(() => {
+    if (isPending) return
+    if (!session) { router.push('/'); return }
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
-  }, [])
+    Promise.all([
+      getDashboardData(),
+      getUserSuggestions().catch(() => [] as any[]),
+    ]).then(([data, suggestions]) => {
+      if (!data) { router.push('/'); return }
+      setDashData({ ...data, suggestions })
+      setLoading(false)
+    }).catch(() => { router.push('/') })
+  }, [session, isPending, router])
+
+  if (isPending || loading) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+    </div>
+  )
+  if (!dashData) return null
+
+  const { user, profile, quizResults, suggestions } = dashData
+  const unreadCount = suggestions.filter((s: any) => !s.isRead).length
+  const latest = quizResults?.[quizResults.length - 1]
+  const typeInfo = latest ? TYPE_MAP[latest.investorType as InvestorKey] ?? TYPE_MAP.balanced : null
+  const phone = profile?.phone || quizResults?.find((r: any) => r.phone)?.phone || ''
 
   const handleSavePhone = async () => {
     if (!/^0\d{10}$/.test(phoneInput)) { setPhoneMsg('شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد'); return }
