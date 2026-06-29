@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db'
-import { fetchAllPrices, calcStockPrice, DEFAULT_STOCKS } from '@/lib/prices'
+import { fetchAllPrices, calcStockPrice, DEFAULT_STOCKS, fetchIrrRate } from '@/lib/prices'
 import { randomUUID } from 'node:crypto'
 
 export async function GET() {
@@ -20,20 +20,24 @@ export async function GET() {
   }
 
   if (!prices['USDT-IRR']) {
+    let rate = 0
     try {
       const r = await pool.query(`SELECT price FROM asset_price WHERE symbol = 'USDT-IRR' ORDER BY "updatedAt" DESC LIMIT 1`)
-      if (r.rows.length > 0 && r.rows[0].price > 0) {
-        const rate = r.rows[0].price
-        prices['USDT-IRR'] = { price: rate, currency: 'IRR' }
-        prices['USD-IRR'] = { price: rate, currency: 'IRR' }
-        if (prices['BTC']?.price) {
-          prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * rate), currency: 'IRR' }
-        }
-        if (prices['GOLD']?.price) {
-          prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * rate / 31.1), currency: 'IRR' }
-        }
-      }
+      if (r.rows.length > 0 && r.rows[0].price > 0) rate = r.rows[0].price
     } catch (e) { console.error('USDT-IRR DB fallback error:', e) }
+    if (!rate) {
+      try { rate = (await fetchIrrRate()).rate } catch {}
+    }
+    if (rate > 0) {
+      prices['USDT-IRR'] = { price: rate, currency: 'IRR' }
+      prices['USD-IRR'] = { price: rate, currency: 'IRR' }
+      if (prices['BTC']?.price) {
+        prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * rate), currency: 'IRR' }
+      }
+      if (prices['GOLD']?.price) {
+        prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * rate / 31.1), currency: 'IRR' }
+      }
+    }
   }
 
   let stocks: any[] = []

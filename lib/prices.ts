@@ -61,6 +61,22 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
   } catch (e) { console.error('fetchCryptoPrices error:', e); return {} }
 }
 
+export async function fetchIrrRate(): Promise<{ rate: number; source: string }> {
+  try {
+    const res = await fetch('https://api.nobitex.ir/market/stats', { ...FETCH_OPTS, next: { revalidate: 120 } })
+    const data = await res.json()
+    if (data?.stats?.['USDT-IRR']?.latest) {
+      return { rate: Number(data.stats['USDT-IRR'].latest), source: 'nobitex' }
+    }
+  } catch (e) { console.error('fetchIrrRate nobitex error:', e) }
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { ...FETCH_OPTS, next: { revalidate: 300 } })
+    const data = await res.json()
+    if (data?.rates?.IRR) return { rate: data.rates.IRR, source: 'er-api' }
+  } catch (e) { console.error('fetchIrrRate er-api error:', e) }
+  return { rate: 700000, source: 'fallback' }
+}
+
 export async function fetchNobitexPrices(): Promise<PriceMap> {
   try {
     const res = await fetch('https://api.nobitex.ir/market/stats', { ...FETCH_OPTS, next: { revalidate: 120 } })
@@ -75,7 +91,8 @@ export async function fetchNobitexPrices(): Promise<PriceMap> {
       }
     }
     return result
-  } catch (e) { console.error('fetchNobitexPrices error:', e); return {} }
+  } catch (e) { console.error('fetchNobitexPrices error:', e) }
+  return {}
 }
 
 export async function fetchGoldPrices(): Promise<PriceMap> {
@@ -95,15 +112,16 @@ export async function fetchGoldPrices(): Promise<PriceMap> {
 }
 
 export async function fetchAllPrices(): Promise<PriceMap> {
-  const [crypto, nobitex, gold] = await Promise.all([
+  const [crypto, nobitex, gold, irrResult] = await Promise.all([
     fetchCryptoPrices(['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX']),
     fetchNobitexPrices(),
     fetchGoldPrices(),
+    fetchIrrRate(),
   ])
 
   const prices: PriceMap = { ...crypto, ...nobitex, ...gold }
 
-  const usdtIrr = nobitex['USDT']?.price
+  const usdtIrr = nobitex['USDT']?.price ?? irrResult.rate
 
   if (usdtIrr) {
     prices['USDT'] = { price: 1, currency: 'USD' }
