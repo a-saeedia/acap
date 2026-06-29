@@ -9,6 +9,7 @@ import {
   Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain, BarChart3,
 } from 'lucide-react'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
+import { AISupport } from '@/components/ai-support'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 
@@ -109,7 +110,9 @@ function getTotalCost(asset: Asset): number {
 }
 
 function getCurrentValue(asset: Asset, prices: PriceMap, stockPrices: Record<string, number>): number {
-  return getAssetPriceIr(asset.symbol, prices, stockPrices) * asset.quantity
+  const price = getAssetPriceIr(asset.symbol, prices, stockPrices)
+  if (price === null) return 0
+  return price * asset.quantity
 }
 
 function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: number }) {
@@ -536,38 +539,40 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           style={{ animationDelay: '-8s', background: 'radial-gradient(circle, #10B981 0%, transparent 70%)' }} />
       </div>
 
-      {/* Compact Value Bar */}
-      <div className="flex items-center justify-between gap-2 mb-3 p-2.5 sm:p-3 rounded-xl glass border border-border">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-            <Wallet className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">ارزش سبد</div>
-            <div className="text-base sm:text-lg font-black text-foreground truncate">
-              <AnimatedNumber value={totalValue} /> <span className="text-xs font-normal text-muted-foreground">تومان</span>
+      {/* Polished Value Bar - High-end design */}
+      <div className="mb-3 p-3 rounded-2xl glass border border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Wallet className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">ارزش کل سبد</div>
+              <div className="text-lg sm:text-xl font-black text-foreground truncate">
+                <AnimatedNumber value={totalValue} /> <span className="text-xs font-normal text-muted-foreground">تومان</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground shrink-0">
-          <span className="flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-primary" />
-            {assets.length}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-emerald-400" />
-            {Object.keys(byType).length}
-          </span>
-          {investorType && (
-            <span className="flex items-center gap-1">
-              <Brain className="w-2.5 h-2.5 text-primary" />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              {assets.length}
             </span>
-          )}
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/50">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              {Object.keys(byType).length}
+            </span>
+            {investorType && (
+              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+                <Brain className="w-3 h-3" />
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Compact Stats Row */}
-      <div className="grid grid-cols-4 gap-1.5 mb-4">
+      {/* Stats Row - Clean & Compact */}
+      <div className="grid grid-cols-4 gap-1 mb-4">
         {[
           { label: 'دارایی', value: String(assets.length), sub: `${Object.keys(byType).length} دسته` },
           {
@@ -580,16 +585,16 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
               : 'خالی',
           },
           { label: 'تنوع', value: `${Object.keys(byType).length}/۴`, sub: '' },
-          { label: 'مشاوره', value: investorType ? '✓' : '—', sub: '' },
-        ].map((stat, i) => (
+          { label: 'تحلیل', value: investorType ? '✓' : '✗', sub: '' },
+        ].map((stat) => (
           <div key={stat.label}
-            className="glass border border-border rounded-lg py-2 px-1.5 text-center"
+            className="relative overflow-hidden rounded-xl p-2 glass border border-border/30 text-center bg-gradient-to-b from-transparent to-accent/20"
           >
-            <div className="text-muted-foreground text-xs">{stat.label}</div>
-            <div className={`text-sm font-black ${stat.label === 'مشاوره' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
+            <div className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">{stat.label}</div>
+            <div className={`text-sm font-black ${stat.label === 'تحلیل' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
               {stat.value}
             </div>
-            <div className="text-[10px] text-muted-foreground">{stat.sub}</div>
+            <div className="text-[9px] text-muted-foreground truncate">{stat.sub}</div>
           </div>
         ))}
       </div>
@@ -604,53 +609,63 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-4">
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass border border-border rounded-2xl p-3 sm:p-4"
+          className="glass border border-border/50 rounded-2xl p-4"
         >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <PieChart className="w-3 h-3 text-primary" />
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-primary/15 flex items-center justify-center">
+                <PieChart className="w-3.5 h-3.5 text-primary" />
               </div>
-              <h3 className="font-black text-xs text-foreground">توزیع</h3>
+              <h3 className="font-black text-sm text-foreground">توزیع سرمایه</h3>
             </div>
-            {Object.keys(byType).length === 0 ? (
-              <div className="py-3">
-                <DonutChart segments={[]} />
-                <p className="text-muted-foreground text-xs text-center mt-3">هنوز دارایی ثبت نشده</p>
-              </div>
-            ) : (
-        <div className="py-2">
-          <DonutChart
-            segments={Object.entries(byType).map(([type, data], i) => ({
-              label: TYPE_CONFIG[type]?.label ?? 'سایر',
-              value: data.value,
-              color: DONUT_COLORS[i] ?? '#8B5CF6',
-            }))}
-          />
-        </div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              {Object.keys(byType).length} دسته
+            </div>
+          </div>
+          {Object.keys(byType).length === 0 ? (
+            <div className="py-6">
+              <DonutChart segments={[]} />
+              <p className="text-muted-foreground text-xs text-center mt-3">هنوز دارایی ثبت نشده</p>
+            </div>
+          ) : (
+            <div className="py-2">
+              <DonutChart
+                segments={Object.entries(byType).map(([type, data], i) => ({
+                  label: TYPE_CONFIG[type]?.label ?? 'سایر',
+                  value: data.value,
+                  color: DONUT_COLORS[i] ?? '#8B5CF6',
+                }))}
+              />
+            </div>
+          )}
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="glass border border-border rounded-2xl p-3 sm:p-4"
+          className="glass border border-border/50 rounded-2xl p-4"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <h3 className="font-black text-sm text-foreground">تفکیک دسته‌ها</h3>
             </div>
-            <h3 className="font-black text-xs text-foreground">تفکیک دسته</h3>
+            <div className="text-xs text-muted-foreground">
+              {assets.length} دارایی
+            </div>
           </div>
           {assets.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-6">دارایی‌ای برای نمایش وجود ندارد</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {Object.entries(byType).map(([type, data]) => {
                 const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0
                 const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
@@ -661,25 +676,25 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{cfg.icon}</span>
                         <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
                       </div>
                       <div className="text-left">
                         <span className="text-sm font-bold text-foreground">{pct.toFixed(1)}%</span>
-                        <span className="text-[10px] text-muted-foreground mr-1.5">
+                        <span className="text-[10px] text-muted-foreground ml-2">
                           {formatCurrency(data.value)}
                         </span>
                       </div>
                     </div>
-                    <div className="h-2.5 bg-accent rounded-full overflow-hidden">
+                    <div className="h-2 bg-accent rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
                         className="h-full rounded-full"
-                        style={{ background: cfg.color }}
+                        style={{ background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}dd)` }}
                       />
                     </div>
                   </motion.div>
@@ -687,120 +702,62 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
               })}
             </div>
           )}
-        </motion.div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass border border-border rounded-2xl p-3 sm:p-4"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <PieChart className="w-3.5 h-3.5 text-primary" />
-            </div>
-            <h3 className="font-black text-sm text-foreground">توزیع</h3>
-          </div>
-          {Object.keys(byType).length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-6">هنوز دارایی ثبت نشده</p>
-          ) : (
-            <div className="space-y-4">
-              {Object.entries(byType).map(([type, data]) => {
-                const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0
-                const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
-                return (
-                  <motion.div
-                    key={type}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cfg.icon}</span>
-                        <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
-                      </div>
-                      <div className="text-left">
-                        <span className="text-sm font-bold text-foreground">{pct.toFixed(1)}%</span>
-                        <span className="text-xs text-muted-foreground mr-1.5">
-                          {formatCurrency(data.value)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-2.5 bg-accent rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-                        className="h-full rounded-full"
-                        style={{ background: cfg.color }}
-                      />
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          )}
-        </motion.div>
-
-        <div className="lg:col-span-2 space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="glass border border-border rounded-2xl p-3"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                  <Bitcoin className="w-3 h-3 text-amber-400" />
-                </div>
-                <h3 className="font-black text-xs text-foreground">مدیریت سبد</h3>
-              </div>
-              <button onClick={openAdd} className="btn-primary px-2.5 py-1 rounded-lg text-xs gap-1 flex items-center">
-                <Plus className="w-2.5 h-2.5" />
-                <span>افزودن</span>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Clock className="w-2.5 h-2.5" />
-                {lastUpdate ? (
-                  <span>{new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(lastUpdate)}</span>
-                ) : (
-                  <span>دریافت قیمت...</span>
-                )}
-              </div>
-              <button onClick={fetchPrices} disabled={priceLoading}
-                className="flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-2.5 h-2.5 ${priceLoading ? 'animate-spin' : ''}`} />
-                {priceLoading ? '...' : 'به‌روزرسانی'}
-              </button>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass border border-border rounded-xl p-2.5 sm:p-3"
-          >
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>💡</span>
-              <span>هر ۳۰ ثانیه از tgju.org و tsetmc.com به‌روز می‌شود</span>
-            </div>
-          </motion.div>
-        </div>
+</motion.div>
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
+        transition={{ delay: 0.15 }}
+        className="glass border border-border/50 rounded-2xl p-4"
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center">
+              <Bitcoin className="w-3 h-3 text-amber-400" />
+            </div>
+            <h3 className="font-black text-xs text-foreground">مدیریت سبد</h3>
+          </div>
+          <button onClick={openAdd} className="btn-primary px-2.5 py-1 rounded-lg text-xs gap-1 flex items-center">
+            <Plus className="w-2.5 h-2.5" />
+            <span>افزودن</span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Clock className="w-2.5 h-2.5" />
+            {lastUpdate ? (
+              <span>{new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(lastUpdate)}</span>
+            ) : (
+              <span>دریافت قیمت...</span>
+            )}
+          </div>
+          <button onClick={fetchPrices} disabled={priceLoading}
+            className="flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-2.5 h-2.5 ${priceLoading ? 'animate-spin' : ''}`} />
+            {priceLoading ? '...' : 'به‌روزرسانی'}
+          </button>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="glass border border-border/50 rounded-xl p-3"
+      >
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>💡</span>
+          <span>هر ۳۰ ثانیه از tgju.org و tsetmc.com به‌روز می‌شود</span>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-black text-sm text-foreground">دارایی‌های من</h3>
@@ -808,7 +765,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         </div>
 
         {assets.length === 0 ? (
-          <div className="glass border border-border rounded-2xl p-8 text-center">
+          <div className="glass border border-border/50 rounded-2xl p-8 text-center">
             <div className="text-4xl mb-3">📦</div>
             <p className="text-muted-foreground text-sm font-semibold mb-1">سبد شما خالی است</p>
             <p className="text-muted-foreground text-xs mb-4">اولین دارایی را اضافه کنید</p>
@@ -818,131 +775,130 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             <AnimatePresence mode="popLayout">
-{assets.map((a, i) => {
-                    const price = getAssetPriceIr(a.symbol, prices, stockPrices)
-                    const value = price * a.quantity
-                    const cost = getTotalCost(a)
-                    const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
-                    const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
-                    return (
-                      <motion.div
-                        key={a.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ delay: i * 0.03, duration: 0.25 }}
-                        className="group relative rounded-xl p-2.5 cursor-pointer border overflow-hidden"
-                        style={{
-                          background: `linear-gradient(135deg, ${cfg.color}08, ${cfg.color}02)`,
-                          borderColor: 'rgba(255,255,255,0.06)',
-                        } as React.CSSProperties}
-                        onTouchStart={() => {}}
-                        whileHover={{
-                          y: -6,
-                          scale: 1.015,
-                          rotateZ: 0.5,
-                          boxShadow: `
-                            0 25px 50px -12px ${cfg.color}40,
-                            0 0 0 1px ${cfg.color}40,
-                            0 0 40px -8px ${cfg.color}60,
-                            inset 0 1px 0 ${cfg.color}20
-                          `,
-                          transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
-                        }}
-                        whileTap={{ scale: 0.98, rotateZ: 0 }}
-                      >
-                        {/* Animated gradient border */}
-                        <motion.div
-                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100"
-                          style={{
-                            background: `conic-gradient(from 0deg, ${cfg.color}00, ${cfg.color}80, ${cfg.color}00)`,
-                            mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                            maskComposite: 'exclude',
-                            WebkitMaskComposite: 'xor',
-                          }}
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                          initial={{ rotate: 0 }}
-                        />
-                        
-                        {/* Inner glow sweep */}
-                        <motion.div
-                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100"
-                          style={{
-                            background: `linear-gradient(135deg, ${cfg.color}15, transparent 50%, ${cfg.color}10)`,
-                          }}
-                          initial={{ x: '-100%', y: '-100%' }}
-                          animate={{ x: '100%', y: '100%' }}
-                          transition={{ duration: 1.5, ease: 'easeInOut' }}
-                        />
-                        
-                        {/* Left accent bar - expands with glow */}
-                        <motion.div
-                          className="absolute right-0 top-1/2 w-0.5 h-0 rounded-full"
-                          style={{ background: cfg.color, boxShadow: `0 0 12px 2px ${cfg.color}80` }}
-                          initial={{ height: 0, y: '50%' }}
-                          animate={{ height: 'calc(100% - 8px)', y: '50%' }}
-                          transition={{ duration: 0.35, delay: 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        />
+              {assets.map((a, i) => {
+                const price = getAssetPriceIr(a.symbol, prices, stockPrices)
+                const value = getCurrentValue(a, prices, stockPrices)
+                const cost = getTotalCost(a)
+                const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
+                const pnlAbs = value - cost
+                const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
+                const hasPrice = price !== null
+                return (
+                  <motion.div
+                    key={a.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                    transition={{ delay: i * 0.03, duration: 0.3 }}
+                    className="group relative rounded-2xl p-3 cursor-pointer border overflow-hidden transition-all duration-300"
+                    style={{
+                      background: `linear-gradient(135deg, ${cfg.color}0a, ${cfg.color}03)`,
+                      borderColor: 'rgba(255,255,255,0.06)',
+                    } as React.CSSProperties}
+                    onTouchStart={() => {}}
+                    whileHover={{
+                      y: -4,
+                      scale: 1.01,
+                      borderColor: `${cfg.color}60`,
+                      boxShadow: `
+                        0 20px 40px -12px ${cfg.color}30,
+                        0 0 0 1px ${cfg.color}30,
+                        0 0 30px -8px ${cfg.color}40,
+                        inset 0 1px 0 ${cfg.color}15
+                      `,
+                      transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {/* Accent border glow on hover */}
+                    <motion.div
+                      className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100"
+                      style={{
+                        background: `conic-gradient(from 0deg, ${cfg.color}00, ${cfg.color}60, ${cfg.color}00)`,
+                        mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        maskComposite: 'exclude',
+                        WebkitMaskComposite: 'xor',
+                      }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                      initial={{ rotate: 0 }}
+                    />
+                    
+                    {/* Left accent bar */}
+                    <motion.div
+                      className="absolute right-0 top-1/2 w-1 h-0 rounded-full"
+                      style={{ background: cfg.color, boxShadow: `0 0 10px 2px ${cfg.color}80` }}
+                      initial={{ height: 0, y: '50%' }}
+                      animate={{ height: 'calc(100% - 8px)', y: '50%' }}
+                      transition={{ duration: 0.4, delay: 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    />
 
-                        <div className="relative flex items-start justify-between gap-1.5 z-10">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <motion.div
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
-                              style={{ background: `${cfg.color}18`, border: `1px solid ${cfg.color}30` }}
-                              whileHover={{ scale: 1.15, rotateZ: 6 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                            >
-                              {cfg.icon}
-                            </motion.div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-xs text-foreground truncate group-hover:text-transparent group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)` }}>
-                                {a.label}
-                              </div>
-                              <div className="text-xs text-muted-foreground">{a.symbol}</div>
-                            </div>
-                          </div>
-                          <motion.div
-                            className="flex gap-0.5 shrink-0"
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                          >
-                            <button onClick={() => openEdit(a)}
-                              className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-accent/50 hover:scale-110 active:scale-95 transition-all"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => handleDelete(a.id)}
-                              className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 hover:scale-110 active:scale-95 transition-all"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </motion.div>
+                    <div className="relative flex items-start justify-between gap-2 z-10">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0"
+                          style={{ background: `${cfg.color}15`, border: `1px solid ${cfg.color}25` }}
+                          whileHover={{ scale: 1.1, rotateZ: 4 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                        >
+                          {cfg.icon}
                         </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-foreground truncate group-hover:text-transparent group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)` }}>
+                            {a.label}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{a.symbol}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(a)}
+                          className="w-7 h-7 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-accent/50 hover:scale-110 active:scale-95 transition-all"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(a.id)}
+                          className="w-7 h-7 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 hover:scale-110 active:scale-95 transition-all"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-        <div className="relative z-10 mt-2 flex items-baseline justify-between">
-          <span className="text-base sm:text-lg font-black text-foreground" dir="ltr">
-            {value > 0 ? formatCurrency(value) : '—'}
-          </span>
-          <span className="text-xs text-muted-foreground">تومان</span>
-        </div>
+                    <div className="relative z-10 mt-3 flex items-baseline justify-between">
+                      <span className="text-lg font-black text-foreground" dir="ltr">
+                        {value > 0 ? formatCurrency(value) : '—'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">تومان</span>
+                    </div>
 
-        <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground border-t border-border/20 pt-1.5">
-          <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
-          <span>{price !== null && price > 0 ? `${price.toLocaleString('fa-IR')} تومان` : 'قیمت نامشخص'}</span>
+                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/30 pt-2">
+                      <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
+                      <span>{hasPrice ? `${price!.toLocaleString('fa-IR')} تومان` : 'قیمت نامشخص'}</span>
                       {a.purchaseDate && (
                         <span className="hidden sm:flex items-center gap-1">
-                          <Clock className="w-2 h-2" />
+                          <Clock className="w-2.5 h-2.5" />
                           {new Intl.DateTimeFormat('fa-IR', { month: 'short', day: 'numeric' }).format(new Date(a.purchaseDate))}
                         </span>
                       )}
                     </div>
+
+                    {cost > 0 && hasPrice && (
+                      <div className="mt-2 pt-2 border-t border-border/30">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={`font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
+                          </span>
+                          <span className={`font-bold ${pnlAbs >= 0 ? 'text-emerald-400' : 'text-red-400'}`} dir="ltr">
+                            {pnlAbs >= 0 ? '+' : ''}{formatCurrency(Math.round(pnlAbs))}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )
               })}
@@ -1201,6 +1157,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           </motion.div>
         )}
       </AnimatePresence>
+      <AISupport />
     </div>
   )
 }
