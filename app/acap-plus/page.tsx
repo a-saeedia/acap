@@ -12,27 +12,19 @@ type Suggestion = Awaited<ReturnType<typeof getUserSuggestions>>[number]
 export default function AcapPlusPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [isPlus, setIsPlus] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [isPlus, setIsPlus] = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [loadingSugs, setLoadingSugs] = useState(true)
   const [selectedSug, setSelectedSug] = useState<Suggestion | null>(null)
 
   useEffect(() => {
     if (isPending) return
     if (!session) { router.push('/'); return }
 
-    fetch('/api/acap-plus').then(r => r.json()).then(async data => {
-      setIsPlus(data.isPlus)
-      setChecking(false)
-      if (data.isPlus) {
-        try {
-          const sugs = await getUserSuggestions()
-          setSuggestions(sugs)
-        } catch {}
-        setLoadingSugs(false)
-      }
-    }).catch(() => { setChecking(false); setLoadingSugs(false) })
+    Promise.all([
+      fetch('/api/acap-plus').then(r => r.json()).then(d => setIsPlus(d.isPlus)).catch(() => {}),
+      getUserSuggestions().then(setSuggestions).catch(() => {}),
+    ]).finally(() => setChecking(false))
   }, [session, isPending, router])
 
   const handleMarkRead = async (id: string) => {
@@ -47,7 +39,7 @@ export default function AcapPlusPage() {
   )
   if (!session) return null
 
-  if (!isPlus) {
+  if (!isPlus && suggestions.length === 0) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6" dir="rtl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
@@ -131,9 +123,7 @@ export default function AcapPlusPage() {
           <p className="text-muted-foreground text-sm mt-1">پیشنهادات اختصاصی سرمایه‌گذاری برای شما</p>
         </motion.div>
 
-        {loadingSugs ? (
-          <div className="text-center py-12 text-muted-foreground">در حال بارگذاری...</div>
-        ) : suggestions.length === 0 ? (
+        {suggestions.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="glass border border-border rounded-3xl p-10 text-center"
           >
