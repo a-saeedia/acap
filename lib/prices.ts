@@ -1,7 +1,9 @@
 const COINGECKO = 'https://api.coingecko.com/api/v3'
 const TGJU_AJAX = 'https://call2.tgju.org/ajax.json'
+const TGJU_HTML = 'https://www.tgju.org/'
 const TSETMC_API = 'https://cdn.tsetmc.com/api'
-const FETCH_OPTS = { signal: AbortSignal.timeout(8000) }
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+const FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA } }
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -34,20 +36,101 @@ function parseTgjuPrice(val: string): number {
   return Number(val.replace(/,/g, ''))
 }
 
+async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; timestamp: string }> {
+  try {
+    const res = await fetch(TGJU_HTML, { ...FETCH_OPTS })
+    if (!res.ok) return { prices: {}, irrRate: 0, timestamp: '' }
+    const html = await res.text()
+    
+    const prices: PriceMap = {}
+    let irrRate = 0
+    
+    // Use data-price attribute on tr element - more reliable
+    const extractPrice = (selector: string): number | null => {
+      const regex = new RegExp(`data-market-row="${selector}"[^>]*data-price="([\\d,]+)"`)
+      const match = html.match(regex)
+      if (match) return parseTgjuPrice(match[1])
+      // Fallback: look for td with price
+      const regex2 = new RegExp(`data-market-row="${selector}"[^>]*>.*?<td[^>]*class="[^"]*nf[^"]*"[^>]*>([\\d,]+)</td>`, 's')
+      const match2 = html.match(regex2)
+      if (match2) return parseTgjuPrice(match2[1])
+      return null
+    }
+    
+    const usdPrice = extractPrice('price_dollar_rl')
+    if (usdPrice) {
+      irrRate = usdPrice
+      prices['USD'] = { price: 1, currency: 'USD' }
+      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+    }
+    
+    const forexPairs: Record<string, string> = {
+      price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
+      price_try: 'TRY', price_chf: 'CHF', price_cny: 'CNY',
+      price_cad: 'CAD', price_aud: 'AUD', price_sgd: 'SGD',
+      price_inr: 'INR', price_sar: 'SAR', price_kwd: 'KWD',
+      price_myr: 'MYR', price_rub: 'RUB', price_azn: 'AZN',
+    }
+    for (const [slug, sym] of Object.entries(forexPairs)) {
+      const p = extractPrice(slug)
+      if (p) {
+        prices[sym] = { price: 1, currency: 'USD' }
+        prices[`${sym}-IRR`] = { price: p, currency: 'IRR' }
+      }
+    }
+    
+    const goldSlugs: Record<string, string> = {
+      geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
+      nim: 'HALF_COIN', rob: 'QUARTER_COIN', ons: 'XAU',
+      mesghal: 'MESGHAL',
+    }
+    for (const [slug, sym] of Object.entries(goldSlugs)) {
+      const p = extractPrice(slug)
+      if (p) {
+        const isGlobal = slug === 'ons'
+        prices[sym] = { price: p, currency: isGlobal ? 'USD' : 'IRR' }
+      }
+    }
+    
+    const cryptoIrSlugs: Record<string, string> = {
+      'crypto-bitcoin-irr': 'BTC-IRR',
+      'crypto-ethereum-irr': 'ETH-IRR',
+      'crypto-tether-irr': 'USDT-IRR',
+      'crypto-dash-irr': 'DASH-IRR',
+      'crypto-ripple-irr': 'XRP-IRR',
+      'crypto-litecoin-irr': 'LTC-IRR',
+    }
+    for (const [slug, sym] of Object.entries(cryptoIrSlugs)) {
+      const p = extractPrice(slug)
+      if (p) prices[sym] = { price: p, currency: 'IRR' }
+    }
+    
+    const timestampMatch = html.match(/data-last-update="([^"]+)"/)
+    const timestamp = timestampMatch ? timestampMatch[1] : ''
+    
+    return { prices, irrRate, timestamp }
+  } catch { return { prices: {}, irrRate: 0, timestamp: '' } }
+}
+
 export async function fetchTgjuData(): Promise<{
   prices: PriceMap
   irrRate: number
   timestamp: string
 }> {
   const rev = Math.random().toString(36).substring(2, 12)
-  const urls = [
+  const ajaxUrls = [
     `${TGJU_AJAX}?rev=${rev}`,
     `https://call3.tgju.org/ajax.json?rev=${rev}`,
     `https://call4.tgju.org/ajax.json?rev=${rev}`,
   ]
-  for (const url of urls) {
+  
+  for (const url of ajaxUrls) {
     try {
-      const res = await fetch(url, { ...FETCH_OPTS })
+      const res = await fetch(url, { 
+        ...FETCH_OPTS,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+      })
       if (!res.ok) continue
       const data = await res.json()
       if (!data?.current) continue
@@ -109,6 +192,14 @@ export async function fetchTgjuData(): Promise<{
       continue
     }
   }
+  
+  // Fallback: HTML scrape from main tgju.org page
+  const htmlResult = await fetchTgjuHTML()
+  if (htmlResult.prices && Object.keys(htmlResult.prices).length > 0) {
+    const usdIrr = htmlResult.prices['USD-IRR']?.price || htmlResult.prices['USDT-IRR']?.price
+    return { prices: htmlResult.prices, irrRate: usdIrr || 0, timestamp: htmlResult.timestamp }
+  }
+  
   return { prices: {}, irrRate: 0, timestamp: '' }
 }
 
@@ -119,10 +210,25 @@ export async function fetchTsetmcSearch(symbol: string): Promise<string | null> 
     if (!res.ok) return null
     const data = await res.json()
     if (data?.instrumentSearch?.length > 0) {
-      const match = data.instrumentSearch.find(
-        (i: any) => i.lVal18AFC === symbol || i.lVal30.includes(symbol)
+      // Exact match on lVal18AFC (short symbol) first
+      const exactMatch = data.instrumentSearch.find(
+        (i: any) => i.lVal18AFC === symbol
       )
-      return match?.insCode || data.instrumentSearch[0]?.insCode || null
+      if (exactMatch) return exactMatch.insCode
+      
+      // Then try exact match on lVal30 (full name)
+      const nameMatch = data.instrumentSearch.find(
+        (i: any) => i.lVal30 === symbol
+      )
+      if (nameMatch) return nameMatch.insCode
+      
+      // Fallback: first result only if it's a main board stock (flow=1, cgrValCot starts with N)
+      const mainBoard = data.instrumentSearch.find(
+        (i: any) => i.flow === 1 && i.cgrValCot?.startsWith('N')
+      )
+      if (mainBoard) return mainBoard.insCode
+      
+      return data.instrumentSearch[0]?.insCode || null
     }
     return null
   } catch { return null }

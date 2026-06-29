@@ -171,11 +171,11 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
           />
         ))}
         <text x={cx} y={cy - 3} textAnchor="middle" className="fill-foreground font-black" fontSize="13">{total > 0 ? `${(hovered !== null ? arcs[hovered].pct * 100 : 100).toFixed(0)}%` : '—'}</text>
-        <text x={cx} y={cy + 9} textAnchor="middle" className="fill-muted-foreground" fontSize="7">{hovered !== null ? arcs[hovered].label : 'مجموع'}</text>
+        <text x={cx} y={cy + 9} textAnchor="middle" className="fill-muted-foreground" fontSize="8">{hovered !== null ? arcs[hovered].label : 'مجموع'}</text>
       </svg>
       <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
         {arcs.map(a => (
-          <div key={a.index} className="flex items-center gap-1 text-[9px] cursor-pointer" onMouseEnter={() => setHovered(a.index)} onMouseLeave={() => setHovered(null)}>
+          <div key={a.index} className="flex items-center gap-1 text-xs cursor-pointer" onMouseEnter={() => setHovered(a.index)} onMouseLeave={() => setHovered(null)}>
             <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: a.color }} />
             <span className="text-muted-foreground">{a.label}</span>
             <span className="text-foreground font-bold">{(a.pct * 100).toFixed(1)}%</span>
@@ -525,13 +525,13 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             <Wallet className="w-3.5 h-3.5 text-primary" />
           </div>
           <div className="min-w-0">
-            <div className="text-[9px] text-muted-foreground">ارزش سبد</div>
+            <div className="text-xs text-muted-foreground">ارزش سبد</div>
             <div className="text-base sm:text-lg font-black text-foreground truncate">
-              <AnimatedNumber value={totalValue} /> <span className="text-[9px] font-normal text-muted-foreground">تومان</span>
+              <AnimatedNumber value={totalValue} /> <span className="text-xs font-normal text-muted-foreground">تومان</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] text-muted-foreground shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground shrink-0">
           <span className="flex items-center gap-1">
             <span className="w-1 h-1 rounded-full bg-primary" />
             {assets.length}
@@ -567,11 +567,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           <div key={stat.label}
             className="glass border border-border rounded-lg py-2 px-1.5 text-center"
           >
-            <div className="text-muted-foreground text-[9px]">{stat.label}</div>
-            <div className={`text-xs font-black ${stat.label === 'مشاوره' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
+            <div className="text-muted-foreground text-xs">{stat.label}</div>
+            <div className={`text-sm font-black ${stat.label === 'مشاوره' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
               {stat.value}
             </div>
-            <div className="text-[8px] text-muted-foreground">{stat.sub}</div>
+            <div className="text-[10px] text-muted-foreground">{stat.sub}</div>
           </div>
         ))}
       </div>
@@ -704,7 +704,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                       </div>
                       <div className="text-left">
                         <span className="text-sm font-bold text-foreground">{pct.toFixed(1)}%</span>
-                        <span className="text-[10px] text-muted-foreground mr-1.5">
+                        <span className="text-xs text-muted-foreground mr-1.5">
                           {formatCurrency(data.value)}
                         </span>
                       </div>
@@ -739,13 +739,13 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                 </div>
                 <h3 className="font-black text-xs text-foreground">مدیریت سبد</h3>
               </div>
-              <button onClick={openAdd} className="btn-primary px-2.5 py-1 rounded-lg text-[10px] gap-1 flex items-center">
+              <button onClick={openAdd} className="btn-primary px-2.5 py-1 rounded-lg text-xs gap-1 flex items-center">
                 <Plus className="w-2.5 h-2.5" />
                 <span>افزودن</span>
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
                 {lastUpdate ? (
@@ -769,7 +769,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             transition={{ delay: 0.2 }}
             className="glass border border-border rounded-xl p-2.5 sm:p-3"
           >
-            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>💡</span>
               <span>هر ۳۰ ثانیه از tgju.org و tsetmc.com به‌روز می‌شود</span>
             </div>
@@ -791,7 +791,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           <div className="glass border border-border rounded-2xl p-8 text-center">
             <div className="text-4xl mb-3">📦</div>
             <p className="text-muted-foreground text-sm font-semibold mb-1">سبد شما خالی است</p>
-            <p className="text-muted-foreground text-[10px] mb-4">اولین دارایی را اضافه کنید</p>
+            <p className="text-muted-foreground text-xs mb-4">اولین دارایی را اضافه کنید</p>
             <button onClick={openAdd} className="btn-primary px-5 py-2.5 rounded-xl text-xs font-bold gap-1.5 inline-flex items-center">
               <Plus className="w-3.5 h-3.5" />
               افزودن
@@ -800,64 +800,120 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <AnimatePresence mode="popLayout">
-              {assets.map((a, i) => {
-                const price = getAssetPriceIr(a.symbol, prices, stockPrices)
-                const value = price * a.quantity
-                const cost = getTotalCost(a)
-                const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
-                const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
-                return (
-                  <motion.div
-                    key={a.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: i * 0.03, duration: 0.25 }}
-                    className="group relative rounded-xl p-2.5 transition-all duration-300 cursor-pointer border hover:shadow-[0_0_24px_-4px_var(--glow-color)] hover:-translate-y-1 active:scale-[0.97]"
-                    style={{
-                      background: `linear-gradient(135deg, ${cfg.color}08, ${cfg.color}02)`,
-                      borderColor: 'rgba(255,255,255,0.06)',
-                      '--glow-color': `${cfg.color}60`,
-                    } as React.CSSProperties}
-                    onTouchStart={() => {}}
-                  >
-                    {/* Left accent bar - slides in on hover */}
-                    <div className="absolute right-0 top-2 bottom-2 w-0.5 rounded-full transition-all duration-300 group-hover:top-0 group-hover:bottom-0"
-                      style={{ background: cfg.color }} />
+{assets.map((a, i) => {
+                    const price = getAssetPriceIr(a.symbol, prices, stockPrices)
+                    const value = price * a.quantity
+                    const cost = getTotalCost(a)
+                    const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
+                    const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
+                    return (
+                      <motion.div
+                        key={a.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ delay: i * 0.03, duration: 0.25 }}
+                        className="group relative rounded-xl p-2.5 cursor-pointer border overflow-hidden"
+                        style={{
+                          background: `linear-gradient(135deg, ${cfg.color}08, ${cfg.color}02)`,
+                          borderColor: 'rgba(255,255,255,0.06)',
+                        } as React.CSSProperties}
+                        onTouchStart={() => {}}
+                        whileHover={{
+                          y: -6,
+                          scale: 1.015,
+                          rotateZ: 0.5,
+                          boxShadow: `
+                            0 25px 50px -12px ${cfg.color}40,
+                            0 0 0 1px ${cfg.color}40,
+                            0 0 40px -8px ${cfg.color}60,
+                            inset 0 1px 0 ${cfg.color}20
+                          `,
+                          transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
+                        }}
+                        whileTap={{ scale: 0.98, rotateZ: 0 }}
+                      >
+                        {/* Animated gradient border */}
+                        <motion.div
+                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100"
+                          style={{
+                            background: `conic-gradient(from 0deg, ${cfg.color}00, ${cfg.color}80, ${cfg.color}00)`,
+                            mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                            maskComposite: 'exclude',
+                            WebkitMaskComposite: 'xor',
+                          }}
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                          initial={{ rotate: 0 }}
+                        />
+                        
+                        {/* Inner glow sweep */}
+                        <motion.div
+                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100"
+                          style={{
+                            background: `linear-gradient(135deg, ${cfg.color}15, transparent 50%, ${cfg.color}10)`,
+                          }}
+                          initial={{ x: '-100%', y: '-100%' }}
+                          animate={{ x: '100%', y: '100%' }}
+                          transition={{ duration: 1.5, ease: 'easeInOut' }}
+                        />
+                        
+                        {/* Left accent bar - expands with glow */}
+                        <motion.div
+                          className="absolute right-0 top-1/2 w-0.5 h-0 rounded-full"
+                          style={{ background: cfg.color, boxShadow: `0 0 12px 2px ${cfg.color}80` }}
+                          initial={{ height: 0, y: '50%' }}
+                          animate={{ height: 'calc(100% - 8px)', y: '50%' }}
+                          transition={{ duration: 0.35, delay: 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        />
 
-                    <div className="flex items-start justify-between gap-1.5">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 transition-transform duration-300 group-hover:scale-110"
-                          style={{ background: `${cfg.color}18`, border: `1px solid ${cfg.color}30` }}
-                        >
-                          {cfg.icon}
+                        <div className="relative flex items-start justify-between gap-1.5 z-10">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <motion.div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+                              style={{ background: `${cfg.color}18`, border: `1px solid ${cfg.color}30` }}
+                              whileHover={{ scale: 1.15, rotateZ: 6 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                            >
+                              {cfg.icon}
+                            </motion.div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-xs text-foreground truncate group-hover:text-transparent group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)` }}>
+                                {a.label}
+                              </div>
+                              <div className="text-xs text-muted-foreground">{a.symbol}</div>
+                            </div>
+                          </div>
+                          <motion.div
+                            className="flex gap-0.5 shrink-0"
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <button onClick={() => openEdit(a)}
+                              className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-accent/50 hover:scale-110 active:scale-95 transition-all"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => handleDelete(a.id)}
+                              className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 hover:scale-110 active:scale-95 transition-all"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </motion.div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-xs text-foreground truncate">{a.label}</div>
-                          <div className="text-[9px] text-muted-foreground">{a.symbol}</div>
+
+                        <div className="relative z-10 mt-2 flex items-baseline justify-between">
+                          <span className="text-base sm:text-lg font-black text-foreground" dir="ltr">
+                            {formatCurrency(value)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">تومان</span>
                         </div>
-                      </div>
-                      <div className="flex gap-0.5 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => openEdit(a)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-accent/50 transition-all">
-                          <Edit3 className="w-3 h-3" />
-                        </button>
-                        <button onClick={() => handleDelete(a.id)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 transition-all">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
 
-                    <div className="mt-2 flex items-baseline justify-between">
-                      <span className="text-base sm:text-lg font-black text-foreground" dir="ltr">
-                        {formatCurrency(value)}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground">تومان</span>
-                    </div>
-
-                    <div className="mt-1.5 flex items-center justify-between text-[9px] text-muted-foreground border-t border-border/20 pt-1.5">
+                    <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground border-t border-border/20 pt-1.5">
                       <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
                       <span>{price > 0 ? `${price.toLocaleString('fa-IR')} تومان` : '—'}</span>
                       {a.purchaseDate && (

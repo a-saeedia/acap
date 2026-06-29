@@ -181,7 +181,7 @@ export function DashboardClient() {
                 className="glass border border-border rounded-xl px-3 py-2 text-center shrink-0 min-w-[64px]"
               >
                 <div className="text-base font-black" style={{ color: stat.color }}>{stat.value}</div>
-                <div className="text-[9px] text-muted-foreground">{stat.label}</div>
+                <div className="text-xs text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>
@@ -200,7 +200,7 @@ export function DashboardClient() {
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground">شخصیت مالی</div>
                     <div className="font-black text-base" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
-                    <div className="text-[10px] text-muted-foreground">ریسک‌پذیری {latest.score}/۱۰۰</div>
+                    <div className="text-xs text-muted-foreground">ریسک‌پذیری {latest.score}/۱۰۰</div>
                   </div>
                   <div className="w-20">
                     <div className="h-1.5 bg-accent rounded-full overflow-hidden">
@@ -239,7 +239,7 @@ export function DashboardClient() {
                             <span className="text-lg">{t.emoji}</span>
                             <div>
                               <div className="font-bold text-xs text-foreground">{t.name}</div>
-                              <div className="text-[9px] text-muted-foreground">{formatDate(r.createdAt)}</div>
+                              <div className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</div>
                             </div>
                           </div>
                           <div className="font-black text-sm" style={{ color: t.color }}>{r.score}</div>
@@ -268,7 +268,7 @@ export function DashboardClient() {
                     ...(phone ? [{ label: 'موبایل', value: phone }] : []),
                   ].map(item => (
                     <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/30 last:border-0">
-                      <span className="text-muted-foreground text-[10px]">{item.label}</span>
+                      <span className="text-muted-foreground text-xs">{item.label}</span>
                       <span className="text-foreground text-xs font-semibold text-left truncate max-w-[60%]" dir="ltr">{item.value}</span>
                     </div>
                   ))}

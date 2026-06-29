@@ -43,6 +43,24 @@ export async function GET() {
 
   const { prices, irrRate, stockPrices } = await fetchAllPrices(insCodeMap)
 
+  // Merge live prices with DB fallback for ALL symbols (crypto, gold, forex, stocks)
+  const finalPrices: typeof prices = {}
+  const allSymbols = new Set([...Object.keys(prices), ...Object.keys(stockPrices)])
+  
+  for (const symbol of allSymbols) {
+    const live = prices[symbol] ?? stockPrices[symbol]
+    if (live) {
+      finalPrices[symbol] = { price: live.price, currency: live.currency ?? 'IRR', change: live.change }
+    } else {
+      try {
+        const r = await pool.query(`SELECT price, currency, "updatedAt" FROM asset_price WHERE symbol = $1 ORDER BY "updatedAt" DESC LIMIT 1`, [symbol])
+        if (r.rows.length > 0 && r.rows[0].price > 0) {
+          finalPrices[symbol] = { price: r.rows[0].price, currency: r.rows[0].currency ?? 'IRR', change: 0 }
+        }
+      } catch {}
+    }
+  }
+
   for (const [symbol, data] of Object.entries(prices)) {
     try {
       const exists = await pool.query('SELECT id FROM asset_price WHERE symbol = $1 LIMIT 1', [symbol])
@@ -95,5 +113,5 @@ export async function GET() {
   for (const [sym, d] of Object.entries(stockPrices)) mlPrices[sym] = d.price
   detectAnomalies(mlPrices).catch(() => {})
 
-  return Response.json({ prices, irrRate, stockPrices: fallbackStockPrices })
+  return Response.json({ prices: finalPrices, irrRate, stockPrices: fallbackStockPrices })
 }
