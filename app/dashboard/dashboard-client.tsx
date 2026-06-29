@@ -2,10 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
-import { useTheme } from '@/components/theme-provider'
 import {
   User, Shield, Target, TrendingUp, Flame,
   LogOut, Home, Trophy, Calendar, Phone, Crown, HelpCircle, AlertTriangle, X, GraduationCap, Loader2
@@ -42,7 +40,6 @@ function formatDate(d: Date) {
 
 export function DashboardClient() {
   const router = useRouter()
-  const { theme } = useTheme()
   const { data: session, isPending } = useSession()
   const [loading, setLoading] = useState(true)
   const [dashData, setDashData] = useState<any>(null)
@@ -97,8 +94,10 @@ export function DashboardClient() {
       {/* Top bar */}
       <header className="glass border-b border-border sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push('/')} className="flex items-center gap-2">
-            <Image src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'} alt="A Capital" width={140} height={42} className="h-8 w-auto object-contain" />
+          <button onClick={() => router.push('/')} className="flex items-center gap-2 group">
+            <span className="font-black text-xl sm:text-2xl tracking-widest text-foreground group-hover:text-primary transition-colors">
+              A <span className="text-primary">|</span> CAP
+            </span>
           </button>
           <div className="flex items-center gap-2">
             {isAdmin && (
