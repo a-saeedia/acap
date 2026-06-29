@@ -87,21 +87,21 @@ function getAssetPriceIr(
   symbol: string,
   prices: PriceMap,
   stockPrices: Record<string, number>
-): number {
+): number | null {
   if (stockPrices[symbol] !== undefined) return stockPrices[symbol] / 10
   const upper = symbol.toUpperCase()
   if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
   const irrKey = `${upper}-IRR`
   if (prices[irrKey]) return prices[irrKey].price / 10
   const direct = prices[upper] ?? prices[symbol]
-  if (!direct) return 0
+  if (!direct) return null
   if (direct.currency === 'IRR') return direct.price / 10
   if (direct.currency === 'USD') {
     const usdRate = prices['USDT-IRR']?.price
     if (usdRate) return (direct.price * usdRate) / 10
     return direct.price
   }
-  return 0
+  return null
 }
 
 function getTotalCost(asset: Asset): number {
@@ -147,7 +147,7 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
   const [animated, setAnimated] = useState(false)
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 200); return () => clearTimeout(t) }, [])
 
-  const radius = 40, strokeWidth = 14, cx = 56, cy = 56
+  const radius = 50, strokeWidth = 16, cx = 60, cy = 60
   const circumference = 2 * Math.PI * radius
   let cumulative = 0
   const arcs = segments.map((seg, i) => {
@@ -159,8 +159,8 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
   })
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width="112" height="112" viewBox="0 0 112 112">
+    <div className="flex flex-col items-center gap-1.5">
+      <svg width="140" height="140" viewBox="0 0 120 120" className="mx-auto">
         {arcs.map(a => (
           <circle key={a.index} cx={cx} cy={cy} r={radius} fill="none" stroke={a.color} strokeWidth={strokeWidth}
             strokeDasharray={`${animated ? a.length : 0} ${circumference - (animated ? a.length : 0)}`}
@@ -170,15 +170,14 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
             style={{ transition: 'stroke-dasharray 1.2s ease-out, stroke-dashoffset 1.2s ease-out, opacity 0.2s', transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px`, cursor: 'pointer' }}
           />
         ))}
-        <text x={cx} y={cy - 3} textAnchor="middle" className="fill-foreground font-black" fontSize="13">{total > 0 ? `${(hovered !== null ? arcs[hovered].pct * 100 : 100).toFixed(0)}%` : '—'}</text>
-        <text x={cx} y={cy + 9} textAnchor="middle" className="fill-muted-foreground" fontSize="8">{hovered !== null ? arcs[hovered].label : 'مجموع'}</text>
+        <text x={cx} y={cy - 2} textAnchor="middle" className="fill-foreground font-black" fontSize="16">{total > 0 ? `${(hovered !== null ? arcs[hovered].pct * 100 : 100).toFixed(0)}%` : '—'}</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" className="fill-muted-foreground" fontSize="9">{hovered !== null ? arcs[hovered].label : 'مجموع'}</text>
       </svg>
-      <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
+      <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 text-xs">
         {arcs.map(a => (
-          <div key={a.index} className="flex items-center gap-1 text-xs cursor-pointer" onMouseEnter={() => setHovered(a.index)} onMouseLeave={() => setHovered(null)}>
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: a.color }} />
-            <span className="text-muted-foreground">{a.label}</span>
-            <span className="text-foreground font-bold">{(a.pct * 100).toFixed(1)}%</span>
+          <div key={a.index} className="flex items-center gap-0.5 cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-accent" onMouseEnter={() => setHovered(a.index)} onMouseLeave={() => setHovered(null)}>
+            <span className="w-2 h-2 rounded-full inline-block" style={{ background: a.color }} />
+            <span className="font-bold">{(a.pct * 100).toFixed(1)}%</span>
           </div>
         ))}
       </div>
@@ -624,13 +623,15 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                 <p className="text-muted-foreground text-xs text-center mt-3">هنوز دارایی ثبت نشده</p>
               </div>
             ) : (
-              <DonutChart
-                segments={Object.entries(byType).map(([type, data], i) => ({
-                  label: TYPE_CONFIG[type]?.label ?? 'سایر',
-                  value: data.value,
-                  color: DONUT_COLORS[i] ?? '#8B5CF6',
-                }))}
-              />
+        <div className="py-2">
+          <DonutChart
+            segments={Object.entries(byType).map(([type, data], i) => ({
+              label: TYPE_CONFIG[type]?.label ?? 'سایر',
+              value: data.value,
+              color: DONUT_COLORS[i] ?? '#8B5CF6',
+            }))}
+          />
+        </div>
             )}
         </motion.div>
 
@@ -925,16 +926,16 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                           </motion.div>
                         </div>
 
-                        <div className="relative z-10 mt-2 flex items-baseline justify-between">
-                          <span className="text-base sm:text-lg font-black text-foreground" dir="ltr">
-                            {formatCurrency(value)}
-                          </span>
-                          <span className="text-xs text-muted-foreground">تومان</span>
-                        </div>
+        <div className="relative z-10 mt-2 flex items-baseline justify-between">
+          <span className="text-base sm:text-lg font-black text-foreground" dir="ltr">
+            {value > 0 ? formatCurrency(value) : '—'}
+          </span>
+          <span className="text-xs text-muted-foreground">تومان</span>
+        </div>
 
-                    <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground border-t border-border/20 pt-1.5">
-                      <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
-                      <span>{price > 0 ? `${price.toLocaleString('fa-IR')} تومان` : '—'}</span>
+        <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground border-t border-border/20 pt-1.5">
+          <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
+          <span>{price !== null && price > 0 ? `${price.toLocaleString('fa-IR')} تومان` : 'قیمت نامشخص'}</span>
                       {a.purchaseDate && (
                         <span className="hidden sm:flex items-center gap-1">
                           <Clock className="w-2 h-2" />
