@@ -8,14 +8,19 @@ import { getDashboardData } from '@/app/actions/profile'
 import { DashboardClient } from './dashboard-client'
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) redirect('/')
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) redirect('/')
 
-  const [data, suggestions] = await Promise.all([
-    getDashboardData(),
-    db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)).orderBy(desc(suggestion.createdAt)),
-  ])
-  if (!data) redirect('/')
+    const [data, suggestions] = await Promise.all([
+      getDashboardData(),
+      db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)).orderBy(desc(suggestion.createdAt)),
+    ])
+    if (!data) redirect('/')
 
-  return <DashboardClient data={{ ...data, suggestions }} />
+    return <DashboardClient data={{ ...data, suggestions }} />
+  } catch (e) {
+    console.error('Dashboard error:', e)
+    redirect('/')
+  }
 }

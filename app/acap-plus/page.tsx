@@ -32,7 +32,7 @@ export default function AcapPlusPage() {
         } catch {}
         setLoadingSugs(false)
       }
-    })
+    }).catch(() => { setChecking(false); setLoadingSugs(false) })
   }, [session, isPending, router])
 
   const handleMarkRead = async (id: string) => {
