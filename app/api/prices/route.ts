@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { assetPrice, iranStock } from '@/lib/db/schema'
 import { fetchAllPrices, calcStockPrice } from '@/lib/prices'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 const ALL_CRYPTO = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX']
@@ -31,9 +31,26 @@ export async function GET() {
     } catch (e) { console.error(`price store error for ${symbol}:`, e) }
   }
 
-  let stocks: { symbol: string; name: string; sector: string | null }[] = []
+  // If USDT-IRR is missing from live fetch, try DB fallback
+  if (!prices['USDT-IRR']) {
+    try {
+      const last = await db.select().from(assetPrice).where(eq(assetPrice.symbol, 'USDT-IRR')).orderBy(desc(assetPrice.updatedAt)).limit(1)
+      if (last.length > 0 && last[0].price > 0) {
+        prices['USDT-IRR'] = { price: last[0].price, currency: 'IRR' }
+        prices['USD-IRR'] = { price: last[0].price, currency: 'IRR' }
+        if (prices['BTC']?.price) {
+          prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * last[0].price), currency: 'IRR' }
+        }
+        if (prices['GOLD']?.price) {
+          prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * last[0].price / 31.1), currency: 'IRR' }
+        }
+      }
+    } catch (e) { console.error('USDT-IRR DB fallback error:', e) }
+  }
+
+  let stocks: any[] = []
   try {
-    stocks = await db.select({ symbol: iranStock.symbol, name: iranStock.name, sector: iranStock.sector }).from(iranStock)
+    stocks = await db.select().from(iranStock)
   } catch (e) { console.error('fetch stocks error:', e) }
 
   const stockPrices: Record<string, { price: number; change: number }> = {}

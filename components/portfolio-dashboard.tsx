@@ -99,6 +99,7 @@ function getAssetPriceIr(
   if (direct.currency === 'USD') {
     const usdRate = prices['USDT-IRR']?.price
     if (usdRate) return direct.price * usdRate
+    return direct.price
   }
   return 0
 }

@@ -50,14 +50,17 @@ function getAssetPriceIr(
   stockPrices: Record<string, number>
 ): number {
   if (stockPrices[symbol] !== undefined) return stockPrices[symbol]
-  const irrKey = `${symbol}-IRR`
+  const upper = symbol.toUpperCase()
+  if (stockPrices[upper] !== undefined) return stockPrices[upper]
+  const irrKey = `${upper}-IRR`
   if (prices[irrKey]) return prices[irrKey].price
-  const direct = prices[symbol]
+  const direct = prices[upper] ?? prices[symbol]
   if (!direct) return 0
   if (direct.currency === 'IRR') return direct.price
   if (direct.currency === 'USD') {
     const usdRate = prices['USDT-IRR']?.price
     if (usdRate) return direct.price * usdRate
+    return direct.price
   }
   return 0
 }
