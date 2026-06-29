@@ -62,11 +62,12 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
     setLoading(true); setError('')
     const { error } = await signUp.email({ email, password, name: name.trim() })
     if (error) {
-      setError(error.message?.includes('unique') ? 'این ایمیل قبلاً ثبت‌نام کرده' : 'خطایی رخ داد، دوباره تلاش کنید')
+      console.error('signUp error:', error)
+      setError(error.message?.includes('unique') ? 'این ایمیل قبلاً ثبت‌نام کرده' : error.message || 'خطایی رخ داد، دوباره تلاش کنید')
       setLoading(false)
       return
     }
-    await saveProfile({ phone }).catch(() => {})
+    try { await saveProfile({ phone }) } catch (e) { console.error('saveProfile after signup:', e) }
     reset(); onClose()
     router.push('/dashboard')
   }
