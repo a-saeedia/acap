@@ -186,12 +186,38 @@ body::before {
   to { transform: rotate(360deg); }
 }
 
+@keyframes mesh-shift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  25% { transform: translate(8%, -4%) rotate(2deg) scale(1.03); }
+  50% { transform: translate(-4%, 8%) rotate(-1deg) scale(0.97); }
+  75% { transform: translate(-8%, -6%) rotate(1deg) scale(1.02); }
+}
+
+@keyframes conic-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glow-soft {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3)) drop-shadow(0 0 20px rgba(59, 130, 246, 0.1)); }
+  50% { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.5)) drop-shadow(0 0 30px rgba(59, 130, 246, 0.2)); }
+}
+
+@keyframes shimmer-gold {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
 .animate-float { animation: float 4s ease-in-out infinite; }
 .animate-pulse-blue { animation: pulse-blue 2s ease-in-out infinite; }
 .animate-shimmer { animation: shimmer-blue 3s linear infinite; }
 .animate-ticker { animation: ticker 30s linear infinite; }
 .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
 .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+.animate-mesh { animation: mesh-shift 12s ease-in-out infinite; }
+.animate-conic { animation: conic-spin 4s linear infinite; }
+.animate-glow-soft { animation: glow-soft 3s ease-in-out infinite; }
+.animate-shimmer-gold { animation: shimmer-gold 3s linear infinite; background-size: 200% auto; }
 
 /* ===== Glass morphism ===== */
 .glass {

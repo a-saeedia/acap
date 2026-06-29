@@ -142,7 +142,7 @@ export const assetPrice = pgTable('asset_price', {
   id: text('id').primaryKey(),
   type: text('type').notNull(),
   symbol: text('symbol').notNull(),
-  price: bigint('price', { mode: 'number' }).notNull(),
+  price: real('price').notNull(),
   currency: text('currency').notNull().default('IRR'),
   source: text('source'),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),

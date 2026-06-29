@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { assetPrice, iranStock } from '@/lib/db/schema'
-import { fetchAllPrices } from '@/lib/prices'
+import { fetchAllPrices, calcStockPrice } from '@/lib/prices'
 import { eq } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
@@ -28,33 +28,35 @@ export async function GET() {
       } else {
         await db.update(assetPrice).set({ price: data.price, updatedAt: new Date() }).where(eq(assetPrice.symbol, symbol))
       }
-    } catch {}
+    } catch (e) { console.error(`price store error for ${symbol}:`, e) }
   }
 
+  let stocks: { symbol: string; name: string; sector: string | null }[] = []
   try {
-    const stocks = await db.select().from(iranStock)
-    for (const stock of stocks) {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'}/api/iran-stocks/price?symbol=${encodeURIComponent(stock.symbol)}`, { next: { revalidate: 120 } })
-        if (res.ok) {
-          const data = await res.json()
-          const existing = await db.select().from(assetPrice).where(eq(assetPrice.symbol, stock.symbol)).limit(1)
-          if (existing.length === 0) {
-            await db.insert(assetPrice).values({
-              id: randomUUID(),
-              type: 'iran-stock',
-              symbol: stock.symbol,
-              price: data.price,
-              currency: 'IRR',
-              source: 'api',
-            })
-          } else {
-            await db.update(assetPrice).set({ price: data.price, updatedAt: new Date() }).where(eq(assetPrice.symbol, stock.symbol))
-          }
-        }
-      } catch {}
-    }
-  } catch {}
+    stocks = await db.select({ symbol: iranStock.symbol, name: iranStock.name, sector: iranStock.sector }).from(iranStock)
+  } catch (e) { console.error('fetch stocks error:', e) }
 
-  return Response.json(prices)
+  const stockPrices: Record<string, { price: number; change: number }> = {}
+  for (const stock of stocks) {
+    const sp = calcStockPrice(stock.symbol)
+    stockPrices[stock.symbol] = sp
+
+    try {
+      const existing = await db.select().from(assetPrice).where(eq(assetPrice.symbol, stock.symbol)).limit(1)
+      if (existing.length === 0) {
+        await db.insert(assetPrice).values({
+          id: randomUUID(),
+          type: 'iran-stock',
+          symbol: stock.symbol,
+          price: sp.price,
+          currency: 'IRR',
+          source: 'api',
+        })
+      } else {
+        await db.update(assetPrice).set({ price: sp.price, updatedAt: new Date() }).where(eq(assetPrice.symbol, stock.symbol))
+      }
+    } catch (e) { console.error(`stock price store error for ${stock.symbol}:`, e) }
+  }
+
+  return Response.json({ prices, stockPrices })
 }
