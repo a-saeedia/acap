@@ -6,7 +6,7 @@ import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset } from '@/app/actions/assets'
 import {
   Plus, Trash2, Edit3, X, Search, RefreshCw,
-  Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain,
+  Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain, BarChart3,
 } from 'lucide-react'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
 
