@@ -164,7 +164,7 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <svg width="200" height="200" viewBox="0 0 200 200" className="rtl-flip">
+      <svg width="200" height="200" viewBox="0 0 200 200">
         {arcs.map(a => (
           <circle
             key={a.index}
@@ -337,15 +337,22 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
   const [stockSearching, setStockSearching] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout>>()
   const [submitting, setSubmitting] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
-  const fetchPrices = useCallback(async () => {
+  function showToast(msg: string, type: 'success' | 'error' = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const fetchPrices = useCallback(async (assetList?: Asset[]) => {
     setPriceLoading(true)
     try {
       const res = await fetch('/api/prices')
       const data: PriceMap = await res.json()
       setPrices(data)
 
-      const stockSymbols = assets.filter(a => a.type === 'stock').map(a => a.symbol)
+      const list = assetList ?? assets
+      const stockSymbols = list.filter(a => a.type === 'stock').map(a => a.symbol)
       if (stockSymbols.length > 0) {
         const sp: Record<string, number> = {}
         await Promise.all(
@@ -370,20 +377,40 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
     try {
       const [a] = await Promise.all([getMyAssets()])
       setAssets(a)
-    } catch {}
+      return a
+    } catch { return [] as Asset[] }
   }, [])
 
   useEffect(() => {
     if (isPending) return
-    Promise.all([
-      fetchAll(),
-      fetch('/api/prices').then(r => r.json()).then(setPrices).catch(() => {}),
-    ]).finally(() => setLoading(false))
+    ;(async () => {
+      const a = await fetchAll()
+      const res = await fetch('/api/prices').catch(() => null)
+      if (res) {
+        const data: PriceMap = await res.json()
+        setPrices(data)
+        const stockSymbols = a.filter(x => x.type === 'stock').map(x => x.symbol)
+        if (stockSymbols.length > 0) {
+          const sp: Record<string, number> = {}
+          await Promise.all(
+            [...new Set(stockSymbols)].map(async (sym) => {
+              try {
+                const r = await fetch(`/api/iran-stocks/price?symbol=${encodeURIComponent(sym)}`)
+                if (r.ok) { const d = await r.json(); sp[sym] = d.price }
+              } catch {}
+            })
+          )
+          setStockPrices(sp)
+        }
+        setLastUpdate(new Date())
+      }
+      setLoading(false)
+    })()
   }, [isPending, fetchAll])
 
   useEffect(() => {
     if (loading) return
-    const interval = setInterval(fetchPrices, 30000)
+    const interval = setInterval(() => fetchPrices(), 30000)
     return () => clearInterval(interval)
   }, [loading, fetchPrices])
 
@@ -413,7 +440,7 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
   }, [stockSearch, form.type])
 
   useEffect(() => {
-    if (!lastUpdate || priceLoading) return
+    if (!lastUpdate) return
     fetchPrices()
   }, [assets.length])
 
@@ -461,21 +488,26 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
     try {
       if (editingId) {
         await updateAsset(editingId, form)
+        showToast('دارایی با موفقیت ویرایش شد')
       } else {
         await createAsset(form)
+        showToast('دارایی با موفقیت به سبد اضافه شد')
       }
       setShowModal(false)
       setForm(INITIAL_FORM)
       setEditingId(null)
       const [a] = await Promise.all([getMyAssets()])
       setAssets(a)
-    } catch {}
+    } catch { showToast('خطا در ثبت دارایی', 'error') }
     setSubmitting(false)
   }
 
   async function handleDelete(id: string) {
-    await deleteAsset(id)
-    setAssets(await getMyAssets())
+    try {
+      await deleteAsset(id)
+      setAssets(await getMyAssets())
+      showToast('دارایی حذف شد')
+    } catch { showToast('خطا در حذف دارایی', 'error') }
   }
 
   function handleQuickSymbol(sym: string, label?: string) {
@@ -567,7 +599,23 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
   }
 
   return (
-    <div dir="rtl">
+    <div dir="rtl" className="relative">
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border flex items-center gap-2.5 ${
+            toast.type === 'success'
+              ? 'bg-emerald-900/90 border-emerald-500/30 text-emerald-300'
+              : 'bg-red-900/90 border-red-500/30 text-red-300'
+          }`}
+          style={{ backdropFilter: 'blur(12px)' }}
+        >
+          {toast.type === 'success' ? '✓' : '✕'}
+          {toast.msg}
+        </motion.div>
+      )}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

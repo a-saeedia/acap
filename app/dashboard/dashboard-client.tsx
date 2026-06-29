@@ -36,6 +36,7 @@ export function DashboardClient() {
   const [dismissBanner, setDismissBanner] = useState(false)
   const [showPortfolio, setShowPortfolio] = useState(false)
   const [assetsCount, setAssetsCount] = useState(0)
+  const [portfolioSummary, setPortfolioSummary] = useState<{ value: number; pnl: number } | null>(null)
 
   useEffect(() => {
     if (isPending) return
@@ -53,7 +54,24 @@ export function DashboardClient() {
 
   useEffect(() => {
     if (!dashData) return
-    import('@/app/actions/assets').then(m => m.getMyAssets()).then(a => setAssetsCount(a.length)).catch(() => {})
+    import('@/app/actions/assets').then(m => m.getMyAssets()).then(a => {
+      setAssetsCount(a.length)
+      if (a.length > 0) {
+        fetch('/api/prices').then(r => r.json()).then((prices: any) => {
+          let val = 0
+          const usdRate = prices['USDT-IRR']?.price ?? 0
+          for (const asset of a) {
+            const p = prices[asset.symbol]
+            if (!p) continue
+            const price = p.currency === 'USD' ? p.price * usdRate : p.price
+            val += price * asset.quantity
+          }
+          setPortfolioSummary({ value: val, pnl: 0 })
+        }).catch(() => {})
+      } else {
+        setPortfolioSummary(null)
+      }
+    }).catch(() => {})
   }, [dashData])
 
   if (isPending || loading) return (
@@ -141,6 +159,32 @@ export function DashboardClient() {
           </div>
           <OnboardingTasks profile={profile} quizResults={quizResults} assetsCount={assetsCount} subscription={subscription} />
         </motion.div>
+
+        {isPlus && portfolioSummary && assetsCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass border border-border rounded-2xl p-4 mb-6 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">ارزش سبد سرمایه‌گذاری</div>
+                <div className="text-lg font-black text-foreground">
+                  {portfolioSummary.value > 0 ? Math.round(portfolioSummary.value).toLocaleString('fa-IR') : '—'} <span className="text-xs font-normal text-muted-foreground">تومان</span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowPortfolio(true)}
+              className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20"
+            >
+              مشاهده پرتفوی
+            </button>
+          </motion.div>
+        )}
 
         {!phone && !dismissBanner && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
