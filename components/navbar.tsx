@@ -6,6 +6,7 @@ import { useTheme } from './theme-provider'
 import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle, GraduationCap } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
+import { PriceTicker } from './price-ticker'
 
 const navItems: { label: string; href: string; highlight?: boolean }[] = [
   { label: 'آکادمی', href: '/education' },
@@ -58,6 +59,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
         }`}
         dir="rtl"
       >
+        <PriceTicker />
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Brand wordmark — text only, no image logo in corner */}

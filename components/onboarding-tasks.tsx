@@ -62,17 +62,19 @@ function RadioIcon() {
   )
 }
 
+const easeOutExpo: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94]
+
 const containerVariants = {
   hidden: { height: 0, opacity: 0 },
   visible: {
     height: 'auto',
     opacity: 1,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.4, ease: easeOutExpo },
   },
   exit: {
     height: 0,
     opacity: 0,
-    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.3, ease: easeOutExpo },
   },
 }
 
@@ -148,84 +150,25 @@ export function OnboardingTasks({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        <div className="relative w-[90px] h-[90px] sm:w-[120px] sm:h-[120px]">
-          {/* Background ring */}
+        <div className="relative w-[56px] h-[56px] sm:w-[64px] sm:h-[64px]">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-            <circle
-              cx="60"
-              cy="60"
-              r="54"
-              fill="none"
-              stroke="rgba(107, 141, 181, 0.15)"
-              strokeWidth="8"
-            />
-            {/* Progress ring */}
+            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(107,141,181,0.15)" strokeWidth="8" />
             <motion.circle
-              cx="60"
-              cy="60"
-              r="54"
-              fill="none"
-              stroke="url(#progressGradient)"
-              strokeWidth="8"
-              strokeLinecap="round"
+              cx="60" cy="60" r="54" fill="none" stroke="url(#g)"
+              strokeWidth="8" strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               initial={{ strokeDashoffset: CIRCUMFERENCE }}
               animate={{ strokeDashoffset: offset }}
               transition={{ duration: 1.5, ease: 'easeInOut' }}
             />
-            <defs>
-              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#2979FF" />
-                <stop offset="100%" stopColor="#10B981" />
-              </linearGradient>
-            </defs>
+            <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2979FF" /><stop offset="100%" stopColor="#10B981" /></linearGradient></defs>
           </svg>
-
-          {/* Center percentage */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <motion.span
-              className="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none"
-              key={Math.round(progress)}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {Math.round(progress)}%
-            </motion.span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">تکمیل</span>
+            <motion.span className="text-sm sm:text-base font-black text-foreground tabular-nums leading-none" key={Math.round(progress)} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>{Math.round(progress)}%</motion.span>
           </div>
-
-          {/* Pulse ring for incomplete */}
-          {!allDone && (
-            <motion.div
-              className="absolute inset-0 rounded-full"
-              animate={{
-                boxShadow: [
-                  '0 0 0 0 rgba(41, 121, 255, 0.3)',
-                  '0 0 0 12px rgba(41, 121, 255, 0)',
-                ],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeOut',
-              }}
-            />
-          )}
         </div>
 
-        <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
-          {allDone ? 'همه مراحل تکمیل شد' : `${completedCount} از ${TASKS.length} مرحله`}
-        </span>
-
-        <motion.div
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" className="text-muted-foreground">
-            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </motion.div>
+        <span className="text-[10px] text-muted-foreground">{allDone ? 'تکمیل شد' : `${completedCount}/${TASKS.length}`}</span>
       </motion.button>
 
       {/* Expandable task list */}
@@ -236,83 +179,37 @@ export function OnboardingTasks({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="absolute top-full mt-3 left-1/2 -translate-x-1/2 w-72 z-50 overflow-hidden"
+            className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 z-50 overflow-hidden"
           >
-            <div className="glass rounded-3xl border border-border p-5 shadow-2xl relative bg-gray-900/95 backdrop-blur-xl">
+            <div className="glass rounded-2xl border border-border p-3.5 shadow-xl relative bg-gray-900/95 backdrop-blur-xl">
               {allDone && <Confetti />}
 
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-black text-foreground">مراحل تکمیل پروفایل</h4>
-                <span className="text-xs font-semibold text-muted-foreground bg-accent/30 px-2.5 py-0.5 rounded-full">
-                  {Math.round(progress)}%
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-black text-foreground">مراحل تکمیل</h4>
+                <span className="text-[10px] font-semibold text-muted-foreground bg-accent/30 px-2 py-0.5 rounded-full">{Math.round(progress)}%</span>
               </div>
 
-              {/* Mini progress bar */}
-              <div className="h-1.5 rounded-full bg-accent/50 mb-4 overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #2979FF, #10B981)' }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
+              <div className="h-1 rounded-full bg-accent/50 mb-2.5 overflow-hidden">
+                <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, #2979FF, #10B981)' }} initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.8, ease: 'easeOut' }} />
               </div>
 
-              {/* Task list */}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {TASKS.map((task, i) => {
                   let done: boolean
-                  if (task.key === 'subscription') {
-                    done = task.check({ profile, quizResults, assetsCount }, subscription)
-                  } else {
-                    done = task.check({ profile, quizResults, assetsCount })
-                  }
-
+                  if (task.key === 'subscription') done = task.check({ profile, quizResults, assetsCount }, subscription)
+                  else done = task.check({ profile, quizResults, assetsCount })
                   return (
-                    <motion.div
-                      key={task.key}
-                      custom={i}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className={`flex items-start gap-3 p-2.5 rounded-2xl transition-colors ${
-                        done ? 'bg-emerald-500/8' : 'bg-transparent'
-                      }`}
-                    >
-                      <div className="mt-0.5">
-                        {done ? <CheckIcon /> : <RadioIcon />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div
-                          className={`text-sm font-bold leading-tight ${
-                            done ? 'text-emerald-400' : 'text-gray-100'
-                          }`}
-                        >
-                          {task.label}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                          {task.description}
-                        </div>
-                      </div>
+                    <motion.div key={task.key} custom={i} variants={itemVariants} initial="hidden" animate="visible" className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${done ? 'bg-emerald-500/8' : ''}`}>
+                      {done ? <CheckIcon /> : <RadioIcon />}
+                      <span className={`text-xs font-semibold ${done ? 'text-emerald-400' : 'text-gray-100'}`}>{task.label}</span>
                     </motion.div>
                   )
                 })}
               </div>
 
-              {/* Celebration message */}
               {allDone && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.4 }}
-                  className="mt-4 pt-4 border-t border-border/50 text-center"
-                >
-                  <span className="text-lg">🎉</span>
-                  <p className="text-sm font-bold text-emerald-400 mt-1">تبریک! همه مراحل تکمیل شد</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    پروفایل شما کامل است
-                  </p>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-2.5 pt-2.5 border-t border-border/50 text-center">
+                  <p className="text-xs font-bold text-emerald-400">🎉 همه مراحل تکمیل شد</p>
                 </motion.div>
               )}
             </div>

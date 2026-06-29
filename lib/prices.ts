@@ -1,4 +1,6 @@
 const COINGECKO = 'https://api.coingecko.com/api/v3'
+const TGJU_AJAX = 'https://call2.tgju.org/ajax.json'
+const TSETMC_API = 'https://cdn.tsetmc.com/api'
 const FETCH_OPTS = { signal: AbortSignal.timeout(8000) }
 
 const COINGECKO_IDS: Record<string, string> = {
@@ -9,49 +11,156 @@ const COINGECKO_IDS: Record<string, string> = {
 }
 
 export const DEFAULT_STOCKS = [
-  { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', sector: 'فلزات اساسی' },
-  { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو' },
-  { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری' },
-  { symbol: 'کگل', name: 'گل گهر', sector: 'فلزات اساسی' },
-  { symbol: 'فملی', name: 'ملی صنایع مس ایران', sector: 'فلزات اساسی' },
-  { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری' },
-  { symbol: 'وبملت', name: 'بانک ملت', sector: 'بانک' },
-  { symbol: 'وتجارت', name: 'بانک تجارت', sector: 'بانک' },
-  { symbol: 'پارسان', name: 'پتروشیمی پارس', sector: 'پتروشیمی' },
-  { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری' },
-  { symbol: 'شپنا', name: 'پالایش نفت بندرعباس', sector: 'پالایشی' },
-  { symbol: 'شتران', name: 'پالایش نفت تهران', sector: 'پالایشی' },
-  { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو' },
-  { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک' },
-  { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی' },
+  { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', sector: 'فلزات اساسی', tsetmcSearch: 'فولاد' },
+  { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو', tsetmcSearch: 'خودرو' },
+  { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری', tsetmcSearch: 'وغدیر' },
+  { symbol: 'کگل', name: 'گل گهر', sector: 'فلزات اساسی', tsetmcSearch: 'کگل' },
+  { symbol: 'فملی', name: 'ملی صنایع مس ایران', sector: 'فلزات اساسی', tsetmcSearch: 'فملی' },
+  { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری', tsetmcSearch: 'شستا' },
+  { symbol: 'وبملت', name: 'بانک ملت', sector: 'بانک', tsetmcSearch: 'وبملت' },
+  { symbol: 'وتجارت', name: 'بانک تجارت', sector: 'بانک', tsetmcSearch: 'وتجارت' },
+  { symbol: 'پارسان', name: 'پتروشیمی پارس', sector: 'پتروشیمی', tsetmcSearch: 'پارسان' },
+  { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری', tsetmcSearch: 'تاپیکو' },
+  { symbol: 'شپنا', name: 'پالایش نفت بندرعباس', sector: 'پالایشی', tsetmcSearch: 'شپنا' },
+  { symbol: 'شتران', name: 'پالایش نفت تهران', sector: 'پالایشی', tsetmcSearch: 'شتران' },
+  { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو', tsetmcSearch: 'خساپا' },
+  { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک', tsetmcSearch: 'وبصادر' },
+  { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی', tsetmcSearch: 'رمپنا' },
 ]
-
-const STOCK_BASE_PRICES: Record<string, number> = {
-  فولاد: 25000, خودرو: 8000, وغدیر: 50000, کگل: 35000, فملی: 45000,
-  شستا: 15000, وبملت: 7000, وتجارت: 5000, پارسان: 30000, تاپیکو: 40000,
-  شپنا: 35000, شتران: 28000, خساپا: 6000, وبصادر: 4500, رمپنا: 20000,
-}
 
 export type PriceMap = Record<string, { price: number; currency: string }>
 
-export function calcStockPrice(symbol: string): { price: number; change: number } {
-  const base = STOCK_BASE_PRICES[symbol] ?? 20000
-  const now = Date.now()
-  const timeFactor = Math.sin(now / 10000 + symbol.charCodeAt(0) * 10) * 0.03
-  const noise = Math.sin(now / 3000 + symbol.length * 50) * 0.01
-  const variation = 1 + timeFactor + noise
-  const price = Math.round(base * variation)
-  const change = Math.round((timeFactor + noise) * 10000) / 100
-  return { price, change }
+function parseTgjuPrice(val: string): number {
+  return Number(val.replace(/,/g, ''))
+}
+
+export async function fetchTgjuData(): Promise<{
+  prices: PriceMap
+  irrRate: number
+  timestamp: string
+}> {
+  const rev = Math.random().toString(36).substring(2, 12)
+  const urls = [
+    `${TGJU_AJAX}?rev=${rev}`,
+    `https://call3.tgju.org/ajax.json?rev=${rev}`,
+    `https://call4.tgju.org/ajax.json?rev=${rev}`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { ...FETCH_OPTS })
+      if (!res.ok) continue
+      const data = await res.json()
+      if (!data?.current) continue
+
+      const c = data.current
+      const prices: PriceMap = {}
+      const timestamp = c.price_dollar_rl?.ts || ''
+
+      const rawUsd = c.price_dollar_rl?.p
+      if (!rawUsd) continue
+      const irrRate = parseTgjuPrice(rawUsd)
+
+      prices['USD'] = { price: 1, currency: 'USD' }
+      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+
+      const forexPairs: Record<string, string> = {
+        price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
+        price_try: 'TRY', price_chf: 'CHF', price_cny: 'CNY',
+        price_cad: 'CAD', price_aud: 'AUD', price_sgd: 'SGD',
+        price_inr: 'INR', price_sar: 'SAR', price_kwd: 'KWD',
+        price_myr: 'MYR', price_rub: 'RUB', price_azn: 'AZN',
+      }
+      for (const [slug, sym] of Object.entries(forexPairs)) {
+        if (c[slug]?.p) {
+          prices[sym] = { price: 1, currency: 'USD' }
+          prices[`${sym}-IRR`] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
+        }
+      }
+
+      const goldSlugs: Record<string, string> = {
+        geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
+        nim: 'HALF_COIN', rob: 'QUARTER_COIN', ons: 'XAU',
+        mesghal: 'MESGHAL',
+      }
+      for (const [slug, sym] of Object.entries(goldSlugs)) {
+        if (c[slug]?.p) {
+          const isGlobal = slug === 'ons'
+          prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: isGlobal ? 'USD' : 'IRR' }
+        }
+      }
+
+      const cryptoIrSlugs: Record<string, string> = {
+        'crypto-bitcoin-irr': 'BTC-IRR',
+        'crypto-ethereum-irr': 'ETH-IRR',
+        'crypto-tether-irr': 'USDT-IRR',
+        'crypto-dash-irr': 'DASH-IRR',
+        'crypto-ripple-irr': 'XRP-IRR',
+        'crypto-litecoin-irr': 'LTC-IRR',
+      }
+      for (const [slug, sym] of Object.entries(cryptoIrSlugs)) {
+        if (c[slug]?.p) {
+          prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
+        }
+      }
+
+      return { prices, irrRate, timestamp }
+    } catch {
+      continue
+    }
+  }
+  return { prices: {}, irrRate: 0, timestamp: '' }
+}
+
+export async function fetchTsetmcSearch(symbol: string): Promise<string | null> {
+  try {
+    const encoded = encodeURIComponent(symbol)
+    const res = await fetch(`${TSETMC_API}/Instrument/GetInstrumentSearch/${encoded}`, { ...FETCH_OPTS })
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data?.instrumentSearch?.length > 0) {
+      const match = data.instrumentSearch.find(
+        (i: any) => i.lVal18AFC === symbol || i.lVal30.includes(symbol)
+      )
+      return match?.insCode || data.instrumentSearch[0]?.insCode || null
+    }
+    return null
+  } catch { return null }
+}
+
+export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
+  lastPrice: number
+  closePrice: number
+  change: number
+  high: number
+  low: number
+  volume: number
+  yesterday: number
+} | null> {
+  try {
+    const res = await fetch(`${TSETMC_API}/ClosingPrice/GetClosingPriceInfo/${insCode}`, { ...FETCH_OPTS })
+    if (!res.ok) return null
+    const data = await res.json()
+    const info = data?.closingPriceInfo
+    if (!info) return null
+    return {
+      lastPrice: info.pDrCotVal ?? info.pClosing ?? 0,
+      closePrice: info.pClosing ?? 0,
+      change: info.priceChange ?? 0,
+      high: info.priceMax ?? 0,
+      low: info.priceMin ?? 0,
+      volume: info.qTotTran5J ?? 0,
+      yesterday: info.priceYesterday ?? 0,
+    }
+  } catch { return null }
 }
 
 export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
   const geckoSymbols = symbols.filter(s => COINGECKO_IDS[s]).map(s => COINGECKO_IDS[s])
   if (geckoSymbols.length === 0) return {}
-
   const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd`
   try {
-    const res = await fetch(url, { ...FETCH_OPTS, next: { revalidate: 120 } })
+    const res = await fetch(url, { ...FETCH_OPTS })
     const data = await res.json()
     const result: PriceMap = {}
     for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
@@ -61,82 +170,57 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
   } catch (e) { console.error('fetchCryptoPrices error:', e); return {} }
 }
 
-export async function fetchIrrRate(): Promise<{ rate: number; source: string }> {
-  try {
-    const res = await fetch('https://api.nobitex.ir/market/stats', { ...FETCH_OPTS, next: { revalidate: 120 } })
-    const data = await res.json()
-    if (data?.stats?.['USDT-IRR']?.latest) {
-      return { rate: Number(data.stats['USDT-IRR'].latest), source: 'nobitex' }
-    }
-  } catch (e) { console.error('fetchIrrRate nobitex error:', e) }
-  try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD', { ...FETCH_OPTS, next: { revalidate: 300 } })
-    const data = await res.json()
-    if (data?.rates?.IRR) return { rate: data.rates.IRR, source: 'er-api' }
-  } catch (e) { console.error('fetchIrrRate er-api error:', e) }
-  return { rate: 700000, source: 'fallback' }
+export function convertUsdToIrr(usdPrice: number, irrRate: number): number {
+  return Math.round(usdPrice * irrRate)
 }
 
-export async function fetchNobitexPrices(): Promise<PriceMap> {
-  try {
-    const res = await fetch('https://api.nobitex.ir/market/stats', { ...FETCH_OPTS, next: { revalidate: 120 } })
-    const data = await res.json()
-    const result: PriceMap = {}
-    if (data.stats) {
-      for (const [key, val] of Object.entries(data.stats) as [string, any][]) {
-        if (val?.latest) {
-          const symbol = key.split('-')[0]?.toUpperCase()
-          result[symbol] = { price: Number(val.latest), currency: 'IRR' }
-        }
-      }
-    }
-    return result
-  } catch (e) { console.error('fetchNobitexPrices error:', e) }
-  return {}
-}
-
-export async function fetchGoldPrices(): Promise<PriceMap> {
-  try {
-    const res = await fetch('https://api.coinbase.com/v2/prices/XAU-USD/spot', { ...FETCH_OPTS, next: { revalidate: 120 } })
-    const data = await res.json()
-    const price = parseFloat(data?.data?.amount)
-    if (price > 0) return { GOLD: { price, currency: 'USD' } }
-  } catch (e) { console.error('fetchGoldPrices coinbase error:', e) }
-  try {
-    const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json', { ...FETCH_OPTS, next: { revalidate: 300 } })
-    const data = await res.json()
-    const price = data?.xau?.usd
-    if (price > 0) return { GOLD: { price, currency: 'USD' } }
-  } catch (e) { console.error('fetchGoldPrices fallback error:', e) }
-  return {}
-}
-
-export async function fetchAllPrices(): Promise<PriceMap> {
-  const [crypto, nobitex, gold, irrResult] = await Promise.all([
+export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promise<{
+  prices: PriceMap
+  irrRate: number
+  stockPrices: Record<string, { price: number; change: number; closePrice: number }>
+}> {
+  const [crypto, tgju] = await Promise.all([
     fetchCryptoPrices(['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX']),
-    fetchNobitexPrices(),
-    fetchGoldPrices(),
-    fetchIrrRate(),
+    fetchTgjuData(),
   ])
 
-  const prices: PriceMap = { ...crypto, ...nobitex, ...gold }
+  const prices: PriceMap = { ...crypto, ...tgju.prices }
 
-  const usdtIrr = nobitex['USDT']?.price ?? irrResult.rate
-
-  if (usdtIrr) {
-    prices['USDT'] = { price: 1, currency: 'USD' }
-    prices['USDT-IRR'] = { price: usdtIrr, currency: 'IRR' }
-    prices['USD'] = { price: 1, currency: 'USD' }
-    prices['USD-IRR'] = { price: usdtIrr, currency: 'IRR' }
-
-    if (prices['BTC']?.price) {
-      prices['BTC-IRR'] = { price: Math.round(prices['BTC'].price * usdtIrr), currency: 'IRR' }
+  if (tgju.irrRate > 0) {
+    for (const sym of Object.keys(crypto)) {
+      const usdPrice = crypto[sym]?.price
+      if (usdPrice) {
+        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, tgju.irrRate), currency: 'IRR' }
+      }
     }
-
-    if (prices['GOLD']?.price) {
-      prices['GOLD-IRR'] = { price: Math.round(prices['GOLD'].price * usdtIrr / 31.1), currency: 'IRR' }
+    if (prices['XAU']?.price) {
+      prices['GOLD'] = { price: prices['XAU'].price, currency: 'USD' }
     }
   }
 
-  return prices
+  const stockPrices: Record<string, { price: number; change: number; closePrice: number }> = {}
+
+  if (insCodeMap) {
+    const entries = Object.entries(insCodeMap)
+    const results = await Promise.allSettled(
+      entries.map(([symbol, code]) =>
+        fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))
+      )
+    )
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value.info) {
+        const { symbol, info } = r.value
+        const change = info.yesterday > 0
+          ? Math.round(((info.lastPrice - info.yesterday) / info.yesterday) * 10000) / 100
+          : 0
+        stockPrices[symbol] = {
+          price: info.lastPrice,
+          change,
+          closePrice: info.closePrice,
+        }
+      }
+    }
+  }
+
+  return { prices, irrRate: tgju.irrRate, stockPrices }
 }

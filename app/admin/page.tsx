@@ -11,7 +11,7 @@ type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
 export default function AdminPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'tickets'>('users')
+  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -196,7 +196,7 @@ export default function AdminPage() {
       const byType: Record<string, number> = {}
       let totalVal = 0
       for (const a of portfolioAssets) {
-        const price = prices[a.symbol]?.price ?? 0
+        const price = (prices[a.symbol]?.price ?? 0) / 10
         const val = price * a.quantity
         const t = a.type as string
         byType[t] = (byType[t] ?? 0) + val
@@ -219,7 +219,7 @@ export default function AdminPage() {
     }
   }
 
-  const totalValue = portfolioAssets.reduce((sum, a) => sum + (prices[a.symbol]?.price ?? 0) * a.quantity, 0)
+  const totalValue = portfolioAssets.reduce((sum, a) => sum + ((prices[a.symbol]?.price ?? 0) / 10) * a.quantity, 0)
   const totalInvested = portfolioAssets.reduce((sum, a) => sum + (a.purchasePrice ?? 0) * a.quantity, 0)
   const pnl = totalValue - totalInvested
 
@@ -240,6 +240,10 @@ export default function AdminPage() {
           <button onClick={() => { setTab('tickets'); setSelectedTicket(null) }}
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'tickets' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             تیکت‌ها
+          </button>
+          <button onClick={() => setTab('analytics')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'analytics' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            آمار و رویدادها
           </button>
           <a href="/api/export-csv" download
             className="px-4 py-2 rounded-lg text-sm whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-colors">
@@ -436,7 +440,7 @@ export default function AdminPage() {
                               </thead>
                               <tbody>
                                 {portfolioAssets.map(a => {
-                                  const price = prices[a.symbol]?.price ?? 0
+                                  const price = (prices[a.symbol]?.price ?? 0) / 10
                                   const currentValue = price * a.quantity
                                   const costBasis = a.purchasePrice ? a.purchasePrice * a.quantity : null
                                   const assetPnl = costBasis !== null ? currentValue - costBasis : null
@@ -636,7 +640,118 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {tab === 'analytics' && <AdminAnalytics />}
       </div>
+    </div>
+  )
+}
+
+function AdminAnalytics() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/analytics').then(r => r.json()).then(setData).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+  if (!data) return <div className="text-center py-8 text-red-400">خطا در دریافت آمار</div>
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <p className="text-2xl font-bold">{data.totalEvents}</p>
+          <p className="text-xs text-gray-500">رویداد (۷ روز)</p>
+        </div>
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <p className="text-2xl font-bold">{data.uniqueUsers}</p>
+          <p className="text-xs text-gray-500">کاربر فعال</p>
+        </div>
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <p className="text-2xl font-bold">{data.anomalies?.length || 0}</p>
+          <p className="text-xs text-gray-500">ناهنجاری قیمت</p>
+        </div>
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <p className="text-2xl font-bold">{data.topPages?.length || 0}</p>
+          <p className="text-xs text-gray-500">صفحات پربازدید</p>
+        </div>
+      </div>
+
+      {data.eventCounts && data.eventCounts.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <h3 className="text-sm font-bold mb-3">توزیع رویدادها</h3>
+          <div className="space-y-2">
+            {data.eventCounts.map((e: any, i: number) => {
+              const maxCount = Math.max(...data.eventCounts.map((x: any) => x.count))
+              const pct = (e.count / maxCount) * 100
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 w-24 truncate">{e.event}</span>
+                  <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden">
+                    <div className="h-full bg-emerald-600 rounded" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-xs text-gray-500 w-12 text-left">{e.count}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {data.topPages && data.topPages.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <h3 className="text-sm font-bold mb-3">صفحات پربازدید (۷ روز)</h3>
+          <div className="space-y-1.5">
+            {data.topPages.map((p: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
+                <span className="text-sm text-gray-300 truncate ltr">{p.path || '/'}</span>
+                <span className="text-xs text-gray-500 mr-2">{p.count} بازدید</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.pageViews && data.pageViews.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <h3 className="text-sm font-bold mb-3">روند بازدید روزانه (۳۰ روز)</h3>
+          <div className="flex items-end gap-1 h-32 overflow-x-auto pb-1">
+            {[...data.pageViews].reverse().map((d: any, i: number) => {
+              const maxCount = Math.max(...data.pageViews.map((x: any) => x.count))
+              const height = (d.count / maxCount) * 100
+              return (
+                <div key={i} className="flex flex-col items-center gap-0.5 shrink-0">
+                  <div className="w-6 sm:w-8 bg-emerald-600/60 rounded-t" style={{ height: `${height}%`, minHeight: d.count > 0 ? '4px' : '0' }} />
+                  <span className="text-[8px] text-gray-500">{d.date?.slice(5) || ''}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {data.anomalies && data.anomalies.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <h3 className="text-sm font-bold mb-3">ناهنجاری‌های قیمتی</h3>
+          <div className="space-y-1.5">
+            {data.anomalies.map((a: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${a.direction === 'spike' ? 'bg-red-600/20 text-red-400' : 'bg-orange-600/20 text-orange-400'}`}>
+                    {a.direction === 'spike' ? '⬆' : '⬇'}
+                  </span>
+                  <span className="text-sm font-medium">{a.symbol}</span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Z={a.zScore?.toFixed(1)} | {a.currentPrice?.toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

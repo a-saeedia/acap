@@ -147,3 +147,25 @@ export const assetPrice = pgTable('asset_price', {
   source: text('source'),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
+
+export const userEvent = pgTable('user_event', {
+  id: text('id').primaryKey(),
+  userId: text('userId'),
+  event: text('event').notNull(),
+  path: text('path'),
+  metadata: jsonb('metadata'),
+  ip: text('ip'),
+  userAgent: text('userAgent'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+export const mlAnomaly = pgTable('ml_anomaly', {
+  id: text('id').primaryKey(),
+  symbol: text('symbol').notNull(),
+  zScore: real('zScore').notNull(),
+  currentPrice: real('currentPrice').notNull(),
+  meanPrice: real('meanPrice').notNull(),
+  stdPrice: real('stdPrice').notNull(),
+  direction: text('direction').notNull(),
+  detectedAt: timestamp('detectedAt').notNull().defaultNow(),
+})

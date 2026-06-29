@@ -88,17 +88,17 @@ function getAssetPriceIr(
   prices: PriceMap,
   stockPrices: Record<string, number>
 ): number {
-  if (stockPrices[symbol] !== undefined) return stockPrices[symbol]
+  if (stockPrices[symbol] !== undefined) return stockPrices[symbol] / 10
   const upper = symbol.toUpperCase()
-  if (stockPrices[upper] !== undefined) return stockPrices[upper]
+  if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
   const irrKey = `${upper}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price
+  if (prices[irrKey]) return prices[irrKey].price / 10
   const direct = prices[upper] ?? prices[symbol]
   if (!direct) return 0
-  if (direct.currency === 'IRR') return direct.price
+  if (direct.currency === 'IRR') return direct.price / 10
   if (direct.currency === 'USD') {
     const usdRate = prices['USDT-IRR']?.price
-    if (usdRate) return direct.price * usdRate
+    if (usdRate) return (direct.price * usdRate) / 10
     return direct.price
   }
   return 0
@@ -145,18 +145,10 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
   const total = segments.reduce((s, seg) => s + seg.value, 0)
   const [hovered, setHovered] = useState<number | null>(null)
   const [animated, setAnimated] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setAnimated(true), 200); return () => clearTimeout(t) }, [])
 
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 200)
-    return () => clearTimeout(t)
-  }, [])
-
-  const radius = 70
-  const strokeWidth = 24
-  const cx = 100
-  const cy = 100
+  const radius = 40, strokeWidth = 14, cx = 56, cy = 56
   const circumference = 2 * Math.PI * radius
-
   let cumulative = 0
   const arcs = segments.map((seg, i) => {
     const pct = total > 0 ? seg.value / total : 0
@@ -167,62 +159,24 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
   })
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <svg width="200" height="200" viewBox="0 0 200 200">
+    <div className="flex flex-col items-center gap-2">
+      <svg width="112" height="112" viewBox="0 0 112 112">
         {arcs.map(a => (
-          <circle
-            key={a.index}
-            cx={cx}
-            cy={cy}
-            r={radius}
-            fill="none"
-            stroke={a.color}
-            strokeWidth={strokeWidth}
+          <circle key={a.index} cx={cx} cy={cy} r={radius} fill="none" stroke={a.color} strokeWidth={strokeWidth}
             strokeDasharray={`${animated ? a.length : 0} ${circumference - (animated ? a.length : 0)}`}
-            strokeDashoffset={-a.offset}
-            strokeLinecap="round"
+            strokeDashoffset={-a.offset} strokeLinecap="round"
             opacity={hovered === null || hovered === a.index ? 1 : 0.25}
-            onMouseEnter={() => setHovered(a.index)}
-            onMouseLeave={() => setHovered(null)}
-            style={{
-              transition: 'stroke-dasharray 1.2s ease-out, stroke-dashoffset 1.2s ease-out, opacity 0.2s',
-              transform: 'rotate(-90deg)',
-              transformOrigin: '100px 100px',
-              cursor: 'pointer',
-            }}
+            onMouseEnter={() => setHovered(a.index)} onMouseLeave={() => setHovered(null)}
+            style={{ transition: 'stroke-dasharray 1.2s ease-out, stroke-dashoffset 1.2s ease-out, opacity 0.2s', transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px`, cursor: 'pointer' }}
           />
         ))}
-        <text
-          x={cx}
-          y={cy - 6}
-          textAnchor="middle"
-          className="fill-foreground font-black"
-          fontSize="22"
-        >
-          {total > 0 ? `${(hovered !== null ? arcs[hovered].pct * 100 : 100).toFixed(0)}%` : '—'}
-        </text>
-        <text
-          x={cx}
-          y={cy + 14}
-          textAnchor="middle"
-          className="fill-muted-foreground"
-          fontSize="11"
-        >
-          {hovered !== null ? arcs[hovered].label : 'مجموع'}
-        </text>
+        <text x={cx} y={cy - 3} textAnchor="middle" className="fill-foreground font-black" fontSize="13">{total > 0 ? `${(hovered !== null ? arcs[hovered].pct * 100 : 100).toFixed(0)}%` : '—'}</text>
+        <text x={cx} y={cy + 9} textAnchor="middle" className="fill-muted-foreground" fontSize="7">{hovered !== null ? arcs[hovered].label : 'مجموع'}</text>
       </svg>
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+      <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
         {arcs.map(a => (
-          <div
-            key={a.index}
-            className="flex items-center gap-1.5 text-xs cursor-pointer"
-            onMouseEnter={() => setHovered(a.index)}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <span
-              className="w-2.5 h-2.5 rounded-full inline-block"
-              style={{ background: a.color }}
-            />
+          <div key={a.index} className="flex items-center gap-1 text-[9px] cursor-pointer" onMouseEnter={() => setHovered(a.index)} onMouseLeave={() => setHovered(null)}>
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: a.color }} />
             <span className="text-muted-foreground">{a.label}</span>
             <span className="text-foreground font-bold">{(a.pct * 100).toFixed(1)}%</span>
           </div>
@@ -564,111 +518,65 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           style={{ animationDelay: '-8s', background: 'radial-gradient(circle, #10B981 0%, transparent 70%)' }} />
       </div>
 
-      {/* Hero Value Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative mb-8 overflow-hidden rounded-3xl"
-        style={{
-          background: 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(139,92,246,0.08) 50%, rgba(16,185,129,0.05) 100%)',
-          border: '1px solid rgba(59,130,246,0.15)',
-          boxShadow: '0 0 60px rgba(59,130,246,0.06), inset 0 1px 0 rgba(59,130,246,0.1)',
-        }}
-      >
-        {/* Conic gradient border animation */}
-        <div className="absolute inset-0 rounded-3xl p-[1px] pointer-events-none">
-          <div className="absolute inset-0 rounded-3xl animate-conic opacity-40"
-            style={{ background: 'conic-gradient(#3B82F6, #8B5CF6, #10B981, #F59E0B, #3B82F6)' }} />
-        </div>
-        <div className="absolute inset-[1px] rounded-[calc(1.5rem-1px)]" style={{ background: 'var(--background)' }} />
-
-        <div className="relative p-6 sm:p-8">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
-            <Wallet className="w-4 h-4" />
-            <span>ارزش کل سبد سرمایه‌گذاری</span>
+      {/* Compact Value Bar */}
+      <div className="flex items-center justify-between gap-2 mb-3 p-2.5 sm:p-3 rounded-xl glass border border-border">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <Wallet className="w-3.5 h-3.5 text-primary" />
           </div>
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black text-brand-shimmer animate-glow-soft">
-              <AnimatedNumber value={totalValue} />
-            </span>
-            <span className="text-muted-foreground text-sm font-semibold">تومان</span>
-          </div>
-          <div className="flex items-center gap-4 sm:gap-6 mt-4 text-xs sm:text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              {assets.length} دارایی
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              {Object.keys(byType).length} دسته
-            </span>
-            {investorType && (
-              <span className="flex items-center gap-1.5">
-                <Brain className="w-3.5 h-3.5 text-primary" />
-                مشاوره فعال
-              </span>
-            )}
+          <div className="min-w-0">
+            <div className="text-[9px] text-muted-foreground">ارزش سبد</div>
+            <div className="text-base sm:text-lg font-black text-foreground truncate">
+              <AnimatedNumber value={totalValue} /> <span className="text-[9px] font-normal text-muted-foreground">تومان</span>
+            </div>
           </div>
         </div>
-      </motion.div>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] text-muted-foreground shrink-0">
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-primary" />
+            {assets.length}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-emerald-400" />
+            {Object.keys(byType).length}
+          </span>
+          {investorType && (
+            <span className="flex items-center gap-1">
+              <Brain className="w-2.5 h-2.5 text-primary" />
+            </span>
+          )}
+        </div>
+      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      {/* Compact Stats Row */}
+      <div className="grid grid-cols-4 gap-1.5 mb-4">
         {[
+          { label: 'دارایی', value: String(assets.length), sub: `${Object.keys(byType).length} دسته` },
           {
-            label: 'تعداد دارایی‌ها',
-            value: String(assets.length),
-            sub: `در ${Object.keys(byType).length} دسته`,
-            icon: Wallet,
-            gradient: 'from-blue-500 to-purple-600',
-          },
-          {
-            label: 'بیشترین سهم',
+            label: 'بیشترین',
             value: Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0]?.[0]
               ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.icon ?? '—')
               : '—',
             sub: Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0]?.[0]
-              ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.label ?? 'دارایی ثبت نشده')
-              : 'دارایی ثبت نشده',
-            icon: PieChart,
-            gradient: 'from-amber-500 to-orange-600',
+              ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.label ?? '—')
+              : 'خالی',
           },
-          {
-            label: 'تنوع سبد',
-            value: `${Object.keys(byType).length}/${Object.keys(TYPE_CONFIG).length - 1}`,
-            sub: 'دسته از ۴ دسته',
-            icon: BarChart3,
-            gradient: 'from-emerald-500 to-teal-600',
-          },
-          {
-            label: 'مشاوره هوشمند',
-            value: investorType ? 'فعال' : 'غیرفعال',
-            sub: investorType ? 'بر اساس شخصیت مالی' : 'تست شخصیت دهید',
-            icon: Brain,
-            gradient: 'from-violet-500 to-purple-600',
-          },
+          { label: 'تنوع', value: `${Object.keys(byType).length}/۴`, sub: '' },
+          { label: 'مشاوره', value: investorType ? '✓' : '—', sub: '' },
         ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 * i, duration: 0.4 }}
-            className="glass border border-border rounded-2xl p-4 sm:p-5 relative overflow-hidden group hover:-translate-y-0.5 transition-all duration-300"
+          <div key={stat.label}
+            className="glass border border-border rounded-lg py-2 px-1.5 text-center"
           >
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r opacity-60" style={{ background: `linear-gradient(90deg, ${stat.gradient.replace('from-', '').split(' ')[0]}, ${stat.gradient.split(' ')[1]?.replace('to-', '') ?? stat.gradient.split(' ')[0]})` }} />
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-muted-foreground text-xs">{stat.label}</span>
-              <stat.icon className="w-4 h-4 text-muted-foreground/40" />
-            </div>
-            <div className={`text-xl sm:text-2xl font-black ${stat.label === 'مشاوره هوشمند' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
+            <div className="text-muted-foreground text-[9px]">{stat.label}</div>
+            <div className={`text-xs font-black ${stat.label === 'مشاوره' && !investorType ? 'text-muted-foreground' : 'text-foreground'}`}>
               {stat.value}
             </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">{stat.sub}</div>
-          </motion.div>
+            <div className="text-[8px] text-muted-foreground">{stat.sub}</div>
+          </div>
         ))}
       </div>
 
-      <div className="mb-8">
+      <div className="mb-4">
         <PortfolioAdvisor
           assets={assets}
           prices={prices}
@@ -678,51 +586,46 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass border border-border rounded-3xl p-5 sm:p-6 hover-glow"
+          className="glass border border-border rounded-2xl p-3 sm:p-4"
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <PieChart className="w-4 h-4 text-primary" />
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <PieChart className="w-3 h-3 text-primary" />
+              </div>
+              <h3 className="font-black text-xs text-foreground">توزیع</h3>
             </div>
-            <h3 className="font-black text-base text-brand-shimmer">توزیع دارایی‌ها</h3>
-          </div>
-          {Object.keys(byType).length === 0 ? (
-            <div className="py-6">
-              <DonutChart segments={[]} />
-              <p className="text-muted-foreground text-sm text-center mt-4">هنوز دارایی ثبت نشده</p>
-            </div>
-          ) : (
-            <DonutChart
-              segments={Object.entries(byType).map(([type, data], i) => ({
-                label: TYPE_CONFIG[type]?.label ?? 'سایر',
-                value: data.value,
-                color: DONUT_COLORS[i] ?? '#8B5CF6',
-              }))}
-            />
-          )}
+            {Object.keys(byType).length === 0 ? (
+              <div className="py-3">
+                <DonutChart segments={[]} />
+                <p className="text-muted-foreground text-xs text-center mt-3">هنوز دارایی ثبت نشده</p>
+              </div>
+            ) : (
+              <DonutChart
+                segments={Object.entries(byType).map(([type, data], i) => ({
+                  label: TYPE_CONFIG[type]?.label ?? 'سایر',
+                  value: data.value,
+                  color: DONUT_COLORS[i] ?? '#8B5CF6',
+                }))}
+              />
+            )}
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="glass border border-border rounded-3xl p-5 sm:p-6 hover-glow"
+          className="glass border border-border rounded-2xl p-3 sm:p-4"
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <h3 className="font-black text-base" style={{
-              background: 'linear-gradient(90deg, #10B981, #3B82F6)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>تفکیک دسته‌بندی</h3>
+            <h3 className="font-black text-xs text-foreground">تفکیک دسته</h3>
           </div>
           {assets.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-6">دارایی‌ای برای نمایش وجود ندارد</p>
@@ -767,16 +670,18 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass border border-border rounded-3xl p-5 sm:p-6"
+          className="glass border border-border rounded-2xl p-3 sm:p-4"
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <PieChart className="w-5 h-5 text-primary" />
-            <h3 className="font-black text-base text-foreground">توزیع دارایی‌ها</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <PieChart className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <h3 className="font-black text-sm text-foreground">توزیع</h3>
           </div>
           {Object.keys(byType).length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-6">هنوز دارایی ثبت نشده</p>
@@ -825,45 +730,35 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="glass border border-border rounded-3xl p-5 sm:p-6"
+            className="glass border border-border rounded-2xl p-3"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                  <Bitcoin className="w-4 h-4 text-amber-400" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <Bitcoin className="w-3 h-3 text-amber-400" />
                 </div>
-                <h3 className="font-black text-base" style={{
-                  background: 'linear-gradient(90deg, #F59E0B, #3B82F6)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}>مدیریت سبد دارایی</h3>
+                <h3 className="font-black text-xs text-foreground">مدیریت سبد</h3>
               </div>
-              <button
-                onClick={openAdd}
-                className="btn-primary px-4 py-2 rounded-xl text-sm gap-1.5 flex items-center"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">افزودن دارایی</span>
+              <button onClick={openAdd} className="btn-primary px-2.5 py-1 rounded-lg text-[10px] gap-1 flex items-center">
+                <Plus className="w-2.5 h-2.5" />
+                <span>افزودن</span>
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3 h-3" />
+            <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5" />
                 {lastUpdate ? (
-                  <span>آخرین به‌روزرسانی: {new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(lastUpdate)}</span>
+                  <span>{new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(lastUpdate)}</span>
                 ) : (
-                  <span>در انتظار دریافت قیمت‌ها...</span>
+                  <span>دریافت قیمت...</span>
                 )}
               </div>
-              <button
-                onClick={fetchPrices}
-                disabled={priceLoading}
+              <button onClick={fetchPrices} disabled={priceLoading}
                 className="flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-3 h-3 ${priceLoading ? 'animate-spin' : ''}`} />
-                {priceLoading ? 'به‌روزرسانی قیمت‌ها...' : 'به‌روزرسانی'}
+                <RefreshCw className={`w-2.5 h-2.5 ${priceLoading ? 'animate-spin' : ''}`} />
+                {priceLoading ? '...' : 'به‌روزرسانی'}
               </button>
             </div>
           </motion.div>
@@ -872,17 +767,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass border border-border rounded-2xl p-4"
+            className="glass border border-border rounded-xl p-2.5 sm:p-3"
           >
-            <div className="flex items-start gap-3">
-              <div className="text-xl mt-0.5">💡</div>
-              <div>
-                <p className="text-sm text-foreground font-semibold mb-0.5">قیمت‌ها هر ۳۰ ثانیه به‌روز می‌شوند</p>
-                <p className="text-xs text-muted-foreground">
-                  قیمت‌های طلا و ارز به صورت لحظه‌ای از بازار جهانی دریافت می‌شوند.
-                  قیمت سهام بورس ایران به صورت شبیه‌سازی شده است.
-                </p>
-              </div>
+            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-muted-foreground">
+              <span>💡</span>
+              <span>هر ۳۰ ثانیه از tgju.org و tsetmc.com به‌روز می‌شود</span>
             </div>
           </motion.div>
         </div>
@@ -893,19 +782,19 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-black text-lg text-brand-shimmer">دارایی‌های من</h3>
-          <span className="text-sm text-muted-foreground">{assets.length} مورد</span>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-black text-sm text-foreground">دارایی‌های من</h3>
+          <span className="text-xs text-muted-foreground">{assets.length} مورد</span>
         </div>
 
         {assets.length === 0 ? (
-          <div className="glass border border-border rounded-3xl p-12 text-center">
-            <div className="text-6xl mb-4">📦</div>
-            <p className="text-muted-foreground text-lg font-semibold mb-2">سبد دارایی شما خالی است</p>
-            <p className="text-muted-foreground text-sm mb-6">اولین دارایی خود را اضافه کنید</p>
-            <button onClick={openAdd} className="btn-primary px-6 py-3 rounded-xl text-sm font-bold gap-2 inline-flex items-center">
-              <Plus className="w-4 h-4" />
-              افزودن دارایی
+          <div className="glass border border-border rounded-2xl p-8 text-center">
+            <div className="text-4xl mb-3">📦</div>
+            <p className="text-muted-foreground text-sm font-semibold mb-1">سبد شما خالی است</p>
+            <p className="text-muted-foreground text-[10px] mb-4">اولین دارایی را اضافه کنید</p>
+            <button onClick={openAdd} className="btn-primary px-5 py-2.5 rounded-xl text-xs font-bold gap-1.5 inline-flex items-center">
+              <Plus className="w-3.5 h-3.5" />
+              افزودن
             </button>
           </div>
         ) : (
@@ -921,101 +810,61 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                   <motion.div
                     key={a.id}
                     layout
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    transition={{ delay: i * 0.04, duration: 0.35, ease: 'easeOut' }}
-                    className="relative rounded-2xl p-[1px] group transition-all duration-300"
-                    style={{ perspective: '600px' }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: i * 0.03, duration: 0.25 }}
+                    className="group relative rounded-xl p-2.5 transition-all duration-300 cursor-pointer border hover:shadow-[0_0_24px_-4px_var(--glow-color)] hover:-translate-y-1 active:scale-[0.97]"
+                    style={{
+                      background: `linear-gradient(135deg, ${cfg.color}08, ${cfg.color}02)`,
+                      borderColor: 'rgba(255,255,255,0.06)',
+                      '--glow-color': `${cfg.color}60`,
+                    } as React.CSSProperties}
+                    onTouchStart={() => {}}
                   >
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      style={{ background: `conic-gradient(from var(--angle, 0deg), ${cfg.color}00, ${cfg.color}60, ${cfg.color}00)`, animation: 'conic-spin 3s linear infinite' }} />
-                    <div
-                      className="relative rounded-[calc(1rem-1px)] p-4 sm:p-5 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-2xl"
-                      style={{
-                        background: `linear-gradient(135deg, ${cfg.color}08, ${cfg.color}02)`,
-                        border: '1px solid rgba(255,255,255,0.06)',
-                      }}
-                      onMouseMove={e => {
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        const x = (e.clientX - rect.left) / rect.width - 0.5
-                        const y = (e.clientY - rect.top) / rect.height - 0.5
-                        e.currentTarget.style.transform = `rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.transform = 'rotateY(0deg) rotateX(0deg)'
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-                      }}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-11 h-11 rounded-xl flex items-center justify-center text-lg shadow-lg"
-                            style={{
-                              background: `linear-gradient(135deg, ${cfg.color}25, ${cfg.color}10)`,
-                              border: `1px solid ${cfg.color}35`,
-                              boxShadow: `0 0 20px ${cfg.color}15`,
-                            }}
-                          >
-                            {cfg.icon}
-                          </div>
-                          <div>
-                            <div className="font-bold text-sm text-foreground leading-tight">{a.label}</div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1" dir="ltr" style={{ textAlign: 'start' }}>
-                              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: cfg.color }} />
-                              {a.symbol}
-                            </div>
-                          </div>
+                    {/* Left accent bar - slides in on hover */}
+                    <div className="absolute right-0 top-2 bottom-2 w-0.5 rounded-full transition-all duration-300 group-hover:top-0 group-hover:bottom-0"
+                      style={{ background: cfg.color }} />
+
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 transition-transform duration-300 group-hover:scale-110"
+                          style={{ background: `${cfg.color}18`, border: `1px solid ${cfg.color}30` }}
+                        >
+                          {cfg.icon}
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
-                          <button
-                            onClick={() => openEdit(a)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(a.id)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-foreground truncate">{a.label}</div>
+                          <div className="text-[9px] text-muted-foreground">{a.symbol}</div>
                         </div>
                       </div>
-
-                      <div className="mb-3">
-                        <div className="text-xl sm:text-2xl font-black text-foreground" dir="ltr" style={{ textAlign: 'start' }}>
-                          {formatCurrency(value)}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">تومان</div>
+                      <div className="flex gap-0.5 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => openEdit(a)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-accent/50 transition-all">
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDelete(a.id)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 transition-all">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
+                    </div>
 
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">تعداد</span>
-                          <span className="text-foreground font-semibold font-mono" dir="ltr">
-                            {formatQuantity(a.quantity, a.symbol)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">قیمت واحد</span>
-                          <span className="text-foreground font-semibold font-mono" dir="ltr">
-                            {price > 0 ? price.toLocaleString('fa-IR') : '—'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs pt-1.5 border-t border-border/40">
-                          <span className="text-muted-foreground">ارزش روز</span>
-                          <span className={`font-bold font-mono ${cost > 0 && value !== cost ? (value > cost ? 'text-emerald-400' : 'text-red-400') : 'text-foreground'}`}>
-                            {formatCurrency(value)}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                      <span className="text-base sm:text-lg font-black text-foreground" dir="ltr">
+                        {formatCurrency(value)}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">تومان</span>
+                    </div>
 
+                    <div className="mt-1.5 flex items-center justify-between text-[9px] text-muted-foreground border-t border-border/20 pt-1.5">
+                      <span>{formatQuantity(a.quantity, a.symbol)} واحد</span>
+                      <span>{price > 0 ? `${price.toLocaleString('fa-IR')} تومان` : '—'}</span>
                       {a.purchaseDate && (
-                        <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          خرید: {new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(a.purchaseDate))}
-                        </div>
+                        <span className="hidden sm:flex items-center gap-1">
+                          <Clock className="w-2 h-2" />
+                          {new Intl.DateTimeFormat('fa-IR', { month: 'short', day: 'numeric' }).format(new Date(a.purchaseDate))}
+                        </span>
                       )}
                     </div>
                   </motion.div>

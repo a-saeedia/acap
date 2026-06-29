@@ -84,7 +84,7 @@ export function DashboardClient() {
   }
   const itemVariants = {
     hidden: { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+    visible: { opacity: 1, y: 0 },
   }
 
   return (
@@ -121,20 +121,20 @@ export function DashboardClient() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           {/* Welcome Header */}
-          <motion.div variants={itemVariants} className="flex items-start justify-between gap-4 mb-6">
+          <motion.div variants={itemVariants} className="flex items-center justify-between gap-3 mb-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-black text-foreground mb-1">
+              <h1 className="text-lg sm:text-2xl font-black text-foreground truncate">
                 خوش آمدی، {user.name.split(' ')[0]} 👋
               </h1>
-              <p className="text-muted-foreground text-sm">{user.email}</p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-muted-foreground text-xs truncate">{user.email}</p>
                 {isPlus && (
-                  <span className="inline-flex items-center gap-1 text-[11px] bg-amber-500/15 text-amber-400 font-bold px-2.5 py-1 rounded-full border border-amber-500/20">
-                    <Crown className="w-3 h-3" />
-                    A|CAP+
+                  <span className="inline-flex items-center gap-0.5 text-[10px] bg-amber-500/15 text-amber-400 font-bold px-1.5 py-0.5 rounded-full border border-amber-500/20">
+                    <Crown className="w-2.5 h-2.5" />
+                    +
                   </span>
                 )}
               </div>
@@ -150,83 +150,65 @@ export function DashboardClient() {
           {/* Phone Number Banner */}
           {!phone && !dismissBanner && (
             <motion.div variants={itemVariants}
-              className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6"
+              className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mb-4"
             >
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 flex-shrink-0 mt-0.5">⚠️</span>
-                <div className="flex-1">
-                  <p className="text-amber-400 font-semibold mb-2">شماره موبایل شما ثبت نشده است</p>
-                  <p className="text-amber-300/70 text-sm mb-3">برای استفاده از تمامی امکانات، لطفاً شماره موبایل خود را وارد کنید</p>
-                  <div className="flex gap-2">
-                    <input value={phoneInput} onChange={e => setPhoneInput(e.target.value)} placeholder="شماره موبایل (مثال: ۰۹۱۲۳۴۵۶۷۸۹)" type="tel" className="input-field flex-1" />
-                    <button onClick={handleSavePhone} className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors">ثبت</button>
+              <div className="flex items-start gap-2">
+                <span className="text-amber-400 shrink-0 mt-0.5 text-sm">⚠️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-amber-400 font-semibold text-xs mb-1.5">ثبت شماره موبایل</p>
+                  <div className="flex gap-1.5">
+                    <input value={phoneInput} onChange={e => setPhoneInput(e.target.value)} placeholder="شماره موبایل" type="tel" className="input-field flex-1 text-xs py-1.5 px-2.5" />
+                    <button onClick={handleSavePhone} className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0">ثبت</button>
                   </div>
-                  {phoneMsg && <p className={`text-sm mt-2 ${phoneMsg.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>{phoneMsg}</p>}
+                  {phoneMsg && <p className={`text-xs mt-1 ${phoneMsg.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>{phoneMsg}</p>}
                 </div>
-                <button onClick={() => setDismissBanner(true)} className="text-amber-400/50 hover:text-amber-400">
-                  <X className="w-4 h-4" />
+                <button onClick={() => setDismissBanner(true)} className="text-amber-400/50 hover:text-amber-400 shrink-0">
+                  <X className="w-3 h-3" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* Stats Grid + Content */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {/* Profile Stats */}
+          <motion.div variants={itemVariants} className="flex items-center gap-2 mb-4 overflow-x-auto pb-0.5">
             {[
-              { label: 'تعداد تست', value: quizResults.length, icon: Trophy, color: '#2979FF' },
-              { label: 'شخصیت مالی', value: typeInfo?.emoji ?? '—', icon: User, color: typeInfo?.color ?? '#888' },
-              { label: 'آخرین امتیاز', value: latest ? `${latest.score}/۱۰۰` : '—', icon: Target, color: '#10B981' },
-              { label: 'موبایل ثبت‌شده', value: phone ? '✓' : '✗', icon: Phone, color: phone ? '#10B981' : '#EF4444' },
+              { label: 'تست‌ها', value: quizResults.length, color: '#2979FF' },
+              { label: 'شخصیت', value: typeInfo?.emoji ?? '—', color: typeInfo?.color ?? '#888' },
+              { label: 'امتیاز', value: latest ? `${latest.score}` : '—', color: '#10B981' },
+              { label: 'موبایل', value: phone ? '✓' : '✗', color: phone ? '#10B981' : '#EF4444' },
             ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.06 }}
-                className="glass border border-border rounded-2xl p-4 text-center relative overflow-hidden"
+              <div key={stat.label}
+                className="glass border border-border rounded-xl px-3 py-2 text-center shrink-0 min-w-[64px]"
               >
-                <div className="relative z-10">
-                  <div className="text-2xl font-black mb-1" style={{ color: stat.color }}>{stat.value}</div>
-                  <div className="text-muted-foreground text-xs">{stat.label}</div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, transparent, ${stat.color}40, transparent)` }} />
-              </motion.div>
+                <div className="text-base font-black" style={{ color: stat.color }}>{stat.value}</div>
+                <div className="text-[9px] text-muted-foreground">{stat.label}</div>
+              </div>
             ))}
           </motion.div>
 
           {/* Two Column Content */}
-          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-5">
+          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="lg:col-span-2 space-y-3">
               {typeInfo && latest && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                  className="glass border rounded-3xl p-6 sm:p-8"
-                  style={{ borderColor: `${typeInfo.color}30` }}
+                  className="glass rounded-2xl p-4 flex items-center gap-3"
+                  style={{ border: `1px solid ${typeInfo.color}30` }}
                 >
-                  <div className="flex items-center gap-4 mb-5">
-                    <div className="text-5xl">{typeInfo.emoji}</div>
-                    <div>
-                      <div className="text-muted-foreground text-sm mb-0.5">شخصیت مالی شما</div>
-                      <h2 className="font-black text-2xl" style={{ color: typeInfo.color }}>{typeInfo.name}</h2>
-                      <div className="text-muted-foreground text-xs mt-1">
-                        آخرین تست: {formatDate(latest.createdAt)}
-                      </div>
-                    </div>
+                  <div className="text-3xl">{typeInfo.emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-muted-foreground">شخصیت مالی</div>
+                    <div className="font-black text-base" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
+                    <div className="text-[10px] text-muted-foreground">ریسک‌پذیری {latest.score}/۱۰۰</div>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">امتیاز ریسک‌پذیری</span>
-                      <span className="font-black text-foreground">{latest.score} / ۱۰۰</span>
-                    </div>
-                    <div className="h-2.5 bg-accent rounded-full overflow-hidden">
+                  <div className="w-20">
+                    <div className="h-1.5 bg-accent rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${latest.score}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: 0.5 }}
-                        className="h-full rounded-full"
-                        style={{ background: typeInfo.color }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                        className="h-full rounded-full" style={{ background: typeInfo.color }}
                       />
                     </div>
                   </div>
@@ -236,48 +218,32 @@ export function DashboardClient() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="glass border border-border rounded-3xl p-6"
+                className="glass border border-border rounded-2xl p-4"
               >
-                <div className="flex items-center gap-3 mb-5">
-                  <Trophy className="w-5 h-5 text-primary" />
-                  <h3 className="font-black text-lg text-foreground">تاریخچه تست‌ها</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  <h3 className="font-black text-sm text-foreground">تاریخچه تست‌ها</h3>
                 </div>
                 {quizResults.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-3">📊</div>
-                    <p className="text-muted-foreground text-sm">هنوز تستی انجام نداده‌اید</p>
-                    <button
-                      onClick={() => { router.push('/#quiz') }}
-                      className="mt-4 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold"
-                    >
-                      شروع تست شخصیت مالی
-                    </button>
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground text-xs mb-2">هنوز تستی نداده‌اید</p>
+                    <button onClick={() => router.push('/#quiz')} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold">شروع تست</button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {[...quizResults].reverse().map((r, i) => {
+                  <div className="space-y-1.5">
+                    {[...quizResults].reverse().slice(0, 3).map((r, i) => {
                       const t = TYPE_MAP[r.investorType as InvestorKey] ?? TYPE_MAP.balanced
                       return (
-                        <motion.div
-                          key={r.id}
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.06 }}
-                          className="flex items-center justify-between px-4 py-3 rounded-xl bg-accent/30 border border-border"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{t.emoji}</span>
+                        <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/30">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{t.emoji}</span>
                             <div>
-                              <div className="font-bold text-sm text-foreground">{t.name}</div>
-                              <div className="text-muted-foreground text-xs flex items-center gap-1.5">
-                                <Calendar className="w-3 h-3" />
-                                {formatDate(r.createdAt)}
-                              </div>
+                              <div className="font-bold text-xs text-foreground">{t.name}</div>
+                              <div className="text-[9px] text-muted-foreground">{formatDate(r.createdAt)}</div>
                             </div>
                           </div>
-                          <div className="font-black text-lg" style={{ color: t.color }}>{r.score}</div>
-                        </motion.div>
+                          <div className="font-black text-sm" style={{ color: t.color }}>{r.score}</div>
+                        </div>
                       )
                     })}
                   </div>
@@ -285,27 +251,25 @@ export function DashboardClient() {
               </motion.div>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-3">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="glass border border-border rounded-3xl p-6"
+                className="glass border border-border rounded-2xl p-4"
               >
-                <div className="flex items-center gap-3 mb-5">
-                  <User className="w-5 h-5 text-primary" />
-                  <h3 className="font-black text-lg text-foreground">اطلاعات حساب</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <User className="w-4 h-4 text-primary" />
+                  <h3 className="font-black text-sm text-foreground">اطلاعات حساب</h3>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   {[
                     { label: 'نام', value: user.name },
                     { label: 'ایمیل', value: user.email },
                     ...(phone ? [{ label: 'موبایل', value: phone }] : []),
-                    ...(profile?.age ? [{ label: 'سن', value: `${profile.age} سال` }] : []),
                   ].map(item => (
-                    <div key={item.label} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
-                      <span className="text-muted-foreground text-sm">{item.label}</span>
-                      <span className="text-foreground text-sm font-semibold text-left" dir="ltr">{item.value}</span>
+                    <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/30 last:border-0">
+                      <span className="text-muted-foreground text-[10px]">{item.label}</span>
+                      <span className="text-foreground text-xs font-semibold text-left truncate max-w-[60%]" dir="ltr">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -314,41 +278,29 @@ export function DashboardClient() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="glass border border-border rounded-3xl p-6"
+                className="glass border border-border rounded-2xl p-4"
               >
-                <h3 className="font-black text-lg text-foreground mb-4">اقدامات سریع</h3>
-                <div className="space-y-2">
-                  <button onClick={() => router.push('/education')}
-                    className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
-                  >
-                    <GraduationCap className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-                    آکادمی A|CAP
-                  </button>
-                  <button onClick={() => router.push('/acap-plus')}
-                    className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors text-sm font-semibold text-amber-400"
-                  >
-                    <Crown className="w-4 h-4 flex-shrink-0" />
-                    <span>A|CAP+</span>
-                  </button>
-                  <button onClick={() => router.push('/tickets')}
-                    className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-blue-400/30 transition-colors text-sm font-semibold text-blue-400"
-                  >
-                    <HelpCircle className="w-4 h-4 flex-shrink-0" />
-                    تیکت‌های پشتیبانی
-                  </button>
+                <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: 'آکادمی', icon: GraduationCap, action: () => router.push('/education'), color: '' },
+                    { label: 'A|CAP+', icon: Crown, action: () => router.push('/acap-plus'), color: 'text-amber-400' },
+                    { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
+                    { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
+                  ].map(btn => (
+                    <button key={btn.label} onClick={btn.action}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-xs font-semibold ${btn.color || 'text-foreground'}`}
+                    >
+                      <btn.icon className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      {btn.label}
+                    </button>
+                  ))}
                   <a href="https://t.me/acapitalsbot?start=ref_3bCj2pqq" target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-xs font-semibold text-foreground col-span-2"
                   >
-                    <User className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-                    لینک سفیر من
+                    <User className="w-3 h-3 shrink-0 text-muted-foreground" />
+                    لینک سفیر
                   </a>
-                  <button onClick={() => router.push('/#quiz')}
-                    className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground"
-                  >
-                    <Trophy className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-                    تست مجدد شخصیت مالی
-                  </button>
                 </div>
               </motion.div>
             </div>
