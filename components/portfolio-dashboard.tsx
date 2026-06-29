@@ -279,20 +279,39 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   const fetchPrices = useCallback(async () => {
     setPriceLoading(true)
     try {
+      // Fetch general prices (crypto, forex, gold, USDT-IRR rate)
       const res = await fetch('/api/prices')
       const data = await res.json()
       setPrices(data.prices ?? {})
-      if (data.stockPrices) {
+      
+      // Also fetch individual stock prices for user's stock assets
+      const stockAssets = assets.filter(a => a.type === 'stock')
+      if (stockAssets.length > 0) {
+        const stockPricePromises = stockAssets.map(a => 
+          fetch(`/api/iran-stocks/price?symbol=${encodeURIComponent(a.symbol)}`).then(r => r.json())
+        )
+        const stockResults = await Promise.allSettled(stockPricePromises)
+        const sp: Record<string, number> = {}
+        for (const result of stockResults) {
+          if (result.status === 'fulfilled' && result.value.price > 0) {
+            sp[result.value.symbol] = result.value.price
+          }
+        }
+        // Merge with existing stockPrices from bulk API
+        setStockPrices(prev => ({ ...prev, ...sp }))
+      } else if (data.stockPrices) {
+        // Fallback to bulk API stock prices
         const sp: Record<string, number> = {}
         for (const [sym, val] of Object.entries(data.stockPrices) as [string, any][]) {
           sp[sym] = val.price
         }
         setStockPrices(sp)
       }
+      
       setLastUpdate(new Date())
     } catch (e) { console.error('fetchPrices error:', e) }
     setPriceLoading(false)
-  }, [])
+  }, [assets])
 
   const fetchAll = useCallback(async () => {
     try {
