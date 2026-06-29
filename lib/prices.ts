@@ -8,6 +8,24 @@ const COINGECKO_IDS: Record<string, string> = {
   TRX: 'tron', AVAX: 'avalanche-2', LINK: 'chainlink',
 }
 
+export const DEFAULT_STOCKS = [
+  { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', sector: 'فلزات اساسی' },
+  { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو' },
+  { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری' },
+  { symbol: 'کگل', name: 'گل گهر', sector: 'فلزات اساسی' },
+  { symbol: 'فملی', name: 'ملی صنایع مس ایران', sector: 'فلزات اساسی' },
+  { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری' },
+  { symbol: 'وبملت', name: 'بانک ملت', sector: 'بانک' },
+  { symbol: 'وتجارت', name: 'بانک تجارت', sector: 'بانک' },
+  { symbol: 'پارسان', name: 'پتروشیمی پارس', sector: 'پتروشیمی' },
+  { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری' },
+  { symbol: 'شپنا', name: 'پالایش نفت بندرعباس', sector: 'پالایشی' },
+  { symbol: 'شتران', name: 'پالایش نفت تهران', sector: 'پالایشی' },
+  { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو' },
+  { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک' },
+  { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی' },
+]
+
 const STOCK_BASE_PRICES: Record<string, number> = {
   فولاد: 25000, خودرو: 8000, وغدیر: 50000, کگل: 35000, فملی: 45000,
   شستا: 15000, وبملت: 7000, وتجارت: 5000, پارسان: 30000, تاپیکو: 40000,

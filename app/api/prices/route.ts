@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { assetPrice, iranStock } from '@/lib/db/schema'
-import { fetchAllPrices, calcStockPrice } from '@/lib/prices'
+import { fetchAllPrices, calcStockPrice, DEFAULT_STOCKS } from '@/lib/prices'
 import { eq, desc } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
@@ -31,7 +31,6 @@ export async function GET() {
     } catch (e) { console.error(`price store error for ${symbol}:`, e) }
   }
 
-  // If USDT-IRR is missing from live fetch, try DB fallback
   if (!prices['USDT-IRR']) {
     try {
       const last = await db.select().from(assetPrice).where(eq(assetPrice.symbol, 'USDT-IRR')).orderBy(desc(assetPrice.updatedAt)).limit(1)
@@ -52,6 +51,15 @@ export async function GET() {
   try {
     stocks = await db.select().from(iranStock)
   } catch (e) { console.error('fetch stocks error:', e) }
+
+  if (stocks.length === 0) {
+    try {
+      await db.insert(iranStock).values(
+        DEFAULT_STOCKS.map(s => ({ id: randomUUID(), ...s }))
+      ).onConflictDoNothing()
+      stocks = DEFAULT_STOCKS
+    } catch (e) { console.error('seed stocks error:', e) }
+  }
 
   const stockPrices: Record<string, { price: number; change: number }> = {}
   for (const stock of stocks) {

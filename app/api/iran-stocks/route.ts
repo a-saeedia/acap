@@ -1,25 +1,8 @@
 import { db } from '@/lib/db'
 import { iranStock } from '@/lib/db/schema'
+import { DEFAULT_STOCKS } from '@/lib/prices'
 import { ilike, or } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-
-const DEFAULT_STOCKS = [
-  { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', sector: 'فلزات اساسی' },
-  { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو' },
-  { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری' },
-  { symbol: 'کگل', name: 'گل گهر', sector: 'فلزات اساسی' },
-  { symbol: 'فملی', name: 'ملی صنایع مس ایران', sector: 'فلزات اساسی' },
-  { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری' },
-  { symbol: 'وبملت', name: 'بانک ملت', sector: 'بانک' },
-  { symbol: 'وتجارت', name: 'بانک تجارت', sector: 'بانک' },
-  { symbol: 'پارسان', name: 'پتروشیمی پارس', sector: 'پتروشیمی' },
-  { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری' },
-  { symbol: 'شپنا', name: 'پالایش نفت بندرعباس', sector: 'پالایشی' },
-  { symbol: 'شتران', name: 'پالایش نفت تهران', sector: 'پالایشی' },
-  { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو' },
-  { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک' },
-  { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی' },
-]
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
