@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, toggleScanner, getUserQuizResults } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
@@ -32,6 +32,12 @@ export default function AdminPage() {
   const [portfolioAssets, setPortfolioAssets] = useState<any[]>([])
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
   const [portfolioLoading, setPortfolioLoading] = useState(false)
+  const [quizResults, setQuizResults] = useState<any[]>([])
+  const [quizLoading, setQuizLoading] = useState(false)
+  const [scanResult, setScanResult] = useState<{ type: string; current: number; ideal: number; diff: number }[] | null>(null)
+  const [scanInvestorType, setScanInvestorType] = useState<string | null>(null)
+  const [scanLoading, setScanLoading] = useState(false)
+  const [scannerToggling, setScannerToggling] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) router.push('/')
@@ -80,8 +86,18 @@ export default function AdminPage() {
     }
   }
 
+  async function loadQuizResults(userId: string) {
+    setQuizLoading(true)
+    try {
+      const r = await getUserQuizResults(userId)
+      setQuizResults(r)
+    } catch { } finally {
+      setQuizLoading(false)
+    }
+  }
+
   useEffect(() => {
-    if (selectedUser) { loadHistory(selectedUser.id); loadPortfolio(selectedUser.id) }
+    if (selectedUser) { loadHistory(selectedUser.id); loadPortfolio(selectedUser.id); loadQuizResults(selectedUser.id); setScanResult(null); setScanInvestorType(null) }
   }, [selectedUser])
 
   async function handleToggle(userId: string, current: boolean) {
@@ -92,6 +108,22 @@ export default function AdminPage() {
     } : u))
     if (selectedUser?.id === userId) {
       setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, acapPlus: !current } : null } : null)
+    }
+  }
+
+  async function handleToggleScanner(userId: string, current: boolean) {
+    setScannerToggling(true)
+    try {
+      await toggleScanner(userId, !current)
+      setUsers(users.map(u => u.id === userId ? {
+        ...u,
+        subscription: u.subscription ? { ...u.subscription, scannerActive: !current } : null,
+      } : u))
+      if (selectedUser?.id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, scannerActive: !current } : null } : null)
+      }
+    } catch { } finally {
+      setScannerToggling(false)
     }
   }
 
@@ -137,6 +169,54 @@ export default function AdminPage() {
     await closeTicket(ticketId)
     setSelectedTicket(null)
     loadTickets()
+  }
+
+  const TYPE_LABELS: Record<string, string> = {
+    conservative: 'محافظه‌کار',
+    balanced: 'متعادل',
+    growth: 'رشدگرا',
+    aggressive: 'تهاجمی',
+  }
+
+  const IDEAL_ALLOCATIONS: Record<string, Record<string, number>> = {
+    conservative: { gold: 40, currency: 30, stock: 20, crypto: 10, other: 0 },
+    balanced: { gold: 25, currency: 20, stock: 35, crypto: 20, other: 0 },
+    growth: { gold: 10, currency: 10, stock: 40, crypto: 40, other: 0 },
+    aggressive: { gold: 5, currency: 5, stock: 30, crypto: 60, other: 0 },
+  }
+
+  function handleScan() {
+    setScanLoading(true)
+    try {
+      const latest = quizResults[0]
+      if (!latest) { setScanLoading(false); return }
+      const type = latest.investorType as string
+      setScanInvestorType(type)
+      const ideal = IDEAL_ALLOCATIONS[type] ?? IDEAL_ALLOCATIONS.balanced
+      const byType: Record<string, number> = {}
+      let totalVal = 0
+      for (const a of portfolioAssets) {
+        const price = prices[a.symbol]?.price ?? 0
+        const val = price * a.quantity
+        const t = a.type as string
+        byType[t] = (byType[t] ?? 0) + val
+        totalVal += val
+      }
+      const rows = Object.keys(ideal).map(typeKey => {
+        const currentVal = byType[typeKey] ?? 0
+        const currentPct = totalVal > 0 ? (currentVal / totalVal) * 100 : 0
+        const idealPct = ideal[typeKey]
+        return {
+          type: typeKey,
+          current: Math.round(currentPct * 10) / 10,
+          ideal: idealPct,
+          diff: Math.round((currentPct - idealPct) * 10) / 10,
+        }
+      })
+      setScanResult(rows)
+    } catch { } finally {
+      setScanLoading(false)
+    }
   }
 
   const totalValue = portfolioAssets.reduce((sum, a) => sum + (prices[a.symbol]?.price ?? 0) * a.quantity, 0)
@@ -378,6 +458,129 @@ export default function AdminPage() {
                               </tbody>
                             </table>
                           </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Scanner section */}
+                    <div className="bg-gray-800/50 rounded-xl p-4 sm:p-5 border border-gray-700/50 mt-6">
+                      <h3 className="font-semibold text-sm mb-3">اسکنر پرتفوی</h3>
+
+                      <div className="flex items-center justify-between py-2 border-b border-gray-700/50 mb-4">
+                        <span className="text-gray-400 text-sm">وضعیت اسکنر</span>
+                        <button
+                          onClick={() => handleToggleScanner(selectedUser.id, selectedUser.subscription?.scannerActive ?? true)}
+                          disabled={scannerToggling}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+                            selectedUser.subscription?.scannerActive ?? true ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-400'
+                          }`}>
+                          {selectedUser.subscription?.scannerActive ?? true ? 'فعال' : 'غیرفعال'}
+                        </button>
+                      </div>
+
+                      <div className="mb-4">
+                        <h4 className="text-xs text-gray-400 mb-2">نوع سرمایه‌گذاری کاربر</h4>
+                        {quizLoading ? (
+                          <p className="text-gray-500 text-sm">در حال بارگذاری...</p>
+                        ) : quizResults.length === 0 ? (
+                          <p className="text-gray-500 text-sm">کاربر هنوز تست شخصیت مالی را انجام نداده است</p>
+                        ) : (
+                          <div className="bg-gray-800 rounded-lg p-3 space-y-1">
+                            <p className="text-sm font-bold">{TYPE_LABELS[quizResults[0].investorType] || quizResults[0].investorType}</p>
+                            <p className="text-xs text-gray-400">امتیاز: {quizResults[0].score}</p>
+                            <p className="text-xs text-gray-400">تاریخ: {new Date(quizResults[0].createdAt).toLocaleDateString('fa-IR')}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <button onClick={handleScan} disabled={scanLoading || quizResults.length === 0 || portfolioAssets.length === 0}
+                        className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors mb-4">
+                        {scanLoading ? 'در حال اسکن...' : 'اسکن پرتفوی کاربر'}
+                      </button>
+
+                      {scanResult && scanInvestorType && (
+                        <>
+                          <div className="overflow-x-auto mb-3">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-gray-400 border-b border-gray-700">
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">نوع دارایی</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">درصد فعلی</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">درصد ایده‌آل</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">اختلاف</th>
+                                  <th className="text-right py-2 px-2 whitespace-nowrap">وضعیت</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {scanResult.map(row => {
+                                  const typeNames: Record<string, string> = {
+                                    gold: 'طلا', currency: 'ارز', stock: 'سهام', crypto: 'ارز دیجیتال', other: 'سایر',
+                                  }
+                                  return (
+                                    <tr key={row.type} className="border-b border-gray-800">
+                                      <td className="py-2 px-2">{typeNames[row.type] || row.type}</td>
+                                      <td className="py-2 px-2">{row.current}%</td>
+                                      <td className="py-2 px-2">{row.ideal}%</td>
+                                      <td className={`py-2 px-2 ${row.diff > 0 ? 'text-amber-400' : row.diff < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                        {row.diff > 0 ? '+' : ''}{row.diff}%
+                                      </td>
+                                      <td className="py-2 px-2">
+                                        {Math.abs(row.diff) <= 5 ? (
+                                          <span className="text-emerald-400">✓</span>
+                                        ) : (
+                                          <span className="text-red-400">⚠</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="bg-gray-800 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-gray-300 leading-relaxed">
+                              این کاربر از نوع {TYPE_LABELS[scanInvestorType] || scanInvestorType} است.{' '}
+                              {scanResult
+                                .filter(r => Math.abs(r.diff) > 5)
+                                .map(r => {
+                                  const typeNames: Record<string, string> = {
+                                    gold: 'طلا', currency: 'ارز', stock: 'سهام', crypto: 'ارز دیجیتال', other: 'سایر',
+                                  }
+                                  if (r.diff > 0) return `سهم ${typeNames[r.type] || r.type} باید ${Math.round(r.diff)}% کاهش یابد`
+                                  return `سهم ${typeNames[r.type] || r.type} باید ${Math.round(Math.abs(r.diff))}% افزایش یابد`
+                                })
+                                .join('، ')}.
+                            </p>
+                          </div>
+
+                          <button onClick={async () => {
+                            const content = scanResult
+                              .map(r => {
+                                const typeNames: Record<string, string> = {
+                                  gold: 'طلا', currency: 'ارز', stock: 'سهام', crypto: 'ارز دیجیتال', other: 'سایر',
+                                }
+                                const status = Math.abs(r.diff) <= 5 ? '✓' : '⚠'
+                                return `${typeNames[r.type] || r.type}: ${r.current}% (ایده‌آل: ${r.ideal}%) ${status}`
+                              })
+                              .join('\n')
+                            const summary = scanResult
+                              .filter(r => Math.abs(r.diff) > 5)
+                              .map(r => {
+                                const typeNames: Record<string, string> = {
+                                  gold: 'طلا', currency: 'ارز', stock: 'سهام', crypto: 'ارز دیجیتال', other: 'سایر',
+                                }
+                                if (r.diff > 0) return `${typeNames[r.type] || r.type}: ${Math.round(r.diff)}% کاهش`
+                                return `${typeNames[r.type] || r.type}: ${Math.round(Math.abs(r.diff))}% افزایش`
+                              })
+                              .join('، ')
+                            await sendSuggestion(selectedUser.id, 'نتیجه اسکن پرتفوی', `نوع سرمایه‌گذار: ${TYPE_LABELS[scanInvestorType] || scanInvestorType}\n\n${content}\n\nتوصیه‌ها: ${summary}`)
+                            setSugSuccess('نتیجه اسکن به عنوان پیشنهاد ارسال شد')
+                            loadHistory(selectedUser.id)
+                          }}
+                            className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-colors">
+                            ارسال نتیجه اسکن به عنوان پیشنهاد
+                          </button>
                         </>
                       )}
                     </div>

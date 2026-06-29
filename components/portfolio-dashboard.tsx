@@ -6,8 +6,9 @@ import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset } from '@/app/actions/assets'
 import {
   Plus, Trash2, Edit3, X, Search, RefreshCw,
-  TrendingUp, TrendingDown, Wallet, Loader2, Clock, Bitcoin, PieChart, Crown,
+  Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain,
 } from 'lucide-react'
+import { PortfolioAdvisor } from '@/components/portfolio-advisor'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 
@@ -295,33 +296,7 @@ function PerformanceBars({ assets, prices, stockPrices }: {
   )
 }
 
-function SparklineBars({ values, color }: { values: number[]; color: string }) {
-  if (values.length === 0) return null
-  const max = Math.max(...values, 1)
-  return (
-    <svg width="100%" height="24" viewBox="0 0 100 24" className="mt-1.5 opacity-40">
-      {values.map((v, i) => {
-        const h = (v / max) * 20
-        return (
-          <motion.rect
-            key={i}
-            x={i * (100 / values.length)}
-            y={20 - h}
-            width={Math.max(100 / values.length - 1, 2)}
-            height={h}
-            rx={1}
-            fill={color}
-            initial={{ height: 0, y: 20 }}
-            animate={{ height: h, y: 20 - h }}
-            transition={{ duration: 0.5, delay: i * 0.03 }}
-          />
-        )
-      })}
-    </svg>
-  )
-}
-
-export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
+export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: { isPlus?: boolean; investorType?: string | null; quizTaken?: boolean }) {
   const { data: session, isPending } = useSession()
   const [assets, setAssets] = useState<Asset[]>([])
   const [prices, setPrices] = useState<PriceMap>({})
@@ -446,8 +421,6 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
 
   const totalValue = assets.reduce((sum, a) => sum + getCurrentValue(a, prices, stockPrices), 0)
   const totalCost = assets.reduce((sum, a) => sum + getTotalCost(a), 0)
-  const profit = totalValue - totalCost
-  const profitPercent = totalCost > 0 ? (profit / totalCost) * 100 : 0
 
   const byType: Record<string, { count: number; value: number; cost: number }> = {}
   for (const a of assets) {
@@ -631,31 +604,6 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
             <AnimatedNumber value={totalValue} />
           </div>
           <div className="text-[10px] text-muted-foreground mt-0.5">تومان</div>
-          <SparklineBars values={sparklineValues} color="#3B82F6" />
-        </div>
-
-        <div className="glass border border-border rounded-2xl p-4 sm:p-5 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1" style={{ background: profit >= 0 ? '#10B981' : '#EF4444' }} />
-          <div className="text-muted-foreground text-xs mb-1.5 flex items-center gap-1.5">
-            {profit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> : <TrendingDown className="w-3.5 h-3.5 text-red-400" />}
-            سود / زیان
-          </div>
-          <div className="text-xl sm:text-2xl font-black" style={{ color: profit >= 0 ? '#10B981' : '#EF4444' }}>
-            {profit >= 0 ? '+' : ''}<AnimatedNumber value={Math.abs(profit)} />
-          </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">تومان</div>
-          <SparklineBars values={sparklineValues.map(v => Math.abs(v - totalCost / assets.length || 0))} color={profit >= 0 ? '#10B981' : '#EF4444'} />
-        </div>
-
-        <div className="glass border border-border rounded-2xl p-4 sm:p-5">
-          <div className="text-muted-foreground text-xs mb-1.5">درصد سود</div>
-          <div className="text-xl sm:text-2xl font-black" style={{ color: profitPercent >= 0 ? '#10B981' : '#EF4444' }}>
-            {profitPercent >= 0 ? '+' : ''}{profitPercent.toFixed(1)}%
-          </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">
-            {totalCost > 0 ? 'از مجموع خرید' : '—'}
-          </div>
-          <SparklineBars values={[profitPercent, profitPercent * 0.8, profitPercent * 1.2, profitPercent * 0.6, profitPercent * 0.9].map(v => Math.abs(v))} color={profitPercent >= 0 ? '#10B981' : '#EF4444'} />
         </div>
 
         <div className="glass border border-border rounded-2xl p-4 sm:p-5">
@@ -666,9 +614,42 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
           <div className="text-[10px] text-muted-foreground mt-0.5">
             در {Object.keys(byType).length} دسته
           </div>
-          <SparklineBars values={Object.values(byType).map(d => d.count)} color="#3B82F6" />
+        </div>
+
+        <div className="glass border border-border rounded-2xl p-4 sm:p-5">
+          <div className="text-muted-foreground text-xs mb-1.5">بیشترین سهم</div>
+          <div className="text-xl sm:text-2xl font-black text-foreground">
+            {Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0]?.[0]
+              ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.icon ?? '—')
+              : '—'}
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            {Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0]?.[0]
+              ? (TYPE_CONFIG[Object.entries(byType).sort((a, b) => b[1].value - a[1].value)[0][0]]?.label ?? '—')
+              : 'دارایی ثبت نشده'}
+          </div>
+        </div>
+
+        <div className="glass border border-border rounded-2xl p-4 sm:p-5">
+          <div className="text-muted-foreground text-xs mb-1.5">مشاوره هوشمند</div>
+          <div className="text-xl sm:text-2xl font-black text-primary flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" />
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            {investorType ? 'فعال' : 'تست شخصیت'}
+          </div>
         </div>
       </motion.div>
+
+      <div className="mb-8">
+        <PortfolioAdvisor
+          assets={assets}
+          prices={prices}
+          stockPrices={stockPrices}
+          investorType={investorType ?? null}
+          quizTaken={!!investorType}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <motion.div
@@ -704,13 +685,48 @@ export function PortfolioDashboard({ isPlus = false }: { isPlus?: boolean }) {
           className="glass border border-border rounded-3xl p-5 sm:p-6"
         >
           <div className="flex items-center gap-2.5 mb-5">
-            {profit >= 0 ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
-            <h3 className="font-black text-base text-foreground">عملکرد دارایی‌ها</h3>
+            <PieChart className="w-5 h-5 text-primary" />
+            <h3 className="font-black text-base text-foreground">تفکیک دسته‌بندی</h3>
           </div>
           {assets.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-6">دارایی‌ای برای نمایش وجود ندارد</p>
           ) : (
-            <PerformanceBars assets={assets} prices={prices} stockPrices={stockPrices} />
+            <div className="space-y-4">
+              {Object.entries(byType).map(([type, data]) => {
+                const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0
+                const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
+                return (
+                  <motion.div
+                    key={type}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{cfg.icon}</span>
+                        <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
+                      </div>
+                      <div className="text-left">
+                        <span className="text-sm font-bold text-foreground">{pct.toFixed(1)}%</span>
+                        <span className="text-[10px] text-muted-foreground mr-1.5">
+                          {formatCurrency(data.value)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 bg-accent rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+                        className="h-full rounded-full"
+                        style={{ background: cfg.color }}
+                      />
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
           )}
         </motion.div>
       </div>

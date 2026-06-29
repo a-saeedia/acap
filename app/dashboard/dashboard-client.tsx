@@ -412,7 +412,7 @@ export function DashboardClient() {
             transition={{ delay: 0.1 }}
             className="mt-8"
           >
-            <PortfolioDashboard isPlus={isPlus} />
+            <PortfolioDashboard isPlus={isPlus} investorType={latest?.investorType ?? null} quizTaken={quizResults.length > 0} />
           </motion.div>
         )}
       </main>

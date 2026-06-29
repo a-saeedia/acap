@@ -105,6 +105,25 @@ export async function getUserAssets(userId: string) {
   return db.select().from(asset).where(eq(asset.userId, userId)).orderBy(desc(asset.createdAt))
 }
 
+export async function toggleScanner(userId: string, active: boolean) {
+  await requireAdmin()
+  const existing = await db.select().from(subscription).where(eq(subscription.userId, userId))
+  if (existing.length === 0) {
+    await db.insert(subscription).values({
+      id: randomUUID(),
+      userId,
+      scannerActive: active,
+    })
+  } else {
+    await db.update(subscription).set({ scannerActive: active, updatedAt: new Date() }).where(eq(subscription.userId, userId))
+  }
+}
+
+export async function getUserQuizResults(userId: string) {
+  await requireAdmin()
+  return db.select().from(quizResult).where(eq(quizResult.userId, userId)).orderBy(desc(quizResult.createdAt))
+}
+
 export async function getTickets() {
   await requireAdmin()
   return db.select().from(ticket).orderBy(desc(ticket.createdAt))

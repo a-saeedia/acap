@@ -80,6 +80,7 @@ export const subscription = pgTable('subscription', {
   acapPlus: boolean('acapPlus').notNull().default(false),
   acapPlusSince: timestamp('acapPlusSince'),
   acapPlusUntil: timestamp('acapPlusUntil'),
+  scannerActive: boolean('scannerActive').notNull().default(true),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
