@@ -41,7 +41,7 @@ const TICKER_SYMBOLS = [
   { key: 'USDT', label: 'USDT', format: (p: number) => `$${p.toFixed(2)}` },
   { key: 'USD-IRR', label: 'دلار', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
   { key: 'EUR-IRR', label: 'یورو', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
-  { key: 'GOLD18', label: 'طلای ۱۸', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
+  { key: 'GOLD18', label: 'طلای ۱۸', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان /گرم` },
   { key: 'GOLD', label: 'انس', format: (p: number) => `$${p.toLocaleString()}` },
 ]
 
@@ -49,23 +49,14 @@ export function PriceTicker() {
   const [prices, setPrices] = useState<PriceMap>({})
 
   useEffect(() => {
-    async function fetchAll() {
-      const [apiRes, tgjuP] = await Promise.all([
-        fetch('/api/prices').catch(() => null),
-        fetchTgjuPrices(),
-      ])
-      const merged: PriceMap = {}
-      if (apiRes) {
-        const apiData = await apiRes.json().catch(() => ({}))
-        if (apiData?.prices) Object.assign(merged, apiData.prices)
-      }
-      // TGJU client data takes priority (always fresh for Iranian users)
-      Object.assign(merged, tgjuP)
-      if (Object.keys(merged).length > 0) setPrices(merged)
-    }
-    fetchAll()
-    const interval = setInterval(fetchAll, 30000)
-    return () => clearInterval(interval)
+    // Load server prices first (fast), then upgrade with TGJU (fresh)
+    fetch('/api/prices').then(r => r.json()).then(d => {
+      if (d?.prices) setPrices(d.prices)
+    }).catch(() => {})
+    // TGJU client data takes priority — fire and forget
+    fetchTgjuPrices().then(tgjuP => {
+      if (Object.keys(tgjuP).length > 0) setPrices(tgjuP)
+    })
   }, [])
 
   const items = TICKER_SYMBOLS

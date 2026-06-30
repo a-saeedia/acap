@@ -36,7 +36,7 @@ type IranStock = {
 const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; gradient: string }> = {
   crypto: { label: 'رمز ارز', icon: '₿', color: '#F59E0B', gradient: 'from-amber-500/20 to-yellow-600/10' },
   stock: { label: 'بورس ایران', icon: '📈', color: '#2979FF', gradient: 'from-blue-500/20 to-blue-600/10' },
-  gold: { label: 'طلا', icon: '🥇', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
+  gold: { label: 'طلا', icon: '🔶', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
   currency: { label: 'ارز', icon: '💵', color: '#10B981', gradient: 'from-emerald-500/20 to-green-600/10' },
   other: { label: 'سایر', icon: '💰', color: '#8B5CF6', gradient: 'from-purple-500/20 to-violet-600/10' },
 }
@@ -53,7 +53,7 @@ const ASSET_TYPES = [
 
 const QUICK_CRYPTO = ['BTC', 'ETH', 'USDT', 'SOL', 'XRP', 'ADA', 'TRX', 'DOGE', 'BNB']
 const QUICK_CURRENCY = ['USD', 'EUR', 'AED', 'TRY']
-const QUICK_GOLD = [{ symbol: 'GOLD', label: 'طلای ۱۸ عیار' }]
+const QUICK_GOLD = [{ symbol: 'GOLD', label: 'طلای ۱۸ (گرم)' }]
 
 const INITIAL_FORM: AssetForm = {
   type: 'crypto',

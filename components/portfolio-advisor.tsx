@@ -15,7 +15,7 @@ const TYPE_LABELS: Record<string, string> = {
 const TYPE_EMOJI: Record<string, string> = {
   crypto: '\u20BF',
   stock: '\uD83D\uDCC8',
-  gold: '\uD83E\uDD47',
+  gold: '\uD83D\uDD36',
   currency: '\uD83D\uDCB5',
   other: '\uD83D\uDCB0',
 }

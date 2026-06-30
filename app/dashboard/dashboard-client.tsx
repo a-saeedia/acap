@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import {
-  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, GraduationCap, Loader2, BarChart3, LogOut, Home
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
@@ -316,7 +316,6 @@ export function DashboardClient() {
                 <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: 'آکادمی', icon: GraduationCap, action: () => router.push('/education'), color: '' },
                     { label: 'A|CAP+', icon: Crown, action: () => router.push('/acap-plus'), color: 'text-amber-400' },
                     { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
