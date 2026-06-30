@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
-import { BarChart3, Wallet, TrendingUp, LogOut, Menu, X } from 'lucide-react'
+import { BarChart3, Wallet, TrendingUp, Zap, LogOut, Menu, X } from 'lucide-react'
 
 const navItems = [
   { href: '/app', label: 'خلاصه Portfolio', icon: BarChart3 },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
+  { href: '/app/signals', label: 'سیگنال‌ها', icon: Zap },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

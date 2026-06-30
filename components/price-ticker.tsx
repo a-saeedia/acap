@@ -10,11 +10,7 @@ function parseTgjuPrice(val: string): number {
 
 async function fetchTgjuPrices(): Promise<PriceMap> {
   const rev = Math.random().toString(36).substring(2, 12)
-  const urls = [
-    `https://call2.tgju.org/ajax.json?rev=${rev}`,
-    `https://call3.tgju.org/ajax.json?rev=${rev}`,
-    `https://call4.tgju.org/ajax.json?rev=${rev}`,
-  ]
+  const urls = [`https://call2.tgju.org/ajax.json?rev=${rev}`]
   for (const url of urls) {
     try {
       const res = await fetch(url)

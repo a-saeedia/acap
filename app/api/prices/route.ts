@@ -40,7 +40,8 @@ export async function GET() {
         insCodeMap[s.symbol] = code
       }
     })
-    await Promise.allSettled(searches)
+    // Timebox code search at 3s — remaining stocks get codes on next visit
+    await Promise.race([Promise.allSettled(searches), new Promise(r => setTimeout(r, 3000))])
   }
 
   const { prices, irrRate, stockPrices } = await fetchAllPrices(insCodeMap)

@@ -3,8 +3,8 @@ const TGJU_AJAX = 'https://call2.tgju.org/ajax.json'
 const TGJU_HTML = 'https://www.tgju.org/'
 const TSETMC_API = 'https://cdn.tsetmc.com/api'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-const FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA } }
-const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
+const FETCH_OPTS = { signal: AbortSignal.timeout(4000), headers: { 'User-Agent': UA } }
+const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(4000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
 // Last-resort fallback rate (1709000 Rial ≈ 170900 Toman per USD, from TGJU live data)
 const FALLBACK_USD_RATE = 1709000
 
@@ -127,13 +127,9 @@ export async function fetchTgjuData(): Promise<{
     return htmlResult
   }
   
-  // Fallback: AJAX endpoints (may be blocked/stale from foreign IPs)
+  // Fallback: single AJAX endpoint (try once)
   const rev = Math.random().toString(36).substring(2, 12)
-  const ajaxUrls = [
-    `${TGJU_AJAX}?rev=${rev}`,
-    `https://call3.tgju.org/ajax.json?rev=${rev}`,
-    `https://call4.tgju.org/ajax.json?rev=${rev}`,
-  ]
+  const ajaxUrls = [`${TGJU_AJAX}?rev=${rev}`]
   
   for (const url of ajaxUrls) {
     try {
@@ -299,9 +295,19 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
   irrRate: number
   stockPrices: Record<string, { price: number; change: number; closePrice: number }>
 }> {
-  const [crypto, tgju] = await Promise.all([
+  // Run crypto, TGJU, AND stock price fetches in parallel — total time ~4s instead of 8s
+  const stockFetch = insCodeMap
+    ? Promise.allSettled(
+        Object.entries(insCodeMap).map(([symbol, code]) =>
+          fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))
+        )
+      )
+    : Promise.resolve([] as PromiseSettledResult<{ symbol: string; info: any }>[])
+
+  const [crypto, tgju, stockResults] = await Promise.all([
     fetchCryptoPrices(['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX']),
     fetchTgjuData(),
+    stockFetch,
   ])
 
   let irrRate = tgju.irrRate
@@ -331,7 +337,6 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
         irrRate = Number(usdRow.price)
         prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
         prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-        // Recompute crypto-IRR with fallback rate
         for (const sym of Object.keys(crypto)) {
           const usdPrice = crypto[sym]?.price
           if (usdPrice) {
@@ -356,25 +361,16 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
   }
 
   const stockPrices: Record<string, { price: number; change: number; closePrice: number }> = {}
-
-  if (insCodeMap) {
-    const entries = Object.entries(insCodeMap)
-    const results = await Promise.allSettled(
-      entries.map(([symbol, code]) =>
-        fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))
-      )
-    )
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value.info) {
-        const { symbol, info } = r.value
-        const change = info.yesterday > 0
-          ? Math.round(((info.lastPrice - info.yesterday) / info.yesterday) * 10000) / 100
-          : 0
-        stockPrices[symbol] = {
-          price: info.lastPrice,
-          change,
-          closePrice: info.closePrice,
-        }
+  for (const r of stockResults) {
+    if (r.status === 'fulfilled' && r.value.info) {
+      const { symbol, info } = r.value
+      const change = info.yesterday > 0
+        ? Math.round(((info.lastPrice - info.yesterday) / info.yesterday) * 10000) / 100
+        : 0
+      stockPrices[symbol] = {
+        price: info.lastPrice,
+        change,
+        closePrice: info.closePrice,
       }
     }
   }
