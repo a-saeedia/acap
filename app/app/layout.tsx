@@ -10,8 +10,8 @@ const navItems = [
   { href: '/app', label: 'خلاصه Portfolio', icon: BarChart3 },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
-  { href: '/app/signals', label: 'سیگنال‌های A|CAP', icon: Zap },
-  { href: '/app/personal', label: 'شخصی', icon: Crown },
+  { href: '/app/signals', label: 'درآمد A|CAP', icon: Zap },
+  { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
