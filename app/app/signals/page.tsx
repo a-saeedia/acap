@@ -52,7 +52,7 @@ function DetailModal({ item, type, onClose }: { item: any; type: 'revenue' | 'pe
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 {type === 'revenue' ? (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-bold">A|CAP Revenue</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-bold">سیگنال A|CAP</span>
                 ) : (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-bold">شخصی</span>
                 )}
@@ -247,7 +247,7 @@ export default function SignalsPage() {
         </div>
         <div>
           <h1 className="text-lg font-black text-foreground">
-            {tab === 'revenue' ? 'A|CAP Revenue' : 'سیگنال‌های شخصی'}
+            {tab === 'revenue' ? 'سیگنال‌های A|CAP' : 'سیگنال‌های شخصی'}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {tab === 'revenue' ? 'تقویم عملکرد سیگنال‌های A|CAP' : 'پیشنهادات اختصاصی سرمایه‌گذاری برای شما'}
@@ -264,7 +264,7 @@ export default function SignalsPage() {
               : 'bg-white/[0.04] text-muted-foreground border border-transparent hover:bg-white/[0.08]'
           }`}
         >
-          <Zap className="w-3 h-3 inline-block ml-1" />A|CAP Revenue
+          <Zap className="w-3 h-3 inline-block ml-1" />سیگنال‌های A|CAP
         </button>
         <button onClick={() => setTab('personal')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
