@@ -596,7 +596,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             <button onClick={() => fetchPrices(true)} disabled={priceLoading}
               className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
             </button>
             <button onClick={openAdd}
               className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"

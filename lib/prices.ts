@@ -4,6 +4,9 @@ const TGJU_HTML = 'https://www.tgju.org/'
 const TSETMC_API = 'https://cdn.tsetmc.com/api'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA } }
+const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(25000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
+// Last-resort fallback rate (1709000 Rial ≈ 170900 Toman per USD, from TGJU live data)
+const FALLBACK_USD_RATE = 1709000
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -38,7 +41,7 @@ function parseTgjuPrice(val: string): number {
 
 async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; timestamp: string }> {
   try {
-    const res = await fetch(TGJU_HTML, { cache: 'no-store', next: { revalidate: 0 }, ...FETCH_OPTS })
+    const res = await fetch(TGJU_HTML, { cache: 'no-store', next: { revalidate: 0 }, ...TGJU_FETCH_OPTS })
     if (!res.ok) return { prices: {}, irrRate: 0, timestamp: '' }
     const html = await res.text()
     
@@ -137,8 +140,7 @@ export async function fetchTgjuData(): Promise<{
       const res = await fetch(url, { 
         cache: 'no-store',
         next: { revalidate: 0 },
-        ...FETCH_OPTS,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+        ...TGJU_FETCH_OPTS,
       })
       if (!res.ok) continue
       const data = await res.json()
@@ -405,6 +407,19 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
         }
       }
     } catch {}
+  }
+
+  // Hardcoded fallback when everything fails
+  if (irrRate === 0) {
+    irrRate = FALLBACK_USD_RATE
+    prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+    prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+    for (const sym of Object.keys(crypto)) {
+      const usdPrice = crypto[sym]?.price
+      if (usdPrice) {
+        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+      }
+    }
   }
 
   const stockPrices: Record<string, { price: number; change: number; closePrice: number }> = {}
