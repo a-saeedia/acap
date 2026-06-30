@@ -39,11 +39,16 @@ export async function GET(req: Request) {
       "investorType" text,
       "expectedProfit" real,
       "priceAtPublish" real NOT NULL,
+      "expiresAt" timestamp,
       "publishedAt" timestamp DEFAULT now() NOT NULL,
       "createdAt" timestamp DEFAULT now() NOT NULL
     )`)
     try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "investorType" text`) } catch {}
     try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "expectedProfit" real`) } catch {}
+    try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "expiresAt" timestamp`) } catch {}
+    try { await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "expiresAt" timestamp`) } catch {}
+    try { await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "actualProfit" real`) } catch {}
+    try { await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "actual_profit" real`) } catch {}
 
     // Get latest prices from DB for currentPrice display only
     const priceRows = await pool.query(
@@ -93,9 +98,10 @@ export async function GET(req: Request) {
         // priceAtPublish = currentPrice discounted so that profit = expectedProfit
         const priceAtPublish = Math.round(currentPrice / (1 + s.profit / 100) * 100) / 100
         const publishedAt = new Date(Date.now() - s.daysAgo * 24 * 60 * 60 * 1000)
+        const expiresAt = new Date(publishedAt.getTime() + Math.max(s.daysAgo, 30) * 24 * 60 * 60 * 1000)
         await pool.query(
-          'INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "expectedProfit", "priceAtPublish", "publishedAt", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())',
-          [randomUUID(), s.type, s.symbol, info.title, info.desc, 'buy', info.personality, s.profit, priceAtPublish, publishedAt]
+          'INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "expectedProfit", "priceAtPublish", "expiresAt", "publishedAt", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())',
+          [randomUUID(), s.type, s.symbol, info.title, info.desc, 'buy', info.personality, s.profit, priceAtPublish, expiresAt, publishedAt]
         )
       }
     }
@@ -114,22 +120,21 @@ export async function GET(req: Request) {
       signals = rows
     }
 
-    // Enrich: use deterministic expectedProfit, currentPrice is for display only
+    // Enrich: use deterministic expectedProfit, compute actualProfit from live prices
     const enriched = signals.map((s: any) => {
       const currentPrice = prices[s.symbol] ?? s.priceAtPublish
-      const profit = s.expectedProfit ?? 0
+      const expected = s.expectedProfit ?? 0
+      const actual = currentPrice > 0 && s.priceAtPublish > 0
+        ? Math.round(((currentPrice - s.priceAtPublish) / s.priceAtPublish) * 10000) / 100
+        : expected
       const daysSince = Math.floor((Date.now() - new Date(s.publishedAt).getTime()) / (1000 * 60 * 60 * 24))
-      // Compute what 1M Toman would be worth today
-      const investAmount = 1000000
-      const currentValue = s.priceAtPublish > 0
-        ? (investAmount / s.priceAtPublish) * currentPrice
-        : investAmount
       return {
         ...s,
         currentPrice,
-        profitPercent: Math.round(profit * 100) / 100,
-        profitDirection: profit >= 0 ? 'up' : 'down',
-        hypotheticalProfit: Math.round(currentValue - investAmount),
+        expectedProfit: Math.round(expected * 100) / 100,
+        actualProfit: actual,
+        profitPercent: actual,
+        profitDirection: actual >= 0 ? 'up' : 'down',
         daysSince,
       }
     })

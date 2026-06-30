@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [sugSuccess, setSugSuccess] = useState('')
   const [sugProfit, setSugProfit] = useState('')
   const [sugProfitMsg, setSugProfitMsg] = useState('')
+  const [sugExpiresAt, setSugExpiresAt] = useState('')
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -157,11 +158,12 @@ export default function AdminPage() {
     setSugSuccess('')
     try {
       const profit = sugProfit ? parseFloat(sugProfit) : undefined
-      await sendSuggestion(userId, sugTitle, sugContent, profit, sugProfitMsg || undefined)
+      await sendSuggestion(userId, sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined)
       setSugTitle('')
       setSugContent('')
       setSugProfit('')
       setSugProfitMsg('')
+      setSugExpiresAt('')
       setSugSuccess('پیشنهاد با موفقیت ارسال شد')
       loadHistory(userId)
     } catch (e) {
@@ -361,6 +363,9 @@ export default function AdminPage() {
                           <input value={sugProfitMsg} onChange={e => setSugProfitMsg(e.target.value)}
                             placeholder="پیام سود (مثلاً: ۱۲٪ سود برای سرمایه‌گذاران)" type="text"
                             className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-emerald-500/50 focus:outline-none transition-colors" />
+                          <input value={sugExpiresAt} onChange={e => setSugExpiresAt(e.target.value)}
+                            placeholder="تاریخ انقضا (مثلاً: ۱۴۰۴/۱۲/۳۰ یا ۲۰۲۶-۰۳-۲۱)" type="text"
+                            className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-emerald-500/50 focus:outline-none transition-colors" />
                         </div>
                         {sugError && <p className="text-red-400 text-xs">{sugError}</p>}
                         {sugSuccess && <p className="text-emerald-400 text-xs">{sugSuccess}</p>}
@@ -401,6 +406,12 @@ export default function AdminPage() {
                                           <span className="text-gray-400 text-xs">{h.profitMessage}</span>
                                         )}
                                       </div>
+                                    </div>
+                                  )}
+                                  {h.expiresAt && (
+                                    <div className="mt-1.5 text-[10px] text-gray-500">
+                                      انقضا: {new Date(h.expiresAt).toLocaleDateString('fa-IR')}
+                                      {new Date(h.expiresAt) < new Date() && <span className="text-red-400 mr-1">(منقضی شده)</span>}
                                     </div>
                                   )}
                                 </div>
