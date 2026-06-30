@@ -322,27 +322,30 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
       
       setPrices(mergedPrices)
       
-      // Also fetch individual stock prices for user's stock assets
+      // Stock prices: try individual API, fall back to bulk API
       const stockAssets = assets.filter(a => a.type === 'stock')
+      let sp: Record<string, number> = {}
       if (stockAssets.length > 0) {
         const stockPricePromises = stockAssets.map(a => 
           fetch(`/api/iran-stocks/price?symbol=${encodeURIComponent(a.symbol)}`).then(r => r.json())
         )
         const stockResults = await Promise.allSettled(stockPricePromises)
-        const sp: Record<string, number> = {}
         for (const result of stockResults) {
           if (result.status === 'fulfilled' && result.value.price > 0) {
             sp[result.value.symbol] = result.value.price
           }
         }
-        setStockPrices(prev => ({ ...prev, ...sp }))
-      } else if (data.stockPrices) {
-        const sp: Record<string, number> = {}
-        for (const [sym, val] of Object.entries(data.stockPrices) as [string, any][]) {
-          sp[sym] = val.price
-        }
-        setStockPrices(sp)
       }
+      // Fall back to bulk API stock prices for symbols still missing
+      if (data.stockPrices) {
+        for (const [sym, val] of Object.entries(data.stockPrices)) {
+          const v = val as { price: number }
+          if (sp[sym] === undefined && v.price > 0) {
+            sp[sym] = v.price
+          }
+        }
+      }
+      if (Object.keys(sp).length > 0) setStockPrices(sp)
       
       setLastUpdate(new Date())
     } catch (e) { console.error('fetchPrices error:', e) }
@@ -366,12 +369,6 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
       setLoading(false)
     })()
   }, [isPending, fetchAll, fetchPrices])
-
-  useEffect(() => {
-    if (loading) return
-    const interval = setInterval(() => fetchPrices(false), 30000)
-    return () => clearInterval(interval)
-  }, [loading, fetchPrices])
 
   useEffect(() => {
     if (!showModal || form.type !== 'stock') {
@@ -603,7 +600,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             <button onClick={() => fetchPrices(true)} disabled={priceLoading}
               className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
+              <RefreshCw className="w-4 h-4 text-muted-foreground" />
             </button>
             <button onClick={openAdd}
               className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"
