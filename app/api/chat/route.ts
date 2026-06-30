@@ -1,4 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
 
 const googleAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
 
@@ -39,6 +41,11 @@ setInterval(() => {
 }, 60000)
 
 export async function POST(req: Request) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   if (!checkRateLimit(ip)) {
     return Response.json({ error: 'Too many requests. Please wait a minute.' }, { status: 429 })

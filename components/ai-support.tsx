@@ -30,6 +30,7 @@ export function AISupport() {
         body: JSON.stringify({message: msg})
       })
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Request failed')
       setMessages(prev => [...prev, {role: 'bot', content: data.response}])
     } catch {
       setMessages(prev => [...prev, {role: 'bot', content: 'متاسفانه در حال حاضر امکان پاسخگویی نیست.'}])

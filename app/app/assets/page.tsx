@@ -16,17 +16,17 @@ export default function AssetsPage() {
 
   useEffect(() => {
     if (isPending) return
-    if (!session) { router.push('/'); return }
+    if (!session) { setLoading(false); router.push('/'); return }
     import('@/app/actions/profile').then(m =>
       m.getDashboardData().then(data => {
-        if (!data) { router.push('/'); return }
+        if (!data) { setLoading(false); router.push('/'); return }
         setIsPlus(data.subscription?.acapPlus ?? false)
         const latest = data.quizResults?.[data.quizResults.length - 1]
         setInvestorType(latest?.investorType ?? null)
         setQuizTaken(data.quizResults.length > 0)
         setLoading(false)
       })
-    ).catch(() => { router.push('/') })
+    ).catch(() => { setLoading(false); router.push('/') })
   }, [session, isPending, router])
 
   if (isPending || loading) {

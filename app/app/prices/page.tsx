@@ -10,7 +10,7 @@ export default function PricesPage() {
   useEffect(() => {
     fetch('/api/prices').then(r => r.json()).then(d => {
       const m: Record<string, { price: number; currency: string }> = {}
-      for (const [k, v] of Object.entries(d) as [string, any][]) m[k] = v
+      for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) m[k] = v
       setPrices(m)
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])

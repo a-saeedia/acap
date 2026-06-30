@@ -6,10 +6,11 @@ import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset } from '@/app/actions/assets'
 import {
   Plus, Trash2, Edit3, X, Search, RefreshCw,
-  Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain, BarChart3,
+  Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain, BarChart3, Target,
 } from 'lucide-react'
 
 import { AISupport } from '@/components/ai-support'
+import { PortfolioAdvisor } from '@/components/portfolio-advisor'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 
@@ -882,8 +883,8 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
               assets={assets}
               prices={prices}
               stockPrices={stockPrices}
-              investorType={null}
-              quizTaken={false}
+              investorType={investorType ?? null}
+              quizTaken={quizTaken ?? false}
             />
           </div>
         </div>
