@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
 import { BarChart3, Wallet, TrendingUp, Zap, Crown, LogOut, Menu, X } from 'lucide-react'
+import { AISupport } from '@/components/ai-support'
 
 const navItems = [
   { href: '/app', label: 'خلاصه Portfolio', icon: BarChart3 },
@@ -99,6 +100,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+      <AISupport />
     </div>
   )
 }
