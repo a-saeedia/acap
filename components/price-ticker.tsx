@@ -76,7 +76,7 @@ export function PriceTicker() {
     })
     .filter(Boolean)
 
-  if (items.length === 0) return null
+  if (items.length === 0) return <div className="h-7 bg-gradient-to-r from-blue-950/80 via-blue-900/60 to-blue-950/80 border-b border-blue-500/10" />
 
   return (
     <div className="h-7 bg-gradient-to-r from-blue-950/80 via-blue-900/60 to-blue-950/80 border-b border-blue-500/10 overflow-hidden">

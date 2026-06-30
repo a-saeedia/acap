@@ -39,7 +39,7 @@ export function AISupport() {
 
   return (
     <>
-      <button onClick={() => setIsOpen(true)} className="fixed bottom-4 right-4 z-50 p-3 bg-primary text-white rounded-full shadow-lg hover:scale-105 transition-all">
+      <button onClick={() => setIsOpen(true)} aria-label="چت با پشتیبان هوشمند" className="fixed bottom-4 right-4 z-50 p-3 bg-primary text-white rounded-full shadow-lg hover:scale-105 transition-all" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <MessageCircle className="w-5 h-5" />
       </button>
       <AnimatePresence>

@@ -108,7 +108,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
             className="relative z-10 w-full max-w-md glass border border-border rounded-2xl p-6 shadow-2xl"
             dir="rtl"
           >
-            <button onClick={onClose} className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-all">
+            <button onClick={onClose} aria-label="بستن" className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-all">
               <X className="w-4 h-4" />
             </button>
 

@@ -30,7 +30,7 @@ export default function AdminPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showMobileList, setShowMobileList] = useState(true)
   const [portfolioAssets, setPortfolioAssets] = useState<any[]>([])
-  const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
+  const [priceData, setPriceData] = useState<any>({})
   const [portfolioLoading, setPortfolioLoading] = useState(false)
   const [quizResults, setQuizResults] = useState<any[]>([])
   const [quizLoading, setQuizLoading] = useState(false)
@@ -72,6 +72,25 @@ export default function AdminPage() {
     }
   }
 
+  function getPrice(symbol: string): number {
+    const d = priceData
+    if (!d.prices) return 0
+    if (d.stockPrices?.[symbol]) return d.stockPrices[symbol].price / 10
+    const upper = symbol.toUpperCase()
+    if (d.stockPrices?.[upper]) return d.stockPrices[upper].price / 10
+    const irrKey = `${upper}-IRR`
+    if (d.prices[irrKey]) return d.prices[irrKey].price / 10
+    const direct = d.prices[upper] ?? d.prices[symbol]
+    if (!direct) return 0
+    if (direct.currency === 'IRR') return direct.price / 10
+    if (direct.currency === 'USD') {
+      const usdRate = d.prices['USDT-IRR']?.price
+      if (usdRate) return (direct.price * usdRate) / 10
+      return direct.price
+    }
+    return 0
+  }
+
   async function loadPortfolio(userId: string) {
     setPortfolioLoading(true)
     try {
@@ -80,7 +99,7 @@ export default function AdminPage() {
         fetch('/api/prices').then(r => r.json()),
       ])
       setPortfolioAssets(a)
-      setPrices(p)
+      setPriceData(p)
     } catch { } finally {
       setPortfolioLoading(false)
     }
@@ -196,7 +215,7 @@ export default function AdminPage() {
       const byType: Record<string, number> = {}
       let totalVal = 0
       for (const a of portfolioAssets) {
-        const price = (prices[a.symbol]?.price ?? 0) / 10
+        const price = getPrice(a.symbol)
         const val = price * a.quantity
         const t = a.type as string
         byType[t] = (byType[t] ?? 0) + val
@@ -219,11 +238,15 @@ export default function AdminPage() {
     }
   }
 
-  const totalValue = portfolioAssets.reduce((sum, a) => sum + ((prices[a.symbol]?.price ?? 0) / 10) * a.quantity, 0)
+  const totalValue = portfolioAssets.reduce((sum, a) => sum + getPrice(a.symbol) * a.quantity, 0)
   const totalInvested = portfolioAssets.reduce((sum, a) => sum + (a.purchasePrice ?? 0) * a.quantity, 0)
   const pnl = totalValue - totalInvested
 
-  if (isPending) return <div className="min-h-screen flex items-center justify-center text-white">...</div>
+  if (isPending) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
   if (!session) return null
 
   return (
@@ -440,7 +463,7 @@ export default function AdminPage() {
                               </thead>
                               <tbody>
                                 {portfolioAssets.map(a => {
-                                  const price = (prices[a.symbol]?.price ?? 0) / 10
+                                  const price = getPrice(a.symbol)
                                   const currentValue = price * a.quantity
                                   const costBasis = a.purchasePrice ? a.purchasePrice * a.quantity : null
                                   const assetPnl = costBasis !== null ? currentValue - costBasis : null

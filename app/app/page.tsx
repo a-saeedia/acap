@@ -23,30 +23,41 @@ export default function AppPage() {
       getMyAssets().then(setAssets),
       fetch('/api/prices').then(r => r.json()).then(d => {
         const m: Record<string, number> = {}
-        for (const [k, v] of Object.entries(d) as [string, any][]) m[k] = v.price
+        if (d.prices) for (const [k, v] of Object.entries(d.prices) as [string, any][]) m[k] = v.price
+        if (d.stockPrices) for (const [k, v] of Object.entries(d.stockPrices) as [string, any][]) m[k] = v.price
         setPrices(m)
       }).catch(() => {}),
     ]).finally(() => setLoading(false))
   }, [])
 
-  const totalValue = assets.reduce((sum, a) => {
-    const price = prices[a.symbol] || 0
-    return sum + (a.quantity * price)
-  }, 0)
+  function getPriceToman(symbol: string): number {
+    const p = prices[symbol]
+    if (!p) return 0
+    const usdRate = prices['USD-IRR'] || prices['USDT-IRR']
+    if (typeof p === 'number' && usdRate && symbol !== 'USD-IRR' && symbol !== 'USDT-IRR' && symbol !== 'EUR-IRR') {
+      return p * usdRate / 10
+    }
+    return p / 10
+  }
 
+  const totalValue = assets.reduce((sum, a) => sum + getPriceToman(a.symbol) * a.quantity, 0)
   const totalCost = assets.reduce((sum, a) => sum + ((a.purchasePrice || 0) * a.quantity), 0)
   const profit = totalValue - totalCost
   const profitPercent = totalCost > 0 ? (profit / totalCost) * 100 : 0
 
   const byType: Record<string, { count: number; value: number }> = {}
   for (const a of assets) {
-    const price = prices[a.symbol] || 0
+    const price = getPriceToman(a.symbol)
     byType[a.type] ??= { count: 0, value: 0 }
     byType[a.type].count++
     byType[a.type].value += a.quantity * price
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">...</div>
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

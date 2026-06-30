@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle2, Zap, Brain, BarChart2, Bell, Shield, Star, Crown } from 'lucide-react'
+import { CheckCircle2, Zap, Brain, BarChart2, Bell, Shield, Star, Crown, Heart } from 'lucide-react'
 
 const features = [
   {
@@ -24,7 +24,7 @@ const features = [
     badge: 'شخصی‌سازی',
   },
   {
-    icon: Brain,
+    icon: Heart,
     title: 'روانشناسی مالی',
     desc: 'آموزش کنترل احساسات، مدیریت ریسک و تصمیم‌گیری منطقی',
     badge: 'آموزشی',

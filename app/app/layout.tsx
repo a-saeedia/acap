@@ -22,7 +22,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!isPending && !session) router.push('/')
   }, [session, isPending])
 
-  if (isPending) return <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">...</div>
+  if (isPending) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
   if (!session) return null
 
   return (
