@@ -1,8 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
 
-const googleAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
+const key = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+let googleAI: GoogleGenerativeAI | null = null
+let keyOk = false
+try {
+  if (key && key.length > 0) {
+    googleAI = new GoogleGenerativeAI(key)
+    keyOk = true
+  }
+} catch { keyOk = false }
 
 const ACAP_CONTEXT = `You are a smart investment advisor and customer support agent for A|CAP, a Persian capital management platform.
 Your capabilities:
@@ -19,7 +26,7 @@ Rules:
 - Always mention that investments carry risk
 - Keep responses under 3 paragraphs unless asked for detail`;
 
-const RATE_LIMIT = 10 // max requests per window
+const RATE_LIMIT = 10
 const rateMap = new Map<string, { count: number; resetAt: number }>()
 
 function checkRateLimit(ip: string): boolean {
@@ -34,16 +41,20 @@ function checkRateLimit(ip: string): boolean {
   return true
 }
 
-// Periodically clean stale entries
 setInterval(() => {
   const now = Date.now()
   for (const [key, val] of rateMap) if (now > val.resetAt) rateMap.delete(key)
 }, 60000)
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await auth.api.getSession({ headers: req.headers })
   if (!session?.user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (!keyOk) {
+    console.error('Chat: GOOGLE_GENERATIVE_AI_API_KEY missing or empty')
+    return Response.json({ error: 'AI service not configured' }, { status: 503 })
   }
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -61,13 +72,13 @@ export async function POST(req: Request) {
   }
 
   try {
-    const model = googleAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+    const model = googleAI!.getGenerativeModel({ model: "gemini-2.0-flash-001" })
     const result = await model.generateContent(`${ACAP_CONTEXT}\n\nUser: ${message}`)
     const response = result.response.text()
     if (!response) throw new Error('Empty response')
     return Response.json({ response })
   } catch (e) {
-    console.error('Gemini error:', e)
+    console.error('Gemini error:', e instanceof Error ? e.message : e)
     return Response.json({ error: 'AI service temporarily unavailable' }, { status: 503 })
   }
 }

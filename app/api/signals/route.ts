@@ -70,18 +70,18 @@ export async function GET(req: Request) {
     if (Number(existing.rows[0].count) === 0) {
       const seed = [
         { symbol: 'USD-IRR', daysAgo: 3,  profit: 3.2,  type: 'forex' },
-        { symbol: 'EUR-IRR', daysAgo: 5,  profit: 4.8,  type: 'forex' },
+        { symbol: 'EUR-IRR', daysAgo: 5,  profit: -2.1, type: 'forex' },
         { symbol: 'فملی',    daysAgo: 7,  profit: 8.5,  type: 'stock' },
         { symbol: 'GOLD18',  daysAgo: 10, profit: 9.1,  type: 'gold' },
-        { symbol: 'شپنا',    daysAgo: 12, profit: 13.4, type: 'stock' },
+        { symbol: 'شپنا',    daysAgo: 12, profit: -4.3, type: 'stock' },
         { symbol: 'BTC',     daysAgo: 14, profit: 16.2, type: 'crypto' },
-        { symbol: 'COIN',    daysAgo: 17, profit: 18.5, type: 'gold' },
+        { symbol: 'COIN',    daysAgo: 17, profit: -5.8, type: 'gold' },
         { symbol: 'وبملت',   daysAgo: 20, profit: 22.0, type: 'stock' },
         { symbol: 'GOLD24',  daysAgo: 23, profit: 24.1, type: 'gold' },
-        { symbol: 'ETH',     daysAgo: 25, profit: 28.7, type: 'crypto' },
+        { symbol: 'ETH',     daysAgo: 25, profit: -7.5, type: 'crypto' },
         { symbol: 'خودرو',   daysAgo: 28, profit: 30.5, type: 'stock' },
         { symbol: 'فولاد',   daysAgo: 31, profit: 33.2, type: 'stock' },
-        { symbol: 'USD-IRR', daysAgo: 38, profit: 35.0, type: 'forex' },
+        { symbol: 'USD-IRR', daysAgo: 38, profit: -3.5, type: 'forex' },
         { symbol: 'GOLD18',  daysAgo: 45, profit: 38.4, type: 'gold' },
         { symbol: 'BTC',     daysAgo: 52, profit: 42.6, type: 'crypto' },
       ]
