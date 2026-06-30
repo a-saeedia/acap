@@ -292,6 +292,73 @@ export function convertUsdToIrr(usdPrice: number, irrRate: number): number {
   return Math.round(usdPrice * irrRate)
 }
 
+export function getTgjuAjaxUrl(): string {
+  const rev = Math.random().toString(36).substring(2, 12)
+  return `https://call2.tgju.org/ajax.json?rev=${rev}`
+}
+
+export async function parseTgjuAjaxResponse(data: any): Promise<{ prices: PriceMap; irrRate: number }> {
+  if (!data?.current) return { prices: {}, irrRate: 0 }
+  const c = data.current
+  const rawUsd = c.price_dollar_rl?.p
+  if (!rawUsd) return { prices: {}, irrRate: 0 }
+  const irrRate = parseTgjuPrice(rawUsd)
+  const prices: PriceMap = {}
+
+  prices['USD'] = { price: 1, currency: 'USD' }
+  prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+  prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+
+  const forexPairs: Record<string, string> = {
+    price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
+    price_try: 'TRY', price_chf: 'CHF', price_cny: 'CNY',
+    price_cad: 'CAD', price_aud: 'AUD', price_sgd: 'SGD',
+    price_inr: 'INR', price_sar: 'SAR', price_kwd: 'KWD',
+    price_myr: 'MYR', price_rub: 'RUB', price_azn: 'AZN',
+  }
+  for (const [slug, sym] of Object.entries(forexPairs)) {
+    if (c[slug]?.p) {
+      prices[sym] = { price: 1, currency: 'USD' }
+      prices[`${sym}-IRR`] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
+    }
+  }
+
+  const goldSlugs: Record<string, string> = {
+    geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
+    nim: 'HALF_COIN', rob: 'QUARTER_COIN', ons: 'XAU',
+    mesghal: 'MESGHAL',
+  }
+  for (const [slug, sym] of Object.entries(goldSlugs)) {
+    if (c[slug]?.p) {
+      prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: slug === 'ons' ? 'USD' : 'IRR' }
+    }
+  }
+
+  const cryptoIrSlugs: Record<string, string> = {
+    'crypto-bitcoin-irr': 'BTC-IRR',
+    'crypto-ethereum-irr': 'ETH-IRR',
+    'crypto-tether-irr': 'USDT-IRR',
+    'crypto-dash-irr': 'DASH-IRR',
+    'crypto-ripple-irr': 'XRP-IRR',
+    'crypto-litecoin-irr': 'LTC-IRR',
+  }
+  for (const [slug, sym] of Object.entries(cryptoIrSlugs)) {
+    if (c[slug]?.p) {
+      prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
+    }
+  }
+
+  return { prices, irrRate }
+}
+
+export async function fetchTgjuFromClient(): Promise<{ prices: PriceMap; irrRate: number }> {
+  try {
+    const res = await fetch(getTgjuAjaxUrl())
+    if (!res.ok) return { prices: {}, irrRate: 0 }
+    return parseTgjuAjaxResponse(await res.json())
+  } catch { return { prices: {}, irrRate: 0 } }
+}
+
 export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promise<{
   prices: PriceMap
   irrRate: number
@@ -302,22 +369,20 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
     fetchTgjuData(),
   ])
 
+  let irrRate = tgju.irrRate
   const prices: PriceMap = { ...crypto, ...tgju.prices }
 
-  if (tgju.irrRate > 0) {
+  if (irrRate > 0) {
     for (const sym of Object.keys(crypto)) {
       const usdPrice = crypto[sym]?.price
       if (usdPrice) {
-        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, tgju.irrRate), currency: 'IRR' }
+        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
       }
-    }
-    if (prices['XAU']?.price) {
-      prices['GOLD'] = { price: prices['XAU'].price, currency: 'USD' }
     }
   }
 
-  // DB fallback for ALL asset types when live APIs fail (e.g., Vercel IP blocked)
-  if (Object.keys(prices).length === 0 || tgju.irrRate === 0) {
+  // DB fallback for irrRate when TGJU fails (Vercel IP blocked)
+  if (irrRate === 0) {
     try {
       const { pool } = await import('@/lib/db')
       const r = await pool.query(`SELECT symbol, price, currency FROM asset_price WHERE price > 0 ORDER BY "updatedAt" DESC`)
@@ -326,10 +391,18 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
           prices[row.symbol] = { price: Number(row.price), currency: row.currency ?? 'IRR' }
         }
       }
-      // If still no USD-IRR rate, try to get from DB
-      if (tgju.irrRate === 0) {
-        const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
-        if (usdRow) tgju.irrRate = Number(usdRow.price)
+      const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
+      if (usdRow) {
+        irrRate = Number(usdRow.price)
+        prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+        prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+        // Recompute crypto-IRR with fallback rate
+        for (const sym of Object.keys(crypto)) {
+          const usdPrice = crypto[sym]?.price
+          if (usdPrice) {
+            prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+          }
+        }
       }
     } catch {}
   }

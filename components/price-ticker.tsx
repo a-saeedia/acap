@@ -4,6 +4,31 @@ import { useState, useEffect } from 'react'
 
 type PriceMap = Record<string, { price: number; currency: string }>
 
+function parseTgjuPrice(val: string): number {
+  return Number(val.replace(/,/g, ''))
+}
+
+async function fetchTgjuPrices(): Promise<PriceMap> {
+  const rev = Math.random().toString(36).substring(2, 12)
+  try {
+    const res = await fetch(`https://call2.tgju.org/ajax.json?rev=${rev}`)
+    if (!res.ok) return {}
+    const data = await res.json()
+    if (!data?.current) return {}
+    const c = data.current
+    const p: PriceMap = {}
+    const rawUsd = c.price_dollar_rl?.p
+    if (!rawUsd) return {}
+    const irrRate = parseTgjuPrice(rawUsd)
+    p['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+    p['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+    if (c.price_eur?.p) p['EUR-IRR'] = { price: parseTgjuPrice(c.price_eur.p), currency: 'IRR' }
+    if (c.geram18?.p) p['GOLD18'] = { price: parseTgjuPrice(c.geram18.p), currency: 'IRR' }
+    if (c.sekee?.p) p['COIN'] = { price: parseTgjuPrice(c.sekee.p), currency: 'IRR' }
+    return p
+  } catch { return {} }
+}
+
 const TICKER_SYMBOLS = [
   { key: 'BTC', label: 'BTC', format: (p: number) => `$${p.toLocaleString()}` },
   { key: 'ETH', label: 'ETH', format: (p: number) => `$${p.toLocaleString()}` },
@@ -18,15 +43,22 @@ export function PriceTicker() {
   const [prices, setPrices] = useState<PriceMap>({})
 
   useEffect(() => {
-    async function fetchPrices() {
-      try {
-        const res = await fetch('/api/prices')
-        const data = await res.json()
-        if (data?.prices) setPrices(data.prices)
-      } catch {}
+    async function fetchAll() {
+      const [apiRes, tgjuP] = await Promise.all([
+        fetch('/api/prices').catch(() => null),
+        fetchTgjuPrices(),
+      ])
+      const merged: PriceMap = {}
+      if (apiRes) {
+        const apiData = await apiRes.json().catch(() => ({}))
+        if (apiData?.prices) Object.assign(merged, apiData.prices)
+      }
+      // TGJU client data takes priority (always fresh for Iranian users)
+      Object.assign(merged, tgjuP)
+      if (Object.keys(merged).length > 0) setPrices(merged)
     }
-    fetchPrices()
-    const interval = setInterval(fetchPrices, 30000)
+    fetchAll()
+    const interval = setInterval(fetchAll, 30000)
     return () => clearInterval(interval)
   }, [])
 

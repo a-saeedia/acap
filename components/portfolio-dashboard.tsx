@@ -283,10 +283,35 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
     if (isUserAction) setPriceLoading(true)
     else setRefreshing(true)
     try {
-      // Fetch general prices (crypto, forex, gold, USDT-IRR rate)
-      const res = await fetch('/api/prices')
-      const data = await res.json()
-      setPrices(data.prices ?? {})
+      // Fetch both server API (crypto + stocks) and TGJU directly from browser
+      const [apiRes, tgjuRes] = await Promise.all([
+        fetch('/api/prices'),
+        fetch(`https://call2.tgju.org/ajax.json?rev=${Math.random().toString(36).substring(2, 12)}`).catch(() => null),
+      ])
+      
+      const data = apiRes ? await apiRes.json().catch(() => ({})) : {}
+      const mergedPrices = { ...(data.prices ?? {}) }
+      
+      // Merge TGJU live prices from browser (always fresh for Iranian users)
+      if (tgjuRes && tgjuRes.ok) {
+        try {
+          const tgjuData = await tgjuRes.json()
+          if (tgjuData?.current) {
+            const c = tgjuData.current
+            const rawUsd = c.price_dollar_rl?.p
+            if (rawUsd) {
+              const irrRate = Number(rawUsd.replace(/,/g, ''))
+              mergedPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+              mergedPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+              if (c.price_eur?.p) mergedPrices['EUR-IRR'] = { price: Number(c.price_eur.p.replace(/,/g, '')), currency: 'IRR' }
+              if (c.geram18?.p) mergedPrices['GOLD18'] = { price: Number(c.geram18.p.replace(/,/g, '')), currency: 'IRR' }
+              if (c.sekee?.p) mergedPrices['COIN'] = { price: Number(c.sekee.p.replace(/,/g, '')), currency: 'IRR' }
+            }
+          }
+        } catch {}
+      }
+      
+      setPrices(mergedPrices)
       
       // Also fetch individual stock prices for user's stock assets
       const stockAssets = assets.filter(a => a.type === 'stock')
@@ -301,10 +326,8 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             sp[result.value.symbol] = result.value.price
           }
         }
-        // Merge with existing stockPrices from bulk API
         setStockPrices(prev => ({ ...prev, ...sp }))
       } else if (data.stockPrices) {
-        // Fallback to bulk API stock prices
         const sp: Record<string, number> = {}
         for (const [sym, val] of Object.entries(data.stockPrices) as [string, any][]) {
           sp[sym] = val.price
