@@ -23,12 +23,22 @@ export async function createAsset(data: {
   notes?: string
 }) {
   const userId = await getUserId()
+  const sym = data.symbol.toUpperCase()
+  const [existing] = await db.select().from(asset).where(and(eq(asset.userId, userId), eq(asset.type, data.type), eq(asset.symbol, sym))).limit(1)
+  if (existing) {
+    await db.update(asset).set({
+      quantity: existing.quantity + data.quantity,
+      purchasePrice: data.purchasePrice ?? existing.purchasePrice,
+      updatedAt: new Date(),
+    }).where(eq(asset.id, existing.id))
+    return existing.id
+  }
   const id = randomUUID()
   await db.insert(asset).values({
     id,
     userId,
     type: data.type,
-    symbol: data.symbol.toUpperCase(),
+    symbol: sym,
     label: data.label,
     quantity: data.quantity,
     purchasePrice: data.purchasePrice ?? null,

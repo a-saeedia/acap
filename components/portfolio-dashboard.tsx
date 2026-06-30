@@ -36,12 +36,18 @@ type IranStock = {
 const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; gradient: string }> = {
   crypto: { label: 'رمز ارز', icon: '₿', color: '#F59E0B', gradient: 'from-amber-500/20 to-yellow-600/10' },
   stock: { label: 'بورس ایران', icon: '📈', color: '#2979FF', gradient: 'from-blue-500/20 to-blue-600/10' },
-  gold: { label: 'طلا', icon: '🔶', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
+  gold: { label: 'طلا', icon: '🟨', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
   currency: { label: 'ارز', icon: '💵', color: '#10B981', gradient: 'from-emerald-500/20 to-green-600/10' },
   other: { label: 'سایر', icon: '💰', color: '#8B5CF6', gradient: 'from-purple-500/20 to-violet-600/10' },
 }
 
 const DONUT_COLORS = ['#F59E0B', '#2979FF', '#FF6B35', '#10B981', '#8B5CF6']
+const CRYPTO_COLORS: Record<string, string> = {
+  BTC: '#F7931A', ETH: '#627EEA', USDT: '#26A17B', SOL: '#9945FF',
+  XRP: '#23292F', ADA: '#0033AD', TRX: '#EF0027', DOGE: '#C2A633',
+  BNB: '#F0B90B', DOT: '#E6007A', MATIC: '#8247E5', SHIB: '#FFA500',
+  AVAX: '#E84142', LINK: '#2A5ADA', UNI: '#FF007A', ATOM: '#2E3148',
+}
 
 const ASSET_TYPES = [
   { value: 'crypto', label: 'رمز ارز' },
@@ -265,6 +271,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [showAdvisor, setShowAdvisor] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AssetForm>(INITIAL_FORM)
   const [stockSearch, setStockSearch] = useState('')
@@ -624,26 +631,69 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           ))}
         </div>
 
-        {/* ── Category Distribution ── */}
+        {/* ── Donut Chart + Distribution ── */}
         {Object.keys(byType).length > 0 && (
-          <div className="bg-card border border-border rounded-2xl p-4">
-            <h3 className="text-sm font-bold text-foreground mb-3">توزیع سرمایه</h3>
-            <div className="space-y-3">
-              {Object.entries(byType).sort((a, b) => b[1].value - a[1].value).map(([type, data]) => {
-                const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0
-                const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
-                return (
-                  <div key={type}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="font-medium text-foreground">{cfg.icon} {cfg.label}</span>
+          <div className="bg-card border border-border rounded-2xl p-4" onClick={() => setShowAdvisor(true)}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-foreground">توزیع سرمایه</h3>
+              <Target className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex items-center gap-4">
+              {/* SVG Donut */}
+              <div className="shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  {(() => {
+                    const entries = Object.entries(byType).sort((a, b) => b[1].value - a[1].value)
+                    const total = totalValue || 1
+                    const r = 48
+                    const cx = 60, cy = 60
+                    const circ = 2 * Math.PI * r
+                    let offset = 0
+                    return entries.map(([type, data]) => {
+                      const pct = data.value / total
+                      const len = pct * circ
+                      const segment = (
+                        <circle key={type} cx={cx} cy={cy} r={r} fill="none"
+                          stroke={TYPE_CONFIG[type]?.color || '#666'}
+                          strokeWidth="20" strokeDasharray={`${len} ${circ - len}`}
+                          strokeDashoffset={-offset} transform={`rotate(-90 ${cx} ${cy})`}
+                          className="transition-all duration-700"
+                        />
+                      )
+                      offset += len
+                      return segment
+                    })
+                  })()}
+                  <circle cx="60" cy="60" r="36" fill="var(--card)" className="fill-card" />
+                  <text x="60" y="56" textAnchor="middle" className="fill-foreground text-[9px] font-bold">
+                    {totalValue > 0 ? `${((assets.filter(a => getCurrentValue(a, prices, stockPrices) > 0).length / Math.max(assets.length, 1)) * 100).toFixed(0)}%` : '0%'}
+                  </text>
+                  <text x="60" y="68" textAnchor="middle" className="fill-muted-foreground text-[7px]">
+                    تخصیص
+                  </text>
+                </svg>
+              </div>
+              {/* Legend */}
+              <div className="flex-1 space-y-1.5 min-w-0">
+                {Object.entries(byType).sort((a, b) => b[1].value - a[1].value).map(([type, data]) => {
+                  const pct = totalValue > 0 ? (data.value / totalValue) * 100 : 0
+                  const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
+                  return (
+                    <div key={type} className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.color }} />
+                        <span className="text-foreground font-medium">{cfg.icon} {cfg.label}</span>
+                      </span>
                       <span className="text-muted-foreground">{pct.toFixed(0)}%</span>
                     </div>
-                    <div className="h-1.5 bg-accent rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cfg.color }} />
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+                <button onClick={(e) => { e.stopPropagation(); setShowAdvisor(true) }}
+                  className="w-full mt-2 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-colors"
+                >
+                  اسکن پرتفوی
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -680,7 +730,12 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                     <div key={a.id} onClick={() => openEdit(a)}
                       className="bg-card border border-border rounded-2xl p-3 text-center cursor-pointer hover:border-primary/30 transition-colors relative group"
                     >
-                      <div className="text-2xl leading-none mb-1.5">{cfg.icon}</div>
+                      <div className="text-2xl leading-none mb-1.5">
+                        {a.type === 'crypto' && CRYPTO_COLORS[a.symbol] ? (
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md text-white text-[9px] font-extrabold"
+                            style={{ background: CRYPTO_COLORS[a.symbol] }}>{a.symbol.slice(0, 3)}</span>
+                        ) : cfg.icon}
+                      </div>
                       <div className="text-sm font-semibold text-foreground truncate leading-snug">{a.label}</div>
                       <div className="text-xs text-muted-foreground truncate">{formatQuantity(a.quantity, a.symbol)}</div>
                       <div className="text-sm font-bold text-foreground mt-1" dir="ltr">
@@ -816,6 +871,20 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                 className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
               >انصراف</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Advisor Modal */}
+      {showAdvisor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAdvisor(false)}>
+          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-card border border-border" onClick={e => e.stopPropagation()}>
+            <PortfolioAdvisor
+              assets={assets}
+              prices={prices}
+              stockPrices={stockPrices}
+              investorType={null}
+              quizTaken={false}
+            />
           </div>
         </div>
       )}
