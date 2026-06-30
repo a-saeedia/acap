@@ -283,33 +283,38 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
     if (isUserAction) setPriceLoading(true)
     else setRefreshing(true)
     try {
-      // Fetch both server API (crypto + stocks) and TGJU directly from browser
-      const [apiRes, tgjuRes] = await Promise.all([
-        fetch('/api/prices'),
-        fetch(`https://call2.tgju.org/ajax.json?rev=${Math.random().toString(36).substring(2, 12)}`).catch(() => null),
-      ])
-      
+      // Fetch server API (crypto + stocks)
+      const apiRes = await fetch('/api/prices')
       const data = apiRes ? await apiRes.json().catch(() => ({})) : {}
       const mergedPrices = { ...(data.prices ?? {}) }
       
-      // Merge TGJU live prices from browser (always fresh for Iranian users)
-      if (tgjuRes && tgjuRes.ok) {
+      // Fetch TGJU live prices directly from browser (try multiple endpoints)
+      const rev = Math.random().toString(36).substring(2, 12)
+      const tgjuUrls = [
+        `https://call2.tgju.org/ajax.json?rev=${rev}`,
+        `https://call3.tgju.org/ajax.json?rev=${rev}`,
+        `https://call4.tgju.org/ajax.json?rev=${rev}`,
+      ]
+      let tgjuOk = false
+      for (const url of tgjuUrls) {
         try {
-          const tgjuData = await tgjuRes.json()
-          if (tgjuData?.current) {
-            const c = tgjuData.current
-            const rawUsd = c.price_dollar_rl?.p
-            if (rawUsd) {
-              const irrRate = Number(rawUsd.replace(/,/g, ''))
-              mergedPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-              mergedPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-              if (c.price_eur?.p) mergedPrices['EUR-IRR'] = { price: Number(c.price_eur.p.replace(/,/g, '')), currency: 'IRR' }
-              if (c.geram18?.p) mergedPrices['GOLD18'] = { price: Number(c.geram18.p.replace(/,/g, '')), currency: 'IRR' }
-              if (c.sekee?.p) mergedPrices['COIN'] = { price: Number(c.sekee.p.replace(/,/g, '')), currency: 'IRR' }
-            }
+          const r = await fetch(url)
+          if (!r.ok) continue
+          const tj = await r.json()
+          if (tj?.current?.price_dollar_rl?.p) {
+            const c = tj.current
+            const irrRate = Number(c.price_dollar_rl.p.replace(/,/g, ''))
+            mergedPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+            mergedPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+            if (c.price_eur?.p) mergedPrices['EUR-IRR'] = { price: Number(c.price_eur.p.replace(/,/g, '')), currency: 'IRR' }
+            if (c.geram18?.p) mergedPrices['GOLD18'] = { price: Number(c.geram18.p.replace(/,/g, '')), currency: 'IRR' }
+            if (c.sekee?.p) mergedPrices['COIN'] = { price: Number(c.sekee.p.replace(/,/g, '')), currency: 'IRR' }
+            tgjuOk = true
+            break
           }
         } catch {}
       }
+      if (!tgjuOk) console.warn('TGJU: all AJAX endpoints failed, using DB fallback')
       
       setPrices(mergedPrices)
       
@@ -591,7 +596,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             <button onClick={() => fetchPrices(true)} disabled={priceLoading}
               className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin' : refreshing ? 'animate-spin opacity-40' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin' : ''}`} />
             </button>
             <button onClick={openAdd}
               className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"

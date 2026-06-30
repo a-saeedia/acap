@@ -10,23 +10,29 @@ function parseTgjuPrice(val: string): number {
 
 async function fetchTgjuPrices(): Promise<PriceMap> {
   const rev = Math.random().toString(36).substring(2, 12)
-  try {
-    const res = await fetch(`https://call2.tgju.org/ajax.json?rev=${rev}`)
-    if (!res.ok) return {}
-    const data = await res.json()
-    if (!data?.current) return {}
-    const c = data.current
-    const p: PriceMap = {}
-    const rawUsd = c.price_dollar_rl?.p
-    if (!rawUsd) return {}
-    const irrRate = parseTgjuPrice(rawUsd)
-    p['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-    p['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-    if (c.price_eur?.p) p['EUR-IRR'] = { price: parseTgjuPrice(c.price_eur.p), currency: 'IRR' }
-    if (c.geram18?.p) p['GOLD18'] = { price: parseTgjuPrice(c.geram18.p), currency: 'IRR' }
-    if (c.sekee?.p) p['COIN'] = { price: parseTgjuPrice(c.sekee.p), currency: 'IRR' }
-    return p
-  } catch { return {} }
+  const urls = [
+    `https://call2.tgju.org/ajax.json?rev=${rev}`,
+    `https://call3.tgju.org/ajax.json?rev=${rev}`,
+    `https://call4.tgju.org/ajax.json?rev=${rev}`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) continue
+      const data = await res.json()
+      if (!data?.current?.price_dollar_rl?.p) continue
+      const c = data.current
+      const p: PriceMap = {}
+      const irrRate = parseTgjuPrice(c.price_dollar_rl.p)
+      p['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+      p['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+      if (c.price_eur?.p) p['EUR-IRR'] = { price: parseTgjuPrice(c.price_eur.p), currency: 'IRR' }
+      if (c.geram18?.p) p['GOLD18'] = { price: parseTgjuPrice(c.geram18.p), currency: 'IRR' }
+      if (c.sekee?.p) p['COIN'] = { price: parseTgjuPrice(c.sekee.p), currency: 'IRR' }
+      return p
+    } catch { continue }
+  }
+  return {}
 }
 
 const TICKER_SYMBOLS = [
