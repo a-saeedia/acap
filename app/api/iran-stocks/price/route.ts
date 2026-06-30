@@ -10,13 +10,13 @@ export async function GET(request: Request) {
 
   try {
     let insCode: string | null = null
-    const r = await pool.query('SELECT "tsetmcCode" FROM iran_stock WHERE symbol = $1 LIMIT 1', [symbol])
-    if (r.rows.length > 0 && r.rows[0].tsetmcCode) {
-      insCode = r.rows[0].tsetmcCode
+    const r = await pool.query('SELECT "tsetmc_code" FROM iran_stock WHERE symbol = $1 LIMIT 1', [symbol])
+    if (r.rows.length > 0 && r.rows[0].tsetmc_code) {
+      insCode = r.rows[0].tsetmc_code
     } else {
       insCode = await fetchTsetmcSearch(symbol)
       if (insCode) {
-        await pool.query('UPDATE iran_stock SET "tsetmcCode" = $1 WHERE symbol = $2', [insCode, symbol])
+        await pool.query('UPDATE iran_stock SET "tsetmc_code" = $1 WHERE symbol = $2', [insCode, symbol])
       }
     }
 

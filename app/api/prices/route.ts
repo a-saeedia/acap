@@ -10,10 +10,10 @@ export async function GET() {
   let stocks: any[] = []
 
   try {
-      const r = await pool.query('SELECT symbol, name, sector, "tsetmcCode" FROM iran_stock')
+      const r = await pool.query('SELECT symbol, name, sector, "tsetmc_code" FROM iran_stock')
     stocks = r.rows
     for (const s of stocks) {
-      if (s.tsetmcCode) insCodeMap[s.symbol] = s.tsetmcCode
+      if (s.tsetmc_code) insCodeMap[s.symbol] = s.tsetmc_code
     }
   } catch (e) { console.error('fetch stocks error:', e) }
 
@@ -29,13 +29,13 @@ export async function GET() {
     } catch (e) { console.error('seed stocks error:', e) }
   }
 
-  const stocksWithoutCode = stocks.filter((s: any) => !s.tsetmcCode)
+  const stocksWithoutCode = stocks.filter((s: any) => !s.tsetmc_code)
   if (stocksWithoutCode.length > 0) {
     const searches = stocksWithoutCode.map(async (s: any) => {
       const code = await fetchTsetmcSearch(s.symbol)
       if (code) {
         try {
-          await pool.query('UPDATE iran_stock SET "tsetmcCode" = $1 WHERE symbol = $2', [code, s.symbol])
+          await pool.query('UPDATE iran_stock SET "tsetmc_code" = $1 WHERE symbol = $2', [code, s.symbol])
         } catch {}
         insCodeMap[s.symbol] = code
       }

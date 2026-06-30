@@ -93,8 +93,8 @@ export const suggestion = pgTable('suggestion', {
   content: text('content').notNull(),
   isRead: boolean('isRead').notNull().default(false),
   readAt: timestamp('readAt'),
-  profitPercent: real('profitPercent'),
-  profitMessage: text('profitMessage'),
+  profitPercent: real('profit_percent'),
+  profitMessage: text('profit_message'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
@@ -134,7 +134,7 @@ export const iranStock = pgTable('iran_stock', {
   symbol: text('symbol').notNull().unique(),
   name: text('name').notNull(),
   sector: text('sector'),
-  tsetmcCode: text('tsetmcCode'),
+  tsetmcCode: text('tsetmc_code'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
