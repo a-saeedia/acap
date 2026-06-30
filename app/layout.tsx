@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export const metadata: Metadata = {
   title: 'A | CAP — اولین دستیار مدیریت سرمایه بر اساس شخصیت مالی',
@@ -29,9 +30,12 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
         />
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('acap-theme');if(t==='light')document.documentElement.classList.add('light')}catch(e){}})()`
+        }} />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Vazirmatn, sans-serif' }}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider><ErrorBoundary>{children}</ErrorBoundary></ThemeProvider>
       </body>
     </html>
   )
