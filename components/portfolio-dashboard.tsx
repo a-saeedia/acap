@@ -572,7 +572,10 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
 
 
       {/* Dashboard */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* ── Main Content (Left) ── */}
+        <div className="space-y-4 lg:col-span-2">
 
         {/* ── User Profile Card ── */}
         <div className="bg-card border border-border rounded-2xl p-4">
@@ -734,6 +737,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         </div>
       </div>
 
+      {/* ── Signals Sidebar (Right) ── */}
+      <SignalsSidebar />
+
+      </div>
+
       {/* Add/Edit Asset Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
@@ -864,6 +872,73 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         </div>
       )}
       <AISupport />
+    </div>
+  )
+}
+
+function SignalsSidebar() {
+  const [signals, setSignals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/signals').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setSignals(d)
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-foreground">سیگنال‌های A|CAP+</h3>
+        <span className="text-[10px] text-muted-foreground bg-white/[0.05] px-2 py-1 rounded-lg">
+          {signals.length}
+        </span>
+      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : signals.length === 0 ? (
+        <div className="bg-card border border-border rounded-2xl p-4 text-center">
+          <p className="text-xs text-muted-foreground">هیچ سیگنالی موجود نیست</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {signals.map((s: any) => {
+            const isUp = s.profitPercent >= 0
+            const typeBadge: Record<string, { color: string; label: string }> = {
+              crypto: { color: '#F7931A', label: 'C' },
+              stock: { color: '#2979FF', label: 'S' },
+              gold: { color: '#F59E0B', label: 'G' },
+            }
+            const badge = typeBadge[s.type] || { color: '#666', label: '?' }
+            return (
+              <div key={s.id}
+                className="bg-card border border-border rounded-2xl p-3 hover:border-primary/20 transition-colors cursor-default"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[8px] font-black shrink-0 text-white"
+                      style={{ background: badge.color }}>{badge.label}</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-foreground leading-tight truncate">{s.title}</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">
+                        {s.daysSince > 0 ? `${s.daysSince} روز قبل` : 'امروز'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-bold shrink-0 ${isUp ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                    {isUp ? '+' : ''}{s.profitPercent.toFixed(1)}%
+                  </div>
+                </div>
+                {s.description && (
+                  <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed line-clamp-2">{s.description}</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
