@@ -431,5 +431,5 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
     }
   }
 
-  return { prices, irrRate: tgju.irrRate, stockPrices }
+  return { prices, irrRate, stockPrices }
 }
