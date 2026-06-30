@@ -14,8 +14,21 @@ const PERSIAN_LABELS: Record<string, string> = {
   'GOLD': 'طلای ۱۸', 'USD': 'دلار', 'EUR': 'یورو',
 }
 
-const CRYPTO_EMOJI: Record<string, string> = {
-  BTC: '₿', ETH: '⟠', USDT: '₮', SOL: '◎', XRP: '✕', ADA: '₳', DOGE: 'Ð', TRX: '↗', BNB: '◆',
+const SYMBOL_ICON: Record<string, { icon: string; color: string; bg: string }> = {
+  BTC: { icon: '₿', color: '#F7931A', bg: 'rgba(247,147,26,0.15)' },
+  ETH: { icon: '⟠', color: '#627EEA', bg: 'rgba(98,126,234,0.15)' },
+  USDT: { icon: '₮', color: '#26A17B', bg: 'rgba(38,161,123,0.15)' },
+  SOL: { icon: 'S', color: '#9945FF', bg: 'rgba(153,69,255,0.15)' },
+  XRP: { icon: 'X', color: '#23292F', bg: 'rgba(35,41,47,0.15)' },
+  ADA: { icon: 'A', color: '#0033AD', bg: 'rgba(0,51,173,0.15)' },
+  DOGE: { icon: 'Ð', color: '#C2A633', bg: 'rgba(194,166,51,0.15)' },
+  TRX: { icon: 'T', color: '#EF0027', bg: 'rgba(239,0,39,0.15)' },
+  BNB: { icon: 'B', color: '#F0B90B', bg: 'rgba(240,185,11,0.15)' },
+  'USD-IRR': { icon: '$', color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  'EUR-IRR': { icon: '€', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
+  'AED-IRR': { icon: 'د', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
+  'TRY-IRR': { icon: '₺', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+  'GBP-IRR': { icon: '£', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
 }
 
 const TABS = [
@@ -40,10 +53,36 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
   const isUsd = currency === 'USD'
   const label = PERSIAN_LABELS[symbol] || symbol
   const isPositive = weekChange >= 0
-  const emoji = CRYPTO_EMOJI[symbol]
-  const colorKey = symbol.startsWith('BTC') ? '#F7931A' : symbol.startsWith('ETH') ? '#627EEA' : symbol.startsWith('SOL') ? '#9945FF' : symbol.startsWith('USDT') ? '#26A17B' : symbol.startsWith('XRP') ? '#23292F' : ''
+  const meta = SYMBOL_ICON[symbol]
 
   const floatDelay = ((symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 6) * 0.7)
+
+  function renderIcon() {
+    if (meta) {
+      return (
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black"
+          style={{ background: meta.bg, color: meta.color }}>{meta.icon}</span>
+      )
+    }
+    if (symbol === 'GOLD18' || symbol === 'GOLD24' || symbol === 'XAU') {
+      return (
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(217,119,6,0.2))' }}>
+          <span className="text-sm font-black" style={{ color: '#F59E0B' }}>Au</span>
+        </span>
+      )
+    }
+    if (symbol === 'COIN' || symbol === 'HALF_COIN' || symbol === 'QUARTER_COIN') {
+      return (
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
+          style={{ background: 'rgba(245,158,11,0.15)' }}>🪙</span>
+      )
+    }
+    return (
+      <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base"
+        style={{ background: 'rgba(96,165,250,0.1)' }}>💱</span>
+    )
+  }
 
   return (
     <motion.div layout initial={{ opacity: 0, scale: 0.9 }}
@@ -56,21 +95,7 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
       <div className="relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all duration-300 hover:-translate-y-0.5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
-            {emoji ? (
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black"
-                style={{ background: `${colorKey}20`, color: colorKey || '#60A5FA' }}>{emoji}</span>
-            ) : symbol === 'GOLD18' || symbol === 'GOLD24' ? (
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(217,119,6,0.2))' }}>
-                <span className="text-sm font-black" style={{ color: '#F59E0B' }}>Au</span>
-              </span>
-            ) : symbol === 'COIN' ? (
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'rgba(245,158,11,0.15)' }}>🪙</span>
-            ) : (
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base"
-                style={{ background: 'rgba(96,165,250,0.1)' }}>💱</span>
-            )}
+            {renderIcon()}
             <div>
               <div className="text-sm font-bold text-foreground leading-tight">{label}</div>
               <div className="text-[10px] text-muted-foreground font-mono">{symbol}</div>
