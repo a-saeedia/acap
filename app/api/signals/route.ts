@@ -16,6 +16,21 @@ const SIGNAL_DESCRIPTIONS: Record<string, { title: string; desc: string }> = {
 
 export async function GET() {
   try {
+    // Auto-create table if missing (idempotent)
+    try {
+      await pool.query(`CREATE TABLE IF NOT EXISTS "signal" (
+        "id" text PRIMARY KEY NOT NULL,
+        "type" text NOT NULL,
+        "symbol" text NOT NULL,
+        "title" text NOT NULL,
+        "description" text,
+        "action" text NOT NULL,
+        "priceAtPublish" real NOT NULL,
+        "publishedAt" timestamp DEFAULT now() NOT NULL,
+        "createdAt" timestamp DEFAULT now() NOT NULL
+      )`)
+    } catch {}
+
     // Get latest prices from DB (faster than HTTP call)
     const priceRows = await pool.query(
       `SELECT DISTINCT ON (symbol) symbol, price FROM asset_price WHERE price > 0 ORDER BY symbol, "updatedAt" DESC`
