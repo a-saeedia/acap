@@ -22,7 +22,10 @@ export default function AcapPlusPage() {
     if (!session) { router.push('/'); return }
 
     Promise.all([
-      fetch('/api/acap-plus').then(r => r.json()).then(d => setIsPlus(d.isPlus)).catch(() => {}),
+      fetch('/api/acap-plus').then(r => r.json()).then(d => {
+        setIsPlus(d.isPlus)
+        if (d.isPlus) { router.push('/app/signals'); return }
+      }).catch(() => {}),
       getUserSuggestions().then(setSuggestions).catch(() => {}),
     ]).finally(() => setChecking(false))
   }, [session, isPending, router])

@@ -681,41 +681,122 @@ function AdminAnalytics() {
   if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
   if (!data) return <div className="text-center py-8 text-red-400">خطا در دریافت آمار</div>
 
+  const maxHeat = Math.max(...(data.heatMap || []).map((h: any) => h.count), 1)
+  const maxViews = Math.max(...(data.pageViews || []).map((v: any) => v.count), 1)
+  const months = ['', 'ژانویه', 'فوریه', 'مارس', 'آوریل', 'مه', 'ژوئن', 'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر']
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <p className="text-2xl font-bold">{data.totalEvents}</p>
-          <p className="text-xs text-gray-500">رویداد (۷ روز)</p>
-        </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <p className="text-2xl font-bold">{data.uniqueUsers}</p>
-          <p className="text-xs text-gray-500">کاربر فعال</p>
-        </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <p className="text-2xl font-bold">{data.anomalies?.length || 0}</p>
-          <p className="text-xs text-gray-500">ناهنجاری قیمت</p>
-        </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <p className="text-2xl font-bold">{data.topPages?.length || 0}</p>
-          <p className="text-xs text-gray-500">صفحات پربازدید</p>
-        </div>
+    <div className="space-y-4" dir="rtl">
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        {[
+          { label: 'کاربران', value: data.totalUsers, color: 'text-blue-400' },
+          { label: 'A|CAP+', value: data.plusUsers, color: 'text-amber-400' },
+          { label: 'دارایی‌ها', value: data.totalAssets, color: 'text-emerald-400' },
+          { label: 'سیگنال‌ها', value: data.totalSignals, color: 'text-purple-400' },
+          { label: 'پیشنهادات', value: data.totalSuggestions, color: 'text-cyan-400' },
+          { label: 'تیکت‌های باز', value: data.openTickets, color: 'text-rose-400' },
+        ].map(card => (
+          <div key={card.label} className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+            <div className={`text-xl font-black ${card.color}`}>{card.value}</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">{card.label}</div>
+          </div>
+        ))}
       </div>
 
+      {/* Activity Heat Map */}
+      {data.heatMap && data.heatMap.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold">گرمای فعالیت (۳۶۵ روز)</h3>
+            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+              <span>کم</span>
+              {['bg-gray-800', 'bg-emerald-900/40', 'bg-emerald-700/50', 'bg-emerald-500/60', 'bg-emerald-400/80'].map(c => (
+                <div key={c} className={`w-3 h-3 rounded ${c}`} />
+              ))}
+              <span>زیاد</span>
+            </div>
+          </div>
+          <div className="overflow-x-auto pb-1" dir="ltr">
+            <div className="flex gap-0.5" style={{ minWidth: `${(data.heatMap.length / 7) * 14}px` }}>
+              {Array.from({ length: Math.ceil(data.heatMap.length / 7) }, (_, week) => (
+                <div key={week} className="flex flex-col gap-0.5">
+                  {Array.from({ length: 7 }, (_, day) => {
+                    const idx = week * 7 + day
+                    const d = data.heatMap[idx]
+                    if (!d) return <div key={day} className="w-3 h-3 rounded-sm bg-gray-950" />
+                    const intensity = d.count > 0 ? Math.ceil((d.count / maxHeat) * 4) : 0
+                    const colors = ['bg-gray-800', 'bg-emerald-900/40', 'bg-emerald-700/50', 'bg-emerald-500/60', 'bg-emerald-400/80']
+                    return (
+                      <div key={day}
+                        className={`w-3 h-3 rounded-sm ${colors[intensity]} hover:ring-1 hover:ring-emerald-400 cursor-default transition-all`}
+                        title={`${d.date}: ${d.count} بازدید`}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Users & Page Views side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+
+        {/* Daily User Signups */}
+        {data.dailyUsers && data.dailyUsers.length > 0 && (
+          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <h3 className="text-sm font-bold mb-3">کاربران جدید (۳۰ روز)</h3>
+            <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">
+              {data.dailyUsers.map((d: any, i: number) => {
+                const maxSignups = Math.max(...data.dailyUsers.map((x: any) => x.count), 1)
+                const h = (d.count / maxSignups) * 100
+                return (
+                  <div key={i} className="flex flex-col items-center gap-0.5 shrink-0">
+                    <div className="w-5 sm:w-6 bg-blue-500/60 rounded-t" style={{ height: `${Math.max(h, d.count > 0 ? 4 : 0)}%` }} />
+                    <span className="text-[7px] text-gray-600">{d.date?.slice(5) || ''}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Page Views */}
+        {data.pageViews && data.pageViews.length > 0 && (
+          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <h3 className="text-sm font-bold mb-3">بازدید روزانه (۳۰ روز)</h3>
+            <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">
+              {[...data.pageViews].reverse().map((d: any, i: number) => {
+                const h = (d.count / maxViews) * 100
+                return (
+                  <div key={i} className="flex flex-col items-center gap-0.5 shrink-0">
+                    <div className="w-5 sm:w-6 bg-emerald-500/60 rounded-t" style={{ height: `${Math.max(h, d.count > 0 ? 4 : 0)}%` }} />
+                    <span className="text-[7px] text-gray-600">{d.date?.slice(5) || ''}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Event Distribution */}
       {data.eventCounts && data.eventCounts.length > 0 && (
         <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <h3 className="text-sm font-bold mb-3">توزیع رویدادها</h3>
-          <div className="space-y-2">
+          <h3 className="text-sm font-bold mb-3">رویدادها (۷ روز)</h3>
+          <div className="space-y-1.5">
             {data.eventCounts.map((e: any, i: number) => {
-              const maxCount = Math.max(...data.eventCounts.map((x: any) => x.count))
-              const pct = (e.count / maxCount) * 100
+              const maxC = Math.max(...data.eventCounts.map((x: any) => x.count))
               return (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 w-24 truncate">{e.event}</span>
-                  <div className="flex-1 h-5 bg-gray-800 rounded overflow-hidden">
-                    <div className="h-full bg-emerald-600 rounded" style={{ width: `${pct}%` }} />
+                  <span className="text-xs text-gray-400 w-20 sm:w-28 truncate">{e.event}</span>
+                  <div className="flex-1 h-4 bg-gray-800 rounded overflow-hidden">
+                    <div className="h-full bg-emerald-600/70 rounded" style={{ width: `${(e.count / maxC) * 100}%` }} />
                   </div>
-                  <span className="text-xs text-gray-500 w-12 text-left">{e.count}</span>
+                  <span className="text-xs text-gray-500 w-10 text-left">{e.count}</span>
                 </div>
               )
             })}
@@ -723,53 +804,33 @@ function AdminAnalytics() {
         </div>
       )}
 
+      {/* Top Pages */}
       {data.topPages && data.topPages.length > 0 && (
         <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
           <h3 className="text-sm font-bold mb-3">صفحات پربازدید (۷ روز)</h3>
-          <div className="space-y-1.5">
-            {data.topPages.map((p: any, i: number) => (
-              <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
-                <span className="text-sm text-gray-300 truncate ltr">{p.path || '/'}</span>
-                <span className="text-xs text-gray-500 mr-2">{p.count} بازدید</span>
+          <div className="space-y-1">
+            {data.topPages.slice(0, 10).map((p: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1 border-b border-gray-800 last:border-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] text-gray-600 w-4">{i + 1}</span>
+                  <span className="text-xs text-gray-300 truncate ltr">{p.path || '/'}</span>
+                </div>
+                <span className="text-[10px] text-gray-500 shrink-0">{p.count}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {data.pageViews && data.pageViews.length > 0 && (
+      {/* Recent Prices */}
+      {data.recentPrices && data.recentPrices.length > 0 && (
         <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <h3 className="text-sm font-bold mb-3">روند بازدید روزانه (۳۰ روز)</h3>
-          <div className="flex items-end gap-1 h-32 overflow-x-auto pb-1">
-            {[...data.pageViews].reverse().map((d: any, i: number) => {
-              const maxCount = Math.max(...data.pageViews.map((x: any) => x.count))
-              const height = (d.count / maxCount) * 100
-              return (
-                <div key={i} className="flex flex-col items-center gap-0.5 shrink-0">
-                  <div className="w-6 sm:w-8 bg-emerald-600/60 rounded-t" style={{ height: `${height}%`, minHeight: d.count > 0 ? '4px' : '0' }} />
-                  <span className="text-[8px] text-gray-500">{d.date?.slice(5) || ''}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {data.anomalies && data.anomalies.length > 0 && (
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <h3 className="text-sm font-bold mb-3">ناهنجاری‌های قیمتی</h3>
-          <div className="space-y-1.5">
-            {data.anomalies.map((a: any, i: number) => (
-              <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${a.direction === 'spike' ? 'bg-red-600/20 text-red-400' : 'bg-orange-600/20 text-orange-400'}`}>
-                    {a.direction === 'spike' ? '⬆' : '⬇'}
-                  </span>
-                  <span className="text-sm font-medium">{a.symbol}</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Z={a.zScore?.toFixed(1)} | {a.currentPrice?.toLocaleString()}
-                </div>
+          <h3 className="text-sm font-bold mb-3">آخرین قیمت‌های به‌روز شده</h3>
+          <div className="space-y-1">
+            {data.recentPrices.map((p: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-1 border-b border-gray-800 last:border-0 text-xs">
+                <span className="text-gray-300 font-medium">{p.symbol}</span>
+                <span className="text-gray-500">{Number(p.price).toLocaleString()} | {new Date(p.updatedAt).toLocaleDateString('fa-IR')}</span>
               </div>
             ))}
           </div>

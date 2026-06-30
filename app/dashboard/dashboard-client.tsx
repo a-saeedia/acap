@@ -316,7 +316,7 @@ export function DashboardClient() {
                 <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: 'A|CAP+', icon: Crown, action: () => router.push('/acap-plus'), color: 'text-amber-400' },
+                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/signals' : '/acap-plus'), color: 'text-amber-400' },
                     { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
                   ].map(btn => (
