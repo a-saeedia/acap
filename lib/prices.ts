@@ -38,7 +38,7 @@ function parseTgjuPrice(val: string): number {
 
 async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; timestamp: string }> {
   try {
-    const res = await fetch(TGJU_HTML, { ...FETCH_OPTS })
+    const res = await fetch(TGJU_HTML, { cache: 'no-store', next: { revalidate: 0 }, ...FETCH_OPTS })
     if (!res.ok) return { prices: {}, irrRate: 0, timestamp: '' }
     const html = await res.text()
     
@@ -128,6 +128,8 @@ export async function fetchTgjuData(): Promise<{
   for (const url of ajaxUrls) {
     try {
       const res = await fetch(url, { 
+        cache: 'no-store',
+        next: { revalidate: 0 },
         ...FETCH_OPTS,
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
       })

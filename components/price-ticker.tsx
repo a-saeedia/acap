@@ -8,9 +8,9 @@ const TICKER_SYMBOLS = [
   { key: 'BTC', label: 'BTC', format: (p: number) => `$${p.toLocaleString()}` },
   { key: 'ETH', label: 'ETH', format: (p: number) => `$${p.toLocaleString()}` },
   { key: 'USDT', label: 'USDT', format: (p: number) => `$${p.toFixed(2)}` },
-  { key: 'USD-IRR', label: 'دلار', format: (p: number) => `${p.toLocaleString('fa-IR')} تومان` },
-  { key: 'EUR-IRR', label: 'یورو', format: (p: number) => `${p.toLocaleString('fa-IR')} تومان` },
-  { key: 'GOLD18', label: 'طلای ۱۸', format: (p: number) => `${p.toLocaleString('fa-IR')} تومان` },
+  { key: 'USD-IRR', label: 'دلار', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
+  { key: 'EUR-IRR', label: 'یورو', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
+  { key: 'GOLD18', label: 'طلای ۱۸', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
   { key: 'GOLD', label: 'انس', format: (p: number) => `$${p.toLocaleString()}` },
 ]
 

@@ -3,6 +3,8 @@ import { fetchAllPrices, DEFAULT_STOCKS, fetchTsetmcSearch } from '@/lib/prices'
 import { detectAnomalies } from '@/lib/ml'
 import { randomUUID } from 'node:crypto'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   let insCodeMap: Record<string, string> = {}
   let stocks: any[] = []

@@ -93,13 +93,13 @@ function getAssetPriceIr(
   const upper = symbol.toUpperCase()
   if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
   const irrKey = `${upper}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price
+  if (prices[irrKey]) return prices[irrKey].price / 10
   const direct = prices[upper] ?? prices[symbol]
   if (!direct) return null
-  if (direct.currency === 'IRR') return direct.price
+  if (direct.currency === 'IRR') return direct.price / 10
   if (direct.currency === 'USD') {
     const usdRate = prices['USDT-IRR']?.price
-    if (usdRate) return direct.price * usdRate
+    if (usdRate) return (direct.price * usdRate) / 10
     return direct.price
   }
   return null
