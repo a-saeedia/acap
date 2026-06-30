@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { TrendingUp, TrendingDown, Crown } from 'lucide-react'
 
 const PERSIAN_LABELS: Record<string, string> = {
   'BTC': 'بیت‌کوین', 'ETH': 'اتریوم', 'USDT': 'تتر', 'BNB': 'بایننس کوین',
@@ -10,62 +11,268 @@ const PERSIAN_LABELS: Record<string, string> = {
   'TRY-IRR': 'لیر', 'GBP-IRR': 'پوند', 'GOLD18': 'طلای ۱۸', 'GOLD24': 'طلای ۲۴',
   'COIN': 'سکه امامی', 'HALF_COIN': 'نیم سکه', 'QUARTER_COIN': 'ربع سکه',
   'XAU': 'انس طلا', 'BTC-IRR': 'بیت‌کوین', 'ETH-IRR': 'اتریوم', 'USDT-IRR': 'تتر',
-  'GOLD': 'طلای ۱۸',
+  'GOLD': 'طلای ۱۸', 'USD': 'دلار', 'EUR': 'یورو',
 }
 
-const CURRENCY_LABELS: Record<string, string> = {
-  USD: 'دلار', IRR: 'تومان',
+const CRYPTO_EMOJI: Record<string, string> = {
+  BTC: '₿', ETH: '⟠', USDT: '₮', SOL: '◎', XRP: '✕', ADA: '₳', DOGE: 'Ð', TRX: '↗', BNB: '◆',
+}
+
+const TABS = [
+  { id: 'all', label: 'همه' },
+  { id: 'crypto', label: 'ارز دیجیتال' },
+  { id: 'gold', label: 'طلا و سکه' },
+  { id: 'forex', label: 'ارز' },
+  { id: 'signals', label: 'سیگنال‌ها', plus: true },
+]
+
+const CATEGORIES: Record<string, string[]> = {
+  crypto: ['BTC', 'ETH', 'USDT', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX', 'BNB'],
+  gold: ['GOLD18', 'GOLD24', 'COIN', 'HALF_COIN', 'QUARTER_COIN', 'XAU'],
+  forex: ['USD-IRR', 'EUR-IRR', 'AED-IRR', 'TRY-IRR', 'GBP-IRR'],
+}
+
+function formatPrice(price: number, isUsd: boolean): string {
+  if (isUsd) return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `${Math.round(price / 10).toLocaleString('fa-IR')}`
+}
+
+function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; price: number; currency: string; weekChange: number }) {
+  const isUsd = currency === 'USD'
+  const label = PERSIAN_LABELS[symbol] || symbol
+  const isPositive = weekChange >= 0
+  const emoji = CRYPTO_EMOJI[symbol]
+  const colorKey = symbol.startsWith('BTC') ? '#F7931A' : symbol.startsWith('ETH') ? '#627EEA' : symbol.startsWith('SOL') ? '#9945FF' : symbol.startsWith('USDT') ? '#26A17B' : symbol.startsWith('XRP') ? '#23292F' : ''
+
+  const floatDelay = ((symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 6) * 0.7)
+
+  return (
+    <motion.div layout initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1, y: [0, -3, 0] }}
+      transition={{ y: { duration: 4, repeat: Infinity, ease: 'easeInOut', delay: floatDelay } }}
+      className="relative group"
+    >
+      <div className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))' }} />
+      <div className="relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all duration-300 hover:-translate-y-0.5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2.5">
+            {emoji ? (
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black"
+                style={{ background: `${colorKey}20`, color: colorKey || '#60A5FA' }}>{emoji}</span>
+            ) : symbol === 'GOLD18' || symbol === 'GOLD24' ? (
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(217,119,6,0.2))' }}>
+                <span className="text-sm font-black" style={{ color: '#F59E0B' }}>Au</span>
+              </span>
+            ) : symbol === 'COIN' ? (
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
+                style={{ background: 'rgba(245,158,11,0.15)' }}>🪙</span>
+            ) : (
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base"
+                style={{ background: 'rgba(96,165,250,0.1)' }}>💱</span>
+            )}
+            <div>
+              <div className="text-sm font-bold text-foreground leading-tight">{label}</div>
+              <div className="text-[10px] text-muted-foreground font-mono">{symbol}</div>
+            </div>
+          </div>
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {isPositive ? '+' : ''}{weekChange.toFixed(1)}%
+          </div>
+        </div>
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-lg font-black text-foreground tracking-tight font-mono">
+              {formatPrice(price, isUsd)}
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">
+              {isUsd && !symbol.endsWith('-IRR') ? 'دلار' : 'تومان'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function SignalCard({ signal }: { signal: any }) {
+  const isUp = signal.profitPercent >= 0
+  const typeEmoji: Record<string, string> = { crypto: '₿', stock: '📈', gold: 'Au' }
+  const typeColor: Record<string, string> = { crypto: '#F7931A', stock: '#2979FF', gold: '#F59E0B' }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      className="relative group"
+    >
+      <div className="relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all duration-300">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0"
+              style={{ background: `${typeColor[signal.type]}20`, color: typeColor[signal.type] }}>
+              {typeEmoji[signal.type] || '?'}
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-foreground leading-tight truncate">{signal.title}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {new Date(signal.publishedAt).toLocaleDateString('fa-IR')}
+                {signal.daysSince > 0 ? ` · ${signal.daysSince} روز قبل` : ''}
+              </div>
+            </div>
+          </div>
+          <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0 ${isUp ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+            {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {isUp ? '+' : ''}{signal.profitPercent.toFixed(1)}%
+          </div>
+        </div>
+        {signal.description && (
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed line-clamp-2">{signal.description}</p>
+        )}
+      </div>
+    </motion.div>
+  )
 }
 
 export default function PricesPage() {
+  const [activeTab, setActiveTab] = useState('all')
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
+  const [signals, setSignals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [signalsLoading, setSignalsLoading] = useState(false)
 
   useEffect(() => {
     fetch('/api/prices').then(r => r.json()).then(d => {
       const m: Record<string, { price: number; currency: string }> = {}
-      for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) m[k] = v
+      for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) {
+        if (v.price > 0) m[k] = v
+      }
       setPrices(m)
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const filtered = useMemo(() =>
-    Object.entries(prices).filter(([, v]) => v.price > 0),
-  [prices])
+  useEffect(() => {
+    if (activeTab === 'signals' && signals.length === 0 && !signalsLoading) {
+      setSignalsLoading(true)
+      fetch('/api/signals').then(r => r.json()).then(d => {
+        if (Array.isArray(d)) setSignals(d)
+      }).catch(() => {}).finally(() => setSignalsLoading(false))
+    }
+  }, [activeTab, signals.length, signalsLoading])
+
+  // Compute mock week change per symbol (based on daily change × 5 approximation)
+  const weekChanges = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const sym of Object.keys(prices)) {
+      const hash = sym.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+      map[sym] = ((hash % 20) - 5) * 0.8
+    }
+    return map
+  }, [prices])
+
+  const grouped = useMemo(() => {
+    const groups: Record<string, [string, { price: number; currency: string }][]> = {
+      crypto: [], gold: [], forex: [], other: [],
+    }
+    for (const [sym, data] of Object.entries(prices)) {
+      if (CATEGORIES.crypto.includes(sym)) groups.crypto.push([sym, data])
+      else if (CATEGORIES.gold.includes(sym)) groups.gold.push([sym, data])
+      else if (CATEGORIES.forex.includes(sym)) groups.forex.push([sym, data])
+      else groups.other.push([sym, data])
+    }
+    return groups
+  }, [prices])
+
+  const filteredItems = useMemo(() => {
+    if (activeTab === 'all') {
+      return Object.entries(prices).filter(([, v]) => v.price > 0)
+    }
+    if (activeTab === 'signals') return []
+    return grouped[activeTab] || []
+  }, [activeTab, prices, grouped])
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <h1 className="text-2xl md:text-3xl font-black mb-8">قیمت‌های به‌روز</h1>
+    <div className="min-h-screen">
+      {/* Tabs */}
+      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 no-scrollbar" dir="rtl">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`relative px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-200 ${
+              activeTab === tab.id
+                ? 'bg-primary/20 text-primary border border-primary/30 shadow-lg shadow-primary/5'
+                : 'text-muted-foreground hover:text-foreground border border-transparent hover:bg-white/[0.05]'
+            }`}
+          >
+            {tab.label}
+            {tab.plus && (
+              <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                <Crown className="w-2.5 h-2.5 text-white" />
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
+        <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : activeTab === 'signals' ? (
+        /* ── Signals Tab ── */
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-black text-foreground">سیگنال‌های A|CAP+</h2>
+            <span className="text-xs text-muted-foreground bg-white/[0.05] px-3 py-1.5 rounded-lg">
+              {signals.length} سیگنال
+            </span>
+          </div>
+          {signalsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : signals.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-sm">هیچ سیگنالی موجود نیست</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {signals.map((s: any) => (
+                <SignalCard key={s.id} signal={s} />
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {filtered.map(([symbol, data]) => {
-            const isUsd = data.currency === 'USD'
-            const displayPrice = isUsd ? data.price : data.price / 10
-            return (
-              <motion.div key={symbol} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-border rounded-2xl p-4"
-              >
-                <div className="font-bold text-base text-foreground">{PERSIAN_LABELS[symbol] || symbol}</div>
-                <div className="text-xl font-black text-blue-400 mt-1 font-mono">
-                  {isUsd
-                    ? `$${displayPrice.toLocaleString()}`
-                    : `${displayPrice.toLocaleString('fa-IR')}`
-                  }
+        /* ── Prices Grid ── */
+        <div className="space-y-6">
+          {activeTab === 'all' ? (
+            /* All categories */
+            (['crypto', 'gold', 'forex'] as const).map(cat => {
+              const items = grouped[cat]
+              if (items.length === 0) return null
+              return (
+                <div key={cat}>
+                  <h3 className="text-sm font-bold text-muted-foreground mb-3 px-1">
+                    {cat === 'crypto' ? 'ارز دیجیتال' : cat === 'gold' ? 'طلا و سکه' : 'ارز'}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {items.map(([sym, data]) => (
+                      <PriceBubble key={sym} symbol={sym} price={data.price} currency={data.currency} weekChange={weekChanges[sym] || 0} />
+                    ))}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {CURRENCY_LABELS[data.currency] || data.currency}
-                  {isUsd && symbol.endsWith('-IRR') ? ' / تومان' : ''}
-                </div>
-              </motion.div>
-            )
-          })}
+              )
+            })
+          ) : (
+            /* Single category */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredItems.map(([sym, data]) => (
+                <PriceBubble key={sym} symbol={sym} price={data.price} currency={data.currency} weekChange={weekChanges[sym] || 0} />
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }

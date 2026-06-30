@@ -159,6 +159,18 @@ export const userEvent = pgTable('user_event', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
+export const signal = pgTable('signal', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(), // 'crypto' | 'stock' | 'gold'
+  symbol: text('symbol').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  action: text('action').notNull(), // 'buy' | 'sell'
+  priceAtPublish: real('priceAtPublish').notNull(),
+  publishedAt: timestamp('publishedAt').notNull().defaultNow(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
 export const mlAnomaly = pgTable('ml_anomaly', {
   id: text('id').primaryKey(),
   symbol: text('symbol').notNull(),
