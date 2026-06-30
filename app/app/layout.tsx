@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { BarChart3, Wallet, TrendingUp, LogOut, Menu, X } from 'lucide-react'
 
 const navItems = [
-  { href: '/app', label: 'خلاصه Portfolio', icon: '📊' },
-  { href: '/app/assets', label: 'دارایی‌ها', icon: '💰' },
-  { href: '/app/prices', label: 'قیمت‌ها', icon: '📈' },
+  { href: '/app', label: 'خلاصه Portfolio', icon: BarChart3 },
+  { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
+  { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : 'text-gray-400 hover:text-white hover:bg-gray-800'
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
+              <item.icon className="w-5 h-5" />
               {item.label}
             </Link>
           ))}
@@ -49,16 +49,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="pt-4 border-t border-gray-800">
           <div className="text-sm text-gray-400 mb-2 truncate">{session.user.name}</div>
           <button onClick={() => signOut().then(() => router.push('/'))}
-            className="w-full text-right px-4 py-2 rounded-xl text-sm text-red-400 hover:bg-red-400/10 transition-all"
+            className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-red-400 hover:bg-red-400/10 transition-all"
           >
-            خروج
+            <LogOut className="w-4 h-4" /> خروج
           </button>
         </div>
       </aside>
 
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-20 bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 p-4 flex items-center justify-between">
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-2xl">☰</button>
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-foreground">{mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
         <div className="font-bold">A | CAP</div>
         <div className="w-8" />
       </div>
@@ -74,14 +74,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   pathname === item.href ? 'bg-blue-600/20 text-blue-400' : 'text-gray-400'
                 }`}
               >
-                <span className="text-xl">{item.icon}</span>
+                <item.icon className="w-5 h-5" />
                 {item.label}
               </Link>
             ))}
             <button onClick={() => signOut().then(() => router.push('/'))}
-              className="w-full text-right px-4 py-4 rounded-xl text-base text-red-400 mt-4"
+              className="w-full flex items-center gap-2 px-4 py-4 rounded-xl text-base text-red-400 mt-4"
             >
-              خروج
+              <LogOut className="w-5 h-5" /> خروج
             </button>
           </nav>
         </div>

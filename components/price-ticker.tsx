@@ -82,7 +82,7 @@ export function PriceTicker() {
     <div className="h-7 bg-gradient-to-r from-blue-950/80 via-blue-900/60 to-blue-950/80 border-b border-blue-500/10 overflow-hidden">
       <div className="relative h-full flex items-center overflow-hidden">
         <div className="flex animate-ticker gap-10 whitespace-nowrap px-4" style={{ direction: 'ltr' }}>
-          {[...items, ...items, ...items, ...items, ...items].map((item, i) => (
+          {[...items, ...items].map((item, i) => (
             <span key={i} className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] text-blue-200/80 font-medium">
               <span className="text-blue-400 font-bold">{item!.label}</span>
               <span>{item!.display}</span>

@@ -2,10 +2,10 @@
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: blob:",
-  "font-src 'self'",
-  "connect-src 'self' https://api.coingecko.com https://api.nobitex.ir",
+  "font-src 'self' https://cdn.jsdelivr.net",
+  "connect-src 'self' https://api.coingecko.com https://api.nobitex.ir https://call2.tgju.org https://call3.tgju.org https://call4.tgju.org https://www.tgju.org https://cdn.tsetmc.com https://cdn.jsdelivr.net https://vitals.vercel-insights.com",
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",

@@ -276,7 +276,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
 
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type })
-    setTimeout(() => setToast(null), 3000)
+    if (typeof window !== 'undefined') {
+      const existing = (window as any).__toastTimer
+      if (existing) clearTimeout(existing)
+      ;(window as any).__toastTimer = setTimeout(() => setToast(null), 5000)
+    }
   }
 
   const fetchPrices = useCallback(async (isUserAction = false) => {
@@ -555,8 +559,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           }`}
           style={{ backdropFilter: 'blur(12px)' }}
         >
-          {toast.type === 'success' ? '✓' : '✕'}
-          {toast.msg}
+          <span className="text-lg">{toast.type === 'success' ? '✓' : '✕'}</span>
+          <span className="flex-1">{toast.msg}</span>
+          <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 transition-opacity">
+            <X className="w-4 h-4" />
+          </button>
         </motion.div>
       )}
 
