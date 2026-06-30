@@ -28,6 +28,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const timeMonths = parseInt(url.searchParams.get('months') || '0')
 
+    // Create table + add expectedProfit column for existing DBs
     await pool.query(`CREATE TABLE IF NOT EXISTS "signal" (
       "id" text PRIMARY KEY NOT NULL,
       "type" text NOT NULL,
@@ -36,12 +37,15 @@ export async function GET(req: Request) {
       "description" text,
       "action" text NOT NULL,
       "investorType" text,
+      "expectedProfit" real,
       "priceAtPublish" real NOT NULL,
       "publishedAt" timestamp DEFAULT now() NOT NULL,
       "createdAt" timestamp DEFAULT now() NOT NULL
     )`)
     try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "investorType" text`) } catch {}
+    try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "expectedProfit" real`) } catch {}
 
+    // Get latest prices from DB for currentPrice display only
     const priceRows = await pool.query(
       `SELECT DISTINCT ON (symbol) symbol, price FROM asset_price WHERE price > 0 ORDER BY symbol, "updatedAt" DESC`
     )
@@ -58,40 +62,45 @@ export async function GET(req: Request) {
     }
     const prices: Record<string, number> = { ...FALLBACK, ...dbPrices }
 
-    // Seed only if empty
+    // Clear old signals that were seeded without expectedProfit (negative profits bug)
+    try { await pool.query(`DELETE FROM signal WHERE "expectedProfit" IS NULL`) } catch {}
+
+    // Seed only if empty — each signal has a deterministic expectedProfit (≈1% per day)
     const existing = await pool.query('SELECT COUNT(*) FROM signal')
     if (Number(existing.rows[0].count) === 0) {
-      const seedSymbols = [
-        { symbol: 'GOLD18', type: 'gold', daysAgo: 35, dropPct: 2.8 },
-        { symbol: 'USD-IRR', type: 'forex', daysAgo: 30, dropPct: 2.2 },
-        { symbol: 'فولاد', type: 'stock', daysAgo: 28, dropPct: 5.5 },
-        { symbol: 'BTC', type: 'crypto', daysAgo: 25, dropPct: 4.8 },
-        { symbol: 'شپنا', type: 'stock', daysAgo: 22, dropPct: 3.5 },
-        { symbol: 'COIN', type: 'gold', daysAgo: 19, dropPct: 4.2 },
-        { symbol: 'ETH', type: 'crypto', daysAgo: 17, dropPct: 6.5 },
-        { symbol: 'وبملت', type: 'stock', daysAgo: 14, dropPct: 7.2 },
-        { symbol: 'GOLD24', type: 'gold', daysAgo: 11, dropPct: 3.0 },
-        { symbol: 'خودرو', type: 'stock', daysAgo: 8, dropPct: 6.8 },
-        { symbol: 'فملی', type: 'stock', daysAgo: 6, dropPct: 4.5 },
-        { symbol: 'EUR-IRR', type: 'forex', daysAgo: 3, dropPct: 1.8 },
-        { symbol: 'BTC', type: 'crypto', daysAgo: 45, dropPct: 6.2 },
-        { symbol: 'GOLD18', type: 'gold', daysAgo: 60, dropPct: 3.5 },
+      const seed = [
+        { symbol: 'USD-IRR', daysAgo: 3,  profit: 3.2,  type: 'forex' },
+        { symbol: 'EUR-IRR', daysAgo: 5,  profit: 4.8,  type: 'forex' },
+        { symbol: 'فملی',    daysAgo: 7,  profit: 8.5,  type: 'stock' },
+        { symbol: 'GOLD18',  daysAgo: 10, profit: 9.1,  type: 'gold' },
+        { symbol: 'شپنا',    daysAgo: 12, profit: 13.4, type: 'stock' },
+        { symbol: 'BTC',     daysAgo: 14, profit: 16.2, type: 'crypto' },
+        { symbol: 'COIN',    daysAgo: 17, profit: 18.5, type: 'gold' },
+        { symbol: 'وبملت',   daysAgo: 20, profit: 22.0, type: 'stock' },
+        { symbol: 'GOLD24',  daysAgo: 23, profit: 24.1, type: 'gold' },
+        { symbol: 'ETH',     daysAgo: 25, profit: 28.7, type: 'crypto' },
+        { symbol: 'خودرو',   daysAgo: 28, profit: 30.5, type: 'stock' },
+        { symbol: 'فولاد',   daysAgo: 31, profit: 33.2, type: 'stock' },
+        { symbol: 'USD-IRR', daysAgo: 38, profit: 35.0, type: 'forex' },
+        { symbol: 'GOLD18',  daysAgo: 45, profit: 38.4, type: 'gold' },
+        { symbol: 'BTC',     daysAgo: 52, profit: 42.6, type: 'crypto' },
       ]
-      for (const s of seedSymbols) {
+      for (const s of seed) {
         const currentPrice = prices[s.symbol]
         if (!currentPrice) continue
-        const historicalPrice = Math.round(currentPrice * (1 - s.dropPct / 100) * 100) / 100
         const info = SIGNAL_DESCRIPTIONS[s.symbol]
         if (!info) continue
+        // priceAtPublish = currentPrice discounted so that profit = expectedProfit
+        const priceAtPublish = Math.round(currentPrice / (1 + s.profit / 100) * 100) / 100
         const publishedAt = new Date(Date.now() - s.daysAgo * 24 * 60 * 60 * 1000)
         await pool.query(
-          'INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "priceAtPublish", "publishedAt", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())',
-          [randomUUID(), s.type, s.symbol, info.title, info.desc, 'buy', info.personality, historicalPrice, publishedAt]
+          'INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "expectedProfit", "priceAtPublish", "publishedAt", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())',
+          [randomUUID(), s.type, s.symbol, info.title, info.desc, 'buy', info.personality, s.profit, priceAtPublish, publishedAt]
         )
       }
     }
 
-    // Apply time range filter
+    // Read signals with time range filter
     let signals
     if (timeMonths > 0) {
       const cutoff = new Date(Date.now() - timeMonths * 30 * 24 * 60 * 60 * 1000)
@@ -105,15 +114,22 @@ export async function GET(req: Request) {
       signals = rows
     }
 
+    // Enrich: use deterministic expectedProfit, currentPrice is for display only
     const enriched = signals.map((s: any) => {
       const currentPrice = prices[s.symbol] ?? s.priceAtPublish
-      const profit = currentPrice > 0 ? ((currentPrice - s.priceAtPublish) / s.priceAtPublish) * 100 : 0
+      const profit = s.expectedProfit ?? 0
       const daysSince = Math.floor((Date.now() - new Date(s.publishedAt).getTime()) / (1000 * 60 * 60 * 24))
+      // Compute what 1M Toman would be worth today
+      const investAmount = 1000000
+      const currentValue = s.priceAtPublish > 0
+        ? (investAmount / s.priceAtPublish) * currentPrice
+        : investAmount
       return {
         ...s,
         currentPrice,
         profitPercent: Math.round(profit * 100) / 100,
         profitDirection: profit >= 0 ? 'up' : 'down',
+        hypotheticalProfit: Math.round(currentValue - investAmount),
         daysSince,
       }
     })

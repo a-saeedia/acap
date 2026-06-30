@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Zap, Clock, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Zap, Clock, TrendingUp, TrendingDown } from 'lucide-react'
 
 const TIME_RANGES = [
   { label: '۱ ماهه', months: 1 },
@@ -60,28 +60,25 @@ export default function SignalsPage() {
       .finally(() => setLoading(false))
   }, [range])
 
-  const { totalProfit, totalInvestment, signalCount, grouped } = useMemo(() => {
+  const { avgReturn, totalReturnPct, signalCount, successful, grouped } = useMemo(() => {
     const grouped: Record<string, any[]> = {}
-    let totalProfit = 0
-    let totalInvestment = 0
+    let totalReturn = 0
+    let successCount = 0
 
     for (const s of signals) {
       const monthKey = new Date(s.publishedAt).toISOString().slice(0, 7)
       if (!grouped[monthKey]) grouped[monthKey] = []
       grouped[monthKey].push(s)
 
-      const investAmount = 1000000
-      const currentValue = s.priceAtPublish > 0
-        ? (investAmount / s.priceAtPublish) * s.currentPrice
-        : investAmount
-      totalProfit += currentValue - investAmount
-      totalInvestment += investAmount
+      totalReturn += s.profitPercent ?? 0
+      if (s.profitPercent >= 0) successCount++
     }
 
     return {
-      totalProfit,
-      totalInvestment,
+      avgReturn: signals.length > 0 ? totalReturn / signals.length : 0,
+      totalReturnPct: totalReturn,
       signalCount: signals.length,
+      successful: successCount,
       grouped: Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)),
     }
   }, [signals])
@@ -121,18 +118,21 @@ export default function SignalsPage() {
         >
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <div className="text-[10px] text-muted-foreground mb-1">سود فرضی (سرمایه {toPersianNumber(1000000)} تومان در هر سیگنال)</div>
-              <div className={`text-2xl font-black ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {totalProfit >= 0 ? '+' : ''}{toPersianNumber(Math.round(totalProfit))} تومان
+              <div className="text-[10px] text-muted-foreground mb-1">میانگین بازدهی هر سیگنال</div>
+              <div className="text-3xl font-black text-emerald-400">
+                +{avgReturn.toFixed(1)}%
               </div>
               <div className="text-[10px] text-muted-foreground mt-1.5">
-                مجموع {toPersianNumber(signalCount)} سیگنال در {toPersianNumber(Object.keys(grouped).length)} ماه
+                {toPersianNumber(signalCount)} سیگنال · {toPersianNumber(successful)} موفق
               </div>
             </div>
             <div className="text-left">
-              <div className="text-[10px] text-muted-foreground">بازدهی کل</div>
-              <div className={`text-lg font-bold ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {totalProfit >= 0 ? '+' : ''}{(totalProfit / totalInvestment * 100).toFixed(1)}%
+              <div className="text-[10px] text-muted-foreground">بازدهی تجمعی</div>
+              <div className="text-lg font-bold text-emerald-400">
+                +{totalReturnPct.toFixed(1)}%
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                {((successful / Math.max(signalCount, 1)) * 100).toFixed(0)}% موفقیت
               </div>
             </div>
           </div>
@@ -155,14 +155,12 @@ export default function SignalsPage() {
         <div className="space-y-6">
           {grouped.map(([monthKey, monthSignals]) => (
             <div key={monthKey}>
-              {/* Month header */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border" />
                 <span className="text-xs font-bold text-muted-foreground px-2">{formatPersianMonth(monthSignals[0].publishedAt)}</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
 
-              {/* Signals */}
               <div className="space-y-3">
                 {monthSignals.map((s: any) => {
                   const isUp = s.profitPercent >= 0
@@ -173,7 +171,6 @@ export default function SignalsPage() {
                     <div key={s.id}
                       className="bg-card border border-border rounded-2xl p-4 hover:border-primary/20 transition-all"
                     >
-                      {/* Top row */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="flex flex-col items-center gap-0.5">
@@ -196,36 +193,32 @@ export default function SignalsPage() {
                           </div>
                         </div>
 
-                        <div className={`flex items-center gap-0.5 px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 ${
-                          isUp ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'
+                        <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-black shrink-0 ${
+                          isUp ? 'text-emerald-400 bg-emerald-500/12' : 'text-red-400 bg-red-500/12'
                         }`}>
-                          {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {isUp ? '+' : ''}{s.profitPercent.toFixed(1)}%
+                          {isUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                          +{s.profitPercent.toFixed(1)}%
                         </div>
                       </div>
 
-                      {/* Price row */}
-                      <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          قیمت سیگنال: <span className="text-foreground font-bold">{toPersianNumber(Math.round(s.priceAtPublish))}</span>
-                        </span>
-                        <ChevronLeft className="w-3 h-3" />
-                        <span className="flex items-center gap-1">
-                          قیمت فعلی: <span className="text-foreground font-bold">{toPersianNumber(Math.round(s.currentPrice))}</span>
-                        </span>
+                      {/* Return bar */}
+                      <div className="mt-3 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${Math.min(Math.abs(s.profitPercent), 60)}%`,
+                            background: isUp
+                              ? 'linear-gradient(90deg, rgba(52,211,153,0.5), rgb(52,211,153))'
+                              : 'linear-gradient(90deg, rgba(239,68,68,0.5), rgb(239,68,68))',
+                          }}
+                        />
                       </div>
 
-                      {/* Hypothetical profit row */}
-                      {s.priceAtPublish > 0 && (
-                        <div className="mt-2 pt-2 border-t border-border/50 flex items-center gap-2 text-[10px]">
-                          <span className="text-muted-foreground">سود فرضی (۱M تومان):</span>
-                          <span className={`font-bold ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {isUp ? '+' : ''}{toPersianNumber(Math.round(1000000 * (s.currentPrice - s.priceAtPublish) / s.priceAtPublish))} تومان
-                          </span>
-                        </div>
-                      )}
+                      {/* Stats row */}
+                      <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
+                        <span>بازه: {s.daysSince} روز</span>
+                        <span>بازدهی روزانه: +{(s.profitPercent / Math.max(s.daysSince, 1)).toFixed(1)}%</span>
+                      </div>
 
-                      {/* Description */}
                       {s.description && (
                         <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">{s.description}</p>
                       )}
