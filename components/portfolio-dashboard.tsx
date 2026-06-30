@@ -329,6 +329,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   const fetchPrices = useCallback(async (isUserAction = false) => {
     if (isUserAction) setPriceLoading(true)
     else setRefreshing(true)
+    let ok = false
     try {
       const apiRes = await fetch('/api/prices')
       const data = apiRes ? await apiRes.json().catch(() => ({})) : {}
@@ -342,9 +343,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
         setStockPrices(sp)
       }
       setLastUpdate(new Date())
+      ok = Object.keys(data.prices ?? {}).length > 0
     } catch (e) { console.error('fetchPrices error:', e) }
     setPriceLoading(false)
     setRefreshing(false)
+    return ok
   }, [])
 
   const fetchAll = useCallback(async () => {
@@ -357,12 +360,19 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
 
   useEffect(() => {
     if (isPending) return
+    let cancelled = false
     ;(async () => {
       await deduplicateAssets().catch(() => {})
-      const a = await fetchAll()
-      await fetchPrices(true)
-      setLoading(false)
+      await fetchAll()
+      const ok = await fetchPrices(true)
+      if (cancelled) return
+      if (!ok) {
+        await new Promise(r => setTimeout(r, 3000))
+        if (!cancelled) await fetchPrices(true)
+      }
+      if (!cancelled) setLoading(false)
     })()
+    return () => { cancelled = true }
   }, [isPending, fetchAll, fetchPrices])
 
   useEffect(() => {
