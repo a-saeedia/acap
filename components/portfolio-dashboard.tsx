@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from '@/lib/auth-client'
-import { getMyAssets, createAsset, updateAsset, deleteAsset } from '@/app/actions/assets'
+import { getMyAssets, createAsset, updateAsset, deleteAsset, deduplicateAssets } from '@/app/actions/assets'
 import {
-  Plus, Trash2, Edit3, X, Search, RefreshCw,
-  Wallet, Loader2, Clock, Bitcoin, PieChart, Crown, Brain, BarChart3, Target,
+  Plus, X, RefreshCw, Loader2, Crown, Target,
 } from 'lucide-react'
 
 import { AISupport } from '@/components/ai-support'
@@ -37,7 +36,7 @@ type IranStock = {
 const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; gradient: string }> = {
   crypto: { label: 'رمز ارز', icon: '₿', color: '#F59E0B', gradient: 'from-amber-500/20 to-yellow-600/10' },
   stock: { label: 'بورس ایران', icon: '📈', color: '#2979FF', gradient: 'from-blue-500/20 to-blue-600/10' },
-  gold: { label: 'طلا', icon: '🟨', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
+  gold: { label: 'طلا', icon: 'Au', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
   currency: { label: 'ارز', icon: '💵', color: '#10B981', gradient: 'from-emerald-500/20 to-green-600/10' },
   other: { label: 'سایر', icon: '💰', color: '#8B5CF6', gradient: 'from-purple-500/20 to-violet-600/10' },
 }
@@ -262,6 +261,42 @@ function PerformanceBars({ assets, prices, stockPrices }: {
   )
 }
 
+const AssetCard = memo(function AssetCard({ asset, value, cost, pnl, diff, cfg, onEdit, onDelete }: {
+  asset: Asset; value: number; cost: number; pnl: number; diff: number;
+  cfg: { icon: string; color: string }; onEdit: () => void; onDelete: () => void
+}) {
+  return (
+    <div onClick={onEdit}
+      className="bg-card border border-border rounded-2xl p-3 text-center cursor-pointer hover:border-primary/30 transition-colors relative group"
+    >
+      <div className="text-2xl leading-none mb-1.5">
+        {asset.type === 'crypto' && CRYPTO_COLORS[asset.symbol] ? (
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md text-white text-[9px] font-extrabold"
+            style={{ background: CRYPTO_COLORS[asset.symbol] }}>{asset.symbol.slice(0, 3)}</span>
+        ) : asset.type === 'gold' ? (
+          <span className="inline-flex items-center justify-center w-10 h-5 rounded-[3px] text-[7px] font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 0 8px rgba(245,158,11,0.5)' }}>Au</span>
+        ) : cfg.icon}
+      </div>
+      <div className="text-sm font-semibold text-foreground truncate leading-snug">{asset.label}</div>
+      <div className="text-xs text-muted-foreground truncate">{formatQuantity(asset.quantity, asset.symbol)}</div>
+      <div className="text-sm font-bold text-foreground mt-1" dir="ltr">
+        {value > 0 ? formatCurrency(value) : '—'}
+      </div>
+      {cost > 0 && (
+        <div className={`text-xs font-semibold mt-0.5 ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {diff >= 0 ? '+' : ''}{pnl.toFixed(1)}%
+        </div>
+      )}
+      <button onClick={(e) => { e.stopPropagation(); onDelete() }}
+        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  )
+})
+
 export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: { isPlus?: boolean; investorType?: string | null; quizTaken?: boolean }) {
   const { data: session, isPending } = useSession()
   const [assets, setAssets] = useState<Asset[]>([])
@@ -295,71 +330,22 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
     if (isUserAction) setPriceLoading(true)
     else setRefreshing(true)
     try {
-      // Fetch server API (crypto + stocks)
       const apiRes = await fetch('/api/prices')
       const data = apiRes ? await apiRes.json().catch(() => ({})) : {}
-      const mergedPrices = { ...(data.prices ?? {}) }
-      
-      // Fetch TGJU live prices directly from browser (try multiple endpoints)
-      const rev = Math.random().toString(36).substring(2, 12)
-      const tgjuUrls = [
-        `https://call2.tgju.org/ajax.json?rev=${rev}`,
-        `https://call3.tgju.org/ajax.json?rev=${rev}`,
-        `https://call4.tgju.org/ajax.json?rev=${rev}`,
-      ]
-      let tgjuOk = false
-      for (const url of tgjuUrls) {
-        try {
-          const r = await fetch(url)
-          if (!r.ok) continue
-          const tj = await r.json()
-          if (tj?.current?.price_dollar_rl?.p) {
-            const c = tj.current
-            const irrRate = Number(c.price_dollar_rl.p.replace(/,/g, ''))
-            mergedPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-            mergedPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-            if (c.price_eur?.p) mergedPrices['EUR-IRR'] = { price: Number(c.price_eur.p.replace(/,/g, '')), currency: 'IRR' }
-            if (c.geram18?.p) mergedPrices['GOLD18'] = { price: Number(c.geram18.p.replace(/,/g, '')), currency: 'IRR' }
-            if (c.sekee?.p) mergedPrices['COIN'] = { price: Number(c.sekee.p.replace(/,/g, '')), currency: 'IRR' }
-            tgjuOk = true
-            break
-          }
-        } catch {}
-      }
-      if (!tgjuOk) console.warn('TGJU: all AJAX endpoints failed, using DB fallback')
-      
-      setPrices(mergedPrices)
-      
-      // Stock prices: try individual API, fall back to bulk API
-      const stockAssets = assets.filter(a => a.type === 'stock')
-      let sp: Record<string, number> = {}
-      if (stockAssets.length > 0) {
-        const stockPricePromises = stockAssets.map(a => 
-          fetch(`/api/iran-stocks/price?symbol=${encodeURIComponent(a.symbol)}`).then(r => r.json())
-        )
-        const stockResults = await Promise.allSettled(stockPricePromises)
-        for (const result of stockResults) {
-          if (result.status === 'fulfilled' && result.value.price > 0) {
-            sp[result.value.symbol] = result.value.price
-          }
-        }
-      }
-      // Fall back to bulk API stock prices for symbols still missing
+      setPrices(data.prices ?? {})
       if (data.stockPrices) {
+        const sp: Record<string, number> = {}
         for (const [sym, val] of Object.entries(data.stockPrices)) {
           const v = val as { price: number }
-          if (sp[sym] === undefined && v.price > 0) {
-            sp[sym] = v.price
-          }
+          if (v.price > 0) sp[sym] = v.price
         }
+        setStockPrices(sp)
       }
-      if (Object.keys(sp).length > 0) setStockPrices(sp)
-      
       setLastUpdate(new Date())
     } catch (e) { console.error('fetchPrices error:', e) }
     setPriceLoading(false)
     setRefreshing(false)
-  }, [assets])
+  }, [])
 
   const fetchAll = useCallback(async () => {
     try {
@@ -372,6 +358,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   useEffect(() => {
     if (isPending) return
     ;(async () => {
+      await deduplicateAssets().catch(() => {})
       const a = await fetchAll()
       await fetchPrices(true)
       setLoading(false)
@@ -683,7 +670,11 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
                     <div key={type} className="flex items-center justify-between text-xs">
                       <span className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.color }} />
-                        <span className="text-foreground font-medium">{cfg.icon} {cfg.label}</span>
+                        <span className="text-foreground font-medium">
+                          {type === 'gold' ? (
+                            <span className="inline-flex items-center justify-center w-5 h-3.5 rounded-[2px] text-[6px] font-bold text-white align-middle ml-1"
+                              style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 0 4px rgba(245,158,11,0.4)' }}>Au</span>
+                          ) : cfg.icon} {cfg.label}</span>
                       </span>
                       <span className="text-muted-foreground">{pct.toFixed(0)}%</span>
                     </div>
@@ -716,43 +707,16 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           ) : (
             <div className="grid grid-cols-3 gap-3">
               {[...assets]
-                .sort((a, b) => {
-                  const valA = getCurrentValue(a, prices, stockPrices)
-                  const valB = getCurrentValue(b, prices, stockPrices)
-                  return valB - valA
-                })
+                .sort((a, b) => getCurrentValue(b, prices, stockPrices) - getCurrentValue(a, prices, stockPrices))
                 .map((a) => {
                   const value = getCurrentValue(a, prices, stockPrices)
                   const cost = getTotalCost(a)
-                  const pnl = cost > 0 ? ((value - cost) / cost) * 100 : 0
-                  const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
                   const diff = value - cost
+                  const pnl = cost > 0 ? (diff / cost) * 100 : 0
+                  const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
                   return (
-                    <div key={a.id} onClick={() => openEdit(a)}
-                      className="bg-card border border-border rounded-2xl p-3 text-center cursor-pointer hover:border-primary/30 transition-colors relative group"
-                    >
-                      <div className="text-2xl leading-none mb-1.5">
-                        {a.type === 'crypto' && CRYPTO_COLORS[a.symbol] ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md text-white text-[9px] font-extrabold"
-                            style={{ background: CRYPTO_COLORS[a.symbol] }}>{a.symbol.slice(0, 3)}</span>
-                        ) : cfg.icon}
-                      </div>
-                      <div className="text-sm font-semibold text-foreground truncate leading-snug">{a.label}</div>
-                      <div className="text-xs text-muted-foreground truncate">{formatQuantity(a.quantity, a.symbol)}</div>
-                      <div className="text-sm font-bold text-foreground mt-1" dir="ltr">
-                        {value > 0 ? formatCurrency(value) : '—'}
-                      </div>
-                      {cost > 0 && (
-                        <div className={`text-xs font-semibold mt-0.5 ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {diff >= 0 ? '+' : ''}{pnl.toFixed(1)}%
-                        </div>
-                      )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(a.id); }}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
+                    <AssetCard key={a.id} asset={a} value={value} cost={cost} pnl={pnl} diff={diff}
+                      cfg={cfg} onEdit={() => openEdit(a)} onDelete={() => handleDelete(a.id)} />
                   )
                 })}
             </div>

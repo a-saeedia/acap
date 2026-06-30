@@ -83,6 +83,30 @@ export async function getMyAssets() {
   return db.select().from(asset).where(eq(asset.userId, userId)).orderBy(desc(asset.createdAt))
 }
 
+export async function deduplicateAssets() {
+  const userId = await getUserId()
+  const all = await db.select().from(asset).where(eq(asset.userId, userId))
+  const groups = new Map<string, typeof all[0][]>()
+  for (const a of all) {
+    const key = `${a.type}:${a.symbol.toUpperCase()}`
+    const g = groups.get(key)
+    if (g) g.push(a)
+    else groups.set(key, [a])
+  }
+  let merged = 0
+  for (const [, items] of groups) {
+    if (items.length <= 1) continue
+    const [keep, ...rest] = items
+    const totalQty = items.reduce((s, i) => s + i.quantity, 0)
+    await db.update(asset).set({ quantity: totalQty, updatedAt: new Date() }).where(eq(asset.id, keep.id))
+    for (const del of rest) {
+      await db.delete(asset).where(eq(asset.id, del.id))
+      merged++
+    }
+  }
+  return merged
+}
+
 export async function getAssetPrices() {
   const prices = await db.select().from(assetPrice).orderBy(desc(assetPrice.updatedAt))
   const map: Record<string, { price: number; currency: string }> = {}

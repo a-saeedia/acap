@@ -1,7 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
+
+const PERSIAN_LABELS: Record<string, string> = {
+  'BTC': 'بیت‌کوین', 'ETH': 'اتریوم', 'USDT': 'تتر', 'BNB': 'بایننس کوین',
+  'SOL': 'سولانا', 'XRP': 'ریپل', 'ADA': 'کاردانو', 'DOGE': 'دوج کوین',
+  'TRX': 'ترون', 'USD-IRR': 'دلار', 'EUR-IRR': 'یورو', 'AED-IRR': 'درهم',
+  'TRY-IRR': 'لیر', 'GBP-IRR': 'پوند', 'GOLD18': 'طلای ۱۸', 'GOLD24': 'طلای ۲۴',
+  'COIN': 'سکه امامی', 'HALF_COIN': 'نیم سکه', 'QUARTER_COIN': 'ربع سکه',
+  'XAU': 'انس طلا', 'BTC-IRR': 'بیت‌کوین', 'ETH-IRR': 'اتریوم', 'USDT-IRR': 'تتر',
+  'GOLD': 'طلای ۱۸',
+}
+
+const CURRENCY_LABELS: Record<string, string> = {
+  USD: 'دلار', IRR: 'تومان',
+}
 
 export default function PricesPage() {
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
@@ -15,25 +29,41 @@ export default function PricesPage() {
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
+  const filtered = useMemo(() =>
+    Object.entries(prices).filter(([, v]) => v.price > 0),
+  [prices])
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <h1 className="text-2xl md:text-3xl font-black mb-8">قیمت‌های به‌روز</h1>
 
       {loading ? (
-        <p className="text-gray-500">در حال دریافت قیمت‌ها...</p>
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {Object.entries(prices).map(([symbol, data]) => (
-            <motion.div key={symbol} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-4"
-            >
-              <div className="font-bold text-lg">{symbol}</div>
-              <div className="text-2xl font-black text-blue-400 mt-1">
-                {data.price.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-500">{data.currency === 'USD' ? 'دلار' : 'تومان'}</div>
-            </motion.div>
-          ))}
+          {filtered.map(([symbol, data]) => {
+            const isUsd = data.currency === 'USD'
+            const displayPrice = isUsd ? data.price : data.price / 10
+            return (
+              <motion.div key={symbol} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-2xl p-4"
+              >
+                <div className="font-bold text-base text-foreground">{PERSIAN_LABELS[symbol] || symbol}</div>
+                <div className="text-xl font-black text-blue-400 mt-1 font-mono">
+                  {isUsd
+                    ? `$${displayPrice.toLocaleString()}`
+                    : `${displayPrice.toLocaleString('fa-IR')}`
+                  }
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {CURRENCY_LABELS[data.currency] || data.currency}
+                  {isUsd && symbol.endsWith('-IRR') ? ' / تومان' : ''}
+                </div>
+              </motion.div>
+            )
+          })}
         </div>
       )}
     </motion.div>
