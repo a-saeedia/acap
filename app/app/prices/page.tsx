@@ -25,7 +25,8 @@ const TABS = [
   { id: 'crypto', label: 'ارز دیجیتال' },
   { id: 'gold', label: 'طلا و سکه' },
   { id: 'forex', label: 'ارز' },
-  { id: 'signals', label: 'سیگنال‌ها' },
+  { id: 'revenue', label: 'سیگنال‌های A|CAP' },
+  { id: 'personal', label: 'شخصی' },
 ]
 
 const CATEGORIES: Record<string, string[]> = {
@@ -264,7 +265,7 @@ export default function PricesPage() {
   const [signals, setSignals] = useState<any[]>([])
   const [personalSignals, setPersonalSignals] = useState<any[]>([])
   const [signalsLoading, setSignalsLoading] = useState(false)
-  const [signalSubTab, setSignalSubTab] = useState<'revenue' | 'personal'>('revenue')
+  const [personalLoading, setPersonalLoading] = useState(false)
   const [selectedSignal, setSelectedSignal] = useState<{ item: any; type: 'revenue' | 'personal' } | null>(null)
 
   useEffect(() => {
@@ -277,17 +278,18 @@ export default function PricesPage() {
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  // Fetch signals when tab switches to signals
+  // Fetch A|CAP Revenue signals
   useEffect(() => {
-    if (activeTab !== 'signals') return
+    if (activeTab !== 'revenue') return
     setSignalsLoading(true)
     fetch('/api/signals').then(r => r.json()).then(d => { if (Array.isArray(d)) setSignals(d) }).catch(() => {}).finally(() => setSignalsLoading(false))
   }, [activeTab])
 
   // Fetch personal suggestions
   useEffect(() => {
-    if (activeTab !== 'signals' || !session?.user) return
-    getUserSuggestions().then(setPersonalSignals).catch(() => {})
+    if (activeTab !== 'personal' || !session?.user) return
+    setPersonalLoading(true)
+    getUserSuggestions().then(setPersonalSignals).catch(() => {}).finally(() => setPersonalLoading(false))
   }, [activeTab, session])
 
   const weekChanges = useMemo(() => {
@@ -336,52 +338,27 @@ export default function PricesPage() {
         ))}
       </div>
 
-      {activeTab === 'signals' ? (
-        /* Signals tab */
+      {activeTab === 'revenue' || activeTab === 'personal' ? (
         <div className="space-y-5">
-          <div className="flex gap-1.5">
-            <button onClick={() => setSignalSubTab('revenue')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                signalSubTab === 'revenue'
-                  ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'bg-white/[0.04] text-muted-foreground border border-transparent hover:bg-white/[0.08]'
-              }`}
-            >
-              <Zap className="w-3 h-3 inline-block ml-1" />سیگنال‌های A|CAP
-            </button>
-            <button onClick={() => setSignalSubTab('personal')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                signalSubTab === 'personal'
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'bg-white/[0.04] text-muted-foreground border border-transparent hover:bg-white/[0.08]'
-              }`}
-            >
-              <Crown className="w-3 h-3 inline-block ml-1" />شخصی
-              {personalSignals.length > 0 && (
-                <span className="mr-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15">
-                  {personalSignals.length}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {signalsLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (() => {
-            const items = signalSubTab === 'revenue' ? signals : personalSignals
+          {(() => {
+            const isRevenue = activeTab === 'revenue'
+            const items = isRevenue ? signals : personalSignals
+            const isLoading = isRevenue ? signalsLoading : personalLoading
+            if (isLoading) return (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )
             if (items.length === 0) return (
               <div className="bg-card border border-border rounded-2xl p-8 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
-                  {signalSubTab === 'revenue' ? <Zap className="w-6 h-6 text-muted-foreground" /> : <Crown className="w-6 h-6 text-muted-foreground" />}
+                  {isRevenue ? <Zap className="w-6 h-6 text-muted-foreground" /> : <Crown className="w-6 h-6 text-muted-foreground" />}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {signalSubTab === 'revenue' ? 'هیچ سیگنالی وجود ندارد' : 'هنوز پیشنهادی برای شما ثبت نشده'}
+                  {isRevenue ? 'هیچ سیگنالی وجود ندارد' : 'هنوز پیشنهادی برای شما ثبت نشده'}
                 </p>
               </div>
             )
-            // Group by month
             const grouped: Record<string, any[]> = {}
             for (const s of items) {
               const monthKey = new Date(s.publishedAt || s.createdAt).toISOString().slice(0, 7)
@@ -402,7 +379,7 @@ export default function PricesPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {monthItems.map((item: any) => (
-                        <SignalCard key={item.id} item={item} type={signalSubTab} onClick={() => setSelectedSignal({ item, type: signalSubTab })} />
+                        <SignalCard key={item.id} item={item} type={isRevenue ? 'revenue' : 'personal'} onClick={() => setSelectedSignal({ item, type: isRevenue ? 'revenue' : 'personal' })} />
                       ))}
                     </div>
                   </div>
