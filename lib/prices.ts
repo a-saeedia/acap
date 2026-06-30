@@ -118,6 +118,13 @@ export async function fetchTgjuData(): Promise<{
   irrRate: number
   timestamp: string
 }> {
+  // Try HTML scrape first (works reliably from any IP)
+  const htmlResult = await fetchTgjuHTML()
+  if (htmlResult.prices && Object.keys(htmlResult.prices).length > 0 && htmlResult.irrRate > 0) {
+    return htmlResult
+  }
+  
+  // Fallback: AJAX endpoints (may be blocked/stale from foreign IPs)
   const rev = Math.random().toString(36).substring(2, 12)
   const ajaxUrls = [
     `${TGJU_AJAX}?rev=${rev}`,
@@ -193,13 +200,6 @@ export async function fetchTgjuData(): Promise<{
     } catch {
       continue
     }
-  }
-  
-  // Fallback: HTML scrape from main tgju.org page
-  const htmlResult = await fetchTgjuHTML()
-  if (htmlResult.prices && Object.keys(htmlResult.prices).length > 0) {
-    const usdIrr = htmlResult.prices['USD-IRR']?.price || htmlResult.prices['USDT-IRR']?.price
-    return { prices: htmlResult.prices, irrRate: usdIrr || 0, timestamp: htmlResult.timestamp }
   }
   
   return { prices: {}, irrRate: 0, timestamp: '' }
