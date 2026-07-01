@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
-import { BarChart3, Wallet, TrendingUp, Zap, Crown, LogOut, Menu, X } from 'lucide-react'
+import { BarChart3, Wallet, TrendingUp, Zap, Crown, BookOpen, LogOut, Menu, X } from 'lucide-react'
 import { AISupport } from '@/components/ai-support'
 
 const navItems = [
   { href: '/app', label: 'خلاصه Portfolio', icon: BarChart3 },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
+  { href: '/blog', label: 'وبلاگ', icon: BookOpen },
   { href: '/app/signals', label: 'درآمد A|CAP', icon: Zap },
   { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },
 ]
