@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     images: ['/og.png'],
   },
   robots: { index: true, follow: true },
-  verification: { google: '' }, // Add your Google Search Console code here
+  verification: { google: '' }, // Set this after verifying in Google Search Console
 }
 
 export const viewport: Viewport = {
