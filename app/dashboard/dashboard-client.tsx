@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import {
-  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
@@ -33,6 +33,8 @@ export function DashboardClient() {
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
   const [assetsCount, setAssetsCount] = useState(0)
+  const [priceData, setPriceData] = useState<Record<string, {price: number; currency: string; change: number}>>({})
+  const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
 
   useEffect(() => {
     if (isPending) return
@@ -48,6 +50,18 @@ export function DashboardClient() {
   useEffect(() => {
     if (!dashData) return
     import('@/app/actions/assets').then(m => m.getMyAssets()).then(a => setAssetsCount(a.length)).catch(() => {})
+    fetch('/api/prices').then(r => r.json()).then(d => {
+      const merged: Record<string, {price: number; currency: string; change: number}> = {}
+      if (d.prices) for (const [k, v] of Object.entries(d.prices) as [string, any][]) merged[k] = v
+      if (d.stockPrices) for (const [k, v] of Object.entries(d.stockPrices) as [string, any][]) merged[k] = v
+      setPriceData(merged)
+    }).catch(() => {})
+    fetch('/api/signals').then(r => r.json()).then((signals: any[]) => {
+      if (signals.length > 0) {
+        const wins = signals.filter((s: any) => (s.actualProfit ?? 0) > 0).length
+        setSignalStats({ total: signals.length, wins, winRate: Math.round((wins / signals.length) * 100) })
+      }
+    }).catch(() => {})
   }, [dashData])
 
   if (isPending || loading) return (
@@ -141,44 +155,130 @@ export function DashboardClient() {
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
 
-          {/* Portfolio CTA — big orange card */}
-          <motion.div variants={itemVariants} className="mb-5">
-            <button onClick={() => router.push('/app/assets')}
-              className="w-full relative overflow-hidden rounded-3xl p-5 sm:p-6 text-right group cursor-pointer border-0"
-              style={{
-                background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 50%, #9A3412 100%)',
-                boxShadow: '0 8px 40px rgba(234,88,12,0.25)',
-              }}
-            >
-              <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 60%)' }} />
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
-              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5" />
-              <div className="relative flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BarChart3 className="w-5 h-5 text-white/90" />
-                    <h2 className="text-lg sm:text-xl font-black text-white">مدیریت سبد سرمایه</h2>
+          {/* Mosaic — Portfolio, Prices, A|CAP Revenue */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+            {/* Portfolio */}
+            <motion.div variants={itemVariants}>
+              <button onClick={() => router.push('/app/assets')}
+                className="w-full relative overflow-hidden rounded-3xl p-5 text-right group cursor-pointer border-0 h-full"
+                style={{
+                  background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 50%, #9A3412 100%)',
+                  boxShadow: '0 8px 40px rgba(234,88,12,0.25)',
+                }}
+              >
+                <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 60%)' }} />
+                <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
+                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5" />
+                <div className="relative flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="text-base font-black text-white">مدیریت سبد سرمایه</h2>
                   </div>
-                  <p className="text-sm text-white/80 leading-relaxed">
-                    مشاهده و مدیریت دارایی‌ها، تحلیل پرتفوی، نمودارهای پیشرفته و ابزارهای هوشمند
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-3">
+                  <p className="text-xs text-white/70 leading-relaxed mb-3">مشاهده و مدیریت دارایی‌ها</p>
+                  <div className="mt-auto flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-xl">{assetsCount} دارایی</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-xl">ورود</span>
+                  </div>
+                </div>
+              </button>
+            </motion.div>
+
+            {/* Prices */}
+            <motion.div variants={itemVariants}>
+              <button onClick={() => router.push('/app/prices')}
+                className="w-full relative overflow-hidden rounded-3xl p-5 text-right group cursor-pointer border-0 h-full"
+                style={{
+                  background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #1E40AF 100%)',
+                  boxShadow: '0 8px 40px rgba(37,99,235,0.25)',
+                }}
+              >
+                <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
+                <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-white/5" />
+                <div className="relative flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="text-base font-black text-white">قیمت‌های لحظه‌ای</h2>
+                  </div>
+                  <div className="space-y-1.5 mb-3 flex-1">
+                    {['BTC', 'GOLD18', 'USD-IRR'].map(sym => {
+                      const p = priceData[sym]
+                      const change = p?.change ?? 0
+                      const isUp = change >= 0
+                      return (
+                        <div key={sym} className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
+                          <span className="text-xs font-bold text-white/90">{SYM_NAME[sym] || sym}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-white">
+                              {sym === 'BTC' ? `$${p?.price?.toLocaleString() ?? '—'}` : `${Math.round((p?.price ?? 0) / 10).toLocaleString('fa-IR') ?? '—'}`}
+                            </span>
+                            {isUp ? <TrendingUp className="w-3 h-3 text-green-300" /> : <TrendingDown className="w-3 h-3 text-red-300" />}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-auto">
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-                      {assetsCount} دارایی
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-                      <BarChart3 className="w-3 h-3" />
-                      ورود به سبد
+                      <TrendingUp className="w-3 h-3" /> مشاهده همه
                     </span>
                   </div>
                 </div>
-                <div className="shrink-0 w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <BarChart3 className="w-7 h-7 text-white" />
+              </button>
+            </motion.div>
+
+            {/* A|CAP Revenue */}
+            <motion.div variants={itemVariants}>
+              <button onClick={() => router.push('/app/signals')}
+                className="w-full relative overflow-hidden rounded-3xl p-5 text-right group cursor-pointer border-0 h-full"
+                style={{
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
+                  boxShadow: '0 8px 40px rgba(124,58,237,0.25)',
+                }}
+              >
+                <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
+                <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-white/5" />
+                <div className="relative flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className="text-base font-black text-white">درآمد A|CAP</h2>
+                  </div>
+                  {signalStats ? (
+                    <div className="flex-1 space-y-1.5 mb-3">
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
+                        <span className="text-xs text-white/80">کل سیگنال‌ها</span>
+                        <span className="text-sm font-black text-white">{signalStats.total}</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
+                        <span className="text-xs text-white/80">سیگنال‌های موفق</span>
+                        <span className="text-sm font-black text-green-300">{signalStats.wins}</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
+                        <span className="text-xs text-white/80">نرخ موفقیت</span>
+                        <span className="text-sm font-black text-white">{signalStats.winRate}%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <div className="mt-auto">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
+                      <Zap className="w-3 h-3" /> مشاهده جزئیات
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            </button>
-          </motion.div>
+              </button>
+            </motion.div>
+          </div>
 
           {/* Phone Number Banner */}
           {!phone && !dismissBanner && (
@@ -266,7 +366,11 @@ export function DashboardClient() {
                   <div className="space-y-1.5">
                     {[...quizResults].reverse().slice(0, 3).map((r, i) => {
                       const t = TYPE_MAP[r.investorType as InvestorKey] ?? TYPE_MAP.balanced
-                      return (
+  const SYM_NAME: Record<string, string> = {
+    BTC: 'بیت‌کوین', 'GOLD18': 'طلای ۱۸', 'USD-IRR': 'دلار',
+  }
+
+  return (
                         <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/30">
                           <div className="flex items-center gap-2">
                             <span className="text-lg">{t.emoji}</span>
