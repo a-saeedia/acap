@@ -103,7 +103,7 @@ export function DashboardClient() {
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <header className="glass border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <button onClick={() => router.push('/')} className="flex items-center gap-2 group">
             <span className="font-black text-xl sm:text-2xl tracking-widest text-foreground group-hover:text-primary transition-colors">
               A <span className="text-primary">|</span> CAP

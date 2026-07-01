@@ -2,8 +2,6 @@
 
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { useTheme } from '@/components/theme-provider'
 import { GraduationCap, Code, Palette, ShoppingCart, TrendingUp, Globe, ArrowLeft, Sparkles, Zap, Target, Users, Rocket, BookOpen, Award, Clock, CheckCircle, ChevronLeft } from 'lucide-react'
 
 const paths = [
@@ -31,15 +29,16 @@ const mentors = [
 
 export default function EducationPage() {
   const router = useRouter()
-  const { theme } = useTheme()
 
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
       {/* Nav */}
       <header className="glass border-b border-border sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push('/')} className="flex items-center gap-2">
-            <Image src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'} alt="A Capital" width={140} height={42} className="h-8 w-auto object-contain" />
+          <button onClick={() => router.push('/')} className="flex items-center gap-2 group">
+            <span className="font-black text-xl sm:text-2xl tracking-widest text-foreground group-hover:text-primary transition-colors">
+              A <span className="text-primary">|</span> CAP
+            </span>
           </button>
           <button onClick={() => router.push('/')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             بازگشت به صفحه اصلی
