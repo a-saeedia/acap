@@ -158,12 +158,12 @@ export function DashboardClient() {
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
 
-          {/* Mosaic — Portfolio, Prices, A|CAP Revenue */}
+          {/* Mosaic — Portfolio (big) + Prices / A|CAP Revenue (mini squares) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-            {/* Portfolio */}
-            <motion.div variants={itemVariants}>
+            {/* Portfolio — takes 2/3 */}
+            <motion.div variants={itemVariants} className="md:col-span-2">
               <button onClick={() => router.push('/app/assets')}
-                className="w-full relative overflow-hidden rounded-3xl p-5 text-right group cursor-pointer border-0 h-full"
+                className="w-full relative overflow-hidden rounded-3xl p-5 sm:p-7 text-right group cursor-pointer border-0 h-full"
                 style={{
                   background: 'linear-gradient(135deg, #EA580C 0%, #C2410C 50%, #9A3412 100%)',
                   boxShadow: '0 8px 40px rgba(234,88,12,0.25)',
@@ -172,115 +172,88 @@ export function DashboardClient() {
                 <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 60%)' }} />
                 <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
                 <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5" />
-                <div className="relative flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <BarChart3 className="w-5 h-5 text-white" />
+                <div className="relative flex items-center justify-between gap-4 h-full">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <BarChart3 className="w-5 h-5 text-white/90" />
+                      <h2 className="text-lg sm:text-xl font-black text-white">مدیریت سبد سرمایه</h2>
                     </div>
-                    <h2 className="text-base font-black text-white">مدیریت سبد سرمایه</h2>
+                    <p className="text-sm text-white/70 leading-relaxed mb-3">مشاهده و مدیریت دارایی‌ها، تحلیل پرتفوی و ابزارهای هوشمند</p>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">{assetsCount} دارایی</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl"><BarChart3 className="w-3 h-3" /> ورود به سبد</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-white/70 leading-relaxed mb-3">مشاهده و مدیریت دارایی‌ها</p>
-                  <div className="mt-auto flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-xl">{assetsCount} دارایی</span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-xl">ورود</span>
+                  <div className="shrink-0 w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <BarChart3 className="w-7 h-7 text-white" />
                   </div>
                 </div>
               </button>
             </motion.div>
 
-            {/* Prices */}
-            <motion.div variants={itemVariants}>
-              <button onClick={() => router.push('/app/prices')}
-                className="w-full relative overflow-hidden rounded-3xl p-5 text-right group cursor-pointer border-0 h-full"
-                style={{
-                  background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #1E40AF 100%)',
-                  boxShadow: '0 8px 40px rgba(37,99,235,0.25)',
-                }}
-              >
-                <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
-                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
-                <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-white/5" />
-                <div className="relative flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-white" />
+            {/* Right column: mini squares stacked */}
+            <div className="flex flex-col gap-3">
+              {/* Prices mini square */}
+              <motion.div variants={itemVariants} className="flex-1">
+                <button onClick={() => router.push('/app/prices')}
+                  className="w-full relative overflow-hidden rounded-2xl p-3.5 text-right group cursor-pointer border-0 h-full"
+                  style={{
+                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #1E40AF 100%)',
+                    boxShadow: '0 4px 20px rgba(37,99,235,0.2)',
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+                  <div className="relative flex items-center gap-2.5 h-full">
+                    <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
+                      <TrendingUp className="w-4 h-4 text-white" />
                     </div>
-                    <h2 className="text-base font-black text-white">قیمت‌های لحظه‌ای</h2>
-                  </div>
-                  <div className="space-y-1.5 mb-3 flex-1">
-                    {['BTC', 'GOLD18', 'USD-IRR'].map(sym => {
-                      const p = priceData[sym]
-                      const change = p?.change ?? 0
-                      const isUp = change >= 0
-                      return (
-                        <div key={sym} className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
-                          <span className="text-xs font-bold text-white/90">{SYM_NAME[sym] || sym}</span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-white">
-                              {sym === 'BTC' ? `$${p?.price?.toLocaleString() ?? '—'}` : `${Math.round((p?.price ?? 0) / 10).toLocaleString('fa-IR') ?? '—'}`}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-white">قیمت‌های لحظه‌ای</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {['BTC', 'GOLD18', 'USD-IRR'].map(sym => {
+                          const p = priceData[sym]
+                          const change = p?.change ?? 0
+                          const isUp = change >= 0
+                          return (
+                            <span key={sym} className="text-[10px] font-bold text-white/80 bg-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5">
+                              {SYM_NAME[sym]?.slice(0, 3)}
+                              {isUp ? <TrendingUp className="w-2 h-2 text-green-300" /> : <TrendingDown className="w-2 h-2 text-red-300" />}
                             </span>
-                            {isUp ? <TrendingUp className="w-3 h-3 text-green-300" /> : <TrendingDown className="w-3 h-3 text-red-300" />}
-                          </div>
-                        </div>
-                      )
-                    })}
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-auto">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-                      <TrendingUp className="w-3 h-3" /> مشاهده همه
-                    </span>
-                  </div>
-                </div>
-              </button>
-            </motion.div>
+                </button>
+              </motion.div>
 
-            {/* A|CAP Revenue */}
-            <motion.div variants={itemVariants}>
-              <button onClick={() => router.push('/app/signals')}
-                className="w-full relative overflow-hidden rounded-3xl p-5 text-right group cursor-pointer border-0 h-full"
-                style={{
-                  background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
-                  boxShadow: '0 8px 40px rgba(124,58,237,0.25)',
-                }}
-              >
-                <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
-                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
-                <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-white/5" />
-                <div className="relative flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
+              {/* A|CAP Revenue mini square */}
+              <motion.div variants={itemVariants} className="flex-1">
+                <button onClick={() => router.push('/app/signals')}
+                  className="w-full relative overflow-hidden rounded-2xl p-3.5 text-right group cursor-pointer border-0 h-full"
+                  style={{
+                    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
+                    boxShadow: '0 4px 20px rgba(124,58,237,0.2)',
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+                  <div className="relative flex items-center gap-2.5 h-full">
+                    <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
+                      <Zap className="w-4 h-4 text-white" />
                     </div>
-                    <h2 className="text-base font-black text-white">درآمد A|CAP</h2>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-white">درآمد A|CAP</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-bold text-white/80 bg-white/10 rounded-lg px-1.5 py-0.5">
+                          {signalStats ? `${signalStats.winRate}%` : '...'}
+                        </span>
+                        <span className="text-[10px] text-white/60">موفقیت</span>
+                      </div>
+                    </div>
                   </div>
-                  {signalStats ? (
-                    <div className="flex-1 space-y-1.5 mb-3">
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
-                        <span className="text-xs text-white/80">کل سیگنال‌ها</span>
-                        <span className="text-sm font-black text-white">{signalStats.total}</span>
-                      </div>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
-                        <span className="text-xs text-white/80">سیگنال‌های موفق</span>
-                        <span className="text-sm font-black text-green-300">{signalStats.wins}</span>
-                      </div>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl px-2.5 py-1.5">
-                        <span className="text-xs text-white/80">نرخ موفقیت</span>
-                        <span className="text-sm font-black text-white">{signalStats.winRate}%</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
-                    </div>
-                  )}
-                  <div className="mt-auto">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-                      <Zap className="w-3 h-3" /> مشاهده جزئیات
-                    </span>
-                  </div>
-                </div>
-              </button>
-            </motion.div>
+                </button>
+              </motion.div>
+            </div>
           </div>
 
           {/* Phone Number Banner */}
