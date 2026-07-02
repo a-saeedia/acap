@@ -190,6 +190,13 @@ export default function SignalsPage() {
 
   return (
     <div dir="rtl" className="space-y-5">
+      {/* Back to dashboard */}
+      <button onClick={() => window.history.length > 2 ? window.history.back() : router.push('/dashboard')}
+        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        بازگشت به داشبورد
+      </button>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Zap className="w-5 h-5 text-primary" />
