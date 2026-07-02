@@ -196,32 +196,32 @@ export function DashboardClient() {
               {/* Prices mini square */}
               <motion.div variants={itemVariants} className="flex-1">
                 <button onClick={() => router.push('/app/prices')}
-                  className="w-full relative overflow-hidden rounded-2xl p-3.5 text-right group cursor-pointer border-0 h-full"
+                  className="w-full relative overflow-hidden rounded-2xl p-4 text-right group cursor-pointer border-0 h-full"
                   style={{
                     background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #1E40AF 100%)',
                     boxShadow: '0 4px 20px rgba(37,99,235,0.2)',
                   }}
                 >
                   <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
-                  <div className="relative flex items-center gap-2.5 h-full">
-                    <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
-                      <TrendingUp className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-white">قیمت‌های لحظه‌ای</div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {['BTC', 'GOLD18', 'USD-IRR'].map(sym => {
-                          const p = priceData[sym]
-                          const change = p?.change ?? 0
-                          const isUp = change >= 0
-                          return (
-                            <span key={sym} className="text-[10px] font-bold text-white/80 bg-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5">
-                              {SYM_NAME[sym]?.slice(0, 3)}
-                              {isUp ? <TrendingUp className="w-2 h-2 text-green-300" /> : <TrendingDown className="w-2 h-2 text-red-300" />}
-                            </span>
-                          )
-                        })}
+                  <div className="relative flex flex-col h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                        <TrendingUp className="w-3.5 h-3.5 text-white" />
                       </div>
+                      <span className="text-sm font-black text-white">قیمت‌های لحظه‌ای</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-auto">
+                      {['BTC', 'GOLD18', 'USD-IRR'].map(sym => {
+                        const p = priceData[sym]
+                        const change = p?.change ?? 0
+                        const isUp = change >= 0
+                        return (
+                          <span key={sym} className="text-[10px] font-bold text-white/80 bg-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5">
+                            {SYM_NAME[sym]?.slice(0, 3)}
+                            {isUp ? <TrendingUp className="w-2 h-2 text-green-300" /> : <TrendingDown className="w-2 h-2 text-red-300" />}
+                          </span>
+                        )
+                      })}
                     </div>
                   </div>
                 </button>
@@ -230,25 +230,25 @@ export function DashboardClient() {
               {/* A|CAP Revenue mini square */}
               <motion.div variants={itemVariants} className="flex-1">
                 <button onClick={() => router.push('/app/signals')}
-                  className="w-full relative overflow-hidden rounded-2xl p-3.5 text-right group cursor-pointer border-0 h-full"
+                  className="w-full relative overflow-hidden rounded-2xl p-4 text-right group cursor-pointer border-0 h-full"
                   style={{
                     background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
                     boxShadow: '0 4px 20px rgba(124,58,237,0.2)',
                   }}
                 >
                   <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
-                  <div className="relative flex items-center gap-2.5 h-full">
-                    <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
-                      <Zap className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-white">درآمد A|CAP</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold text-white/80 bg-white/10 rounded-lg px-1.5 py-0.5">
-                          {signalStats ? `${signalStats.winRate}%` : '...'}
-                        </span>
-                        <span className="text-[10px] text-white/60">موفقیت</span>
+                  <div className="relative flex flex-col h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                        <Zap className="w-3.5 h-3.5 text-white" />
                       </div>
+                      <span className="text-sm font-black text-white">درآمد A|CAP</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-auto">
+                      <span className="text-xs font-bold text-white/80 bg-white/10 rounded-lg px-2 py-0.5">
+                        {signalStats ? `${signalStats.winRate}%` : '...'}
+                      </span>
+                      <span className="text-[10px] text-white/60">موفقیت</span>
                     </div>
                   </div>
                 </button>

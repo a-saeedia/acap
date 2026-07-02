@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { Crown, Clock, X, ArrowLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { getUserSuggestions } from '@/app/actions/admin'
 
 const PERSIAN_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
@@ -87,6 +88,7 @@ function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
 }
 
 export default function PersonalPage() {
+  const router = useRouter()
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<any | null>(null)
@@ -110,6 +112,13 @@ export default function PersonalPage() {
 
   return (
     <div dir="rtl" className="space-y-5">
+      {/* Back to dashboard */}
+      <button onClick={() => router.push('/dashboard')}
+        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        بازگشت به داشبورد
+      </button>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center">
           <Crown className="w-5 h-5 text-amber-400" />
