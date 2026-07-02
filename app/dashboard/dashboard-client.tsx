@@ -91,6 +91,9 @@ export function DashboardClient() {
     router.refresh()
   }
 
+  const SYM_NAME: Record<string, string> = {
+    BTC: 'بیت‌کوین', 'GOLD18': 'طلای ۱۸', 'USD-IRR': 'دلار',
+  }
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -366,11 +369,7 @@ export function DashboardClient() {
                   <div className="space-y-1.5">
                     {[...quizResults].reverse().slice(0, 3).map((r, i) => {
                       const t = TYPE_MAP[r.investorType as InvestorKey] ?? TYPE_MAP.balanced
-  const SYM_NAME: Record<string, string> = {
-    BTC: 'بیت‌کوین', 'GOLD18': 'طلای ۱۸', 'USD-IRR': 'دلار',
-  }
-
-  return (
+                      return (
                         <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/30">
                           <div className="flex items-center gap-2">
                             <span className="text-lg">{t.emoji}</span>
