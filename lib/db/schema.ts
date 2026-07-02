@@ -183,3 +183,96 @@ export const mlAnomaly = pgTable('ml_anomaly', {
   direction: text('direction').notNull(),
   detectedAt: timestamp('detectedAt').notNull().defaultNow(),
 })
+
+// Academy / Course system
+export const course = pgTable('course', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description').notNull(),
+  longDescription: text('longDescription'),
+  category: text('category').notNull(), // 'ict' | 'ai' | 'stock' | 'forex' | 'crypto' | 'blockchain' | 'trading' | 'psychology'
+  instructor: text('instructor').notNull(), // 'ali-borhan' | 'arman-saeedi'
+  instructorName: text('instructorName').notNull(),
+  price: bigint('price', { mode: 'number' }).notNull().default(0),
+  originalPrice: bigint('originalPrice', { mode: 'number' }),
+  duration: text('duration'), // e.g. '6 هفته'
+  level: text('level').notNull().default('beginner'), // 'beginner' | 'intermediate' | 'advanced'
+  lessons: integer('lessons').notNull().default(0),
+  videoHours: real('videoHours').default(0),
+  thumbnail: text('thumbnail'),
+  color: text('color').notNull().default('#3B82F6'),
+  icon: text('icon').notNull().default('BookOpen'),
+  isPopular: boolean('isPopular').notNull().default(false),
+  isNew: boolean('isNew').notNull().default(false),
+  isBestseller: boolean('isBestseller').notNull().default(false),
+  rating: real('rating').default(0),
+  studentsCount: integer('studentsCount').default(0),
+  prerequisites: text('prerequisites'),
+  whatYouLearn: jsonb('whatYouLearn'),
+  syllabus: jsonb('syllabus'), // Array of modules with lessons
+  publishedAt: timestamp('publishedAt'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const enrollment = pgTable('enrollment', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  courseId: text('courseId').notNull(),
+  progress: real('progress').notNull().default(0),
+  completedLessons: integer('completedLessons').notNull().default(0),
+  startedAt: timestamp('startedAt').notNull().defaultNow(),
+  completedAt: timestamp('completedAt'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+export const learningPath = pgTable('learning_path', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description').notNull(),
+  icon: text('icon').notNull().default('Compass'),
+  color: text('color').notNull().default('#3B82F6'),
+  image: text('image'),
+  minScore: integer('minScore'), // for quiz-based matching
+  maxScore: integer('maxScore'),
+  investorType: text('investorType'), // matches quiz investorType
+  incomePotential: text('incomePotential'),
+  timeToFirstIncome: text('timeToFirstIncome'),
+  requiredCapital: text('requiredCapital'),
+  difficulty: text('difficulty').notNull().default('intermediate'),
+  courseIds: jsonb('courseIds'), // Array of course IDs in order
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+// Blog / Article system
+export const articleCategory = pgTable('article_category', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  color: text('color').default('#3B82F6'),
+  icon: text('icon').default('BookOpen'),
+  order: integer('order').notNull().default(0),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+export const article = pgTable('article', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  excerpt: text('excerpt').notNull(),
+  content: text('content').notNull(),
+  categoryId: text('categoryId'),
+  author: text('author').notNull().default('تیم A|CAP'),
+  authorRole: text('authorRole').default('تحلیلگر بازارهای مالی'),
+  image: text('image'),
+  tags: jsonb('tags'),
+  readingTime: integer('readingTime').notNull().default(5),
+  isFeatured: boolean('isFeatured').notNull().default(false),
+  views: integer('views').notNull().default(0),
+  publishedAt: timestamp('publishedAt').notNull().defaultNow(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})

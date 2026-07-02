@@ -40,7 +40,7 @@ const TABS = [
 ]
 
 const CATEGORIES: Record<string, string[]> = {
-  crypto: ['BTC', 'ETH', 'USDT', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX', 'BNB'],
+  crypto: ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX', 'BNB'],
   gold: ['GOLD18', 'GOLD24', 'COIN', 'HALF_COIN', 'QUARTER_COIN', 'XAU'],
   forex: ['USD-IRR', 'EUR-IRR', 'AED-IRR', 'TRY-IRR', 'GBP-IRR'],
 }
@@ -129,13 +129,16 @@ export default function PricesPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/prices').then(r => r.json()).then(d => {
+    const controller = new AbortController()
+    const tid = setTimeout(() => controller.abort(), 8000)
+    fetch('/api/prices', { signal: controller.signal }).then(r => r.json()).then(d => {
       const m: Record<string, { price: number; currency: string }> = {}
       for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) {
         if (v.price > 0) m[k] = v
       }
       setPrices(m)
     }).catch(() => {}).finally(() => setLoading(false))
+    return () => { clearTimeout(tid); controller.abort() }
   }, [])
 
   const weekChanges = useMemo(() => {
@@ -191,60 +194,7 @@ export default function PricesPage() {
         ))}
       </div>
 
-      {activeTab === 'revenue' || activeTab === 'personal' ? (
-        <div className="space-y-5">
-          {(() => {
-            const isRevenue = activeTab === 'revenue'
-            const items = isRevenue ? signals : personalSignals
-            const isLoading = isRevenue ? signalsLoading : personalLoading
-            if (isLoading) return (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            )
-            if (items.length === 0) return (
-              <div className="bg-card border border-border rounded-2xl p-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
-                  {isRevenue ? <Zap className="w-6 h-6 text-muted-foreground" /> : <Crown className="w-6 h-6 text-muted-foreground" />}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {isRevenue ? 'هیچ سیگنالی وجود ندارد' : 'هنوز پیشنهادی برای شما ثبت نشده'}
-                </p>
-              </div>
-            )
-            const grouped: Record<string, any[]> = {}
-            for (const s of items) {
-              const monthKey = new Date(s.publishedAt || s.createdAt).toISOString().slice(0, 7)
-              if (!grouped[monthKey]) grouped[monthKey] = []
-              grouped[monthKey].push(s)
-            }
-            const sorted = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a))
-            return (
-              <div className="space-y-6">
-                {sorted.map(([monthKey, monthItems]) => (
-                  <div key={monthKey}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-px flex-1 bg-border" />
-                      <span className="text-xs font-bold text-muted-foreground px-2">
-                        {formatPersianMonth(monthItems[0].publishedAt || monthItems[0].createdAt)}
-                      </span>
-                      <div className="h-px flex-1 bg-border" />
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                      {monthItems.map((item: any) => (
-                        <SignalCard key={item.id} item={item} type={isRevenue ? 'revenue' : 'personal'} onClick={() => setSelectedSignal({ item, type: isRevenue ? 'revenue' : 'personal' })} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          })()}
-          {selectedSignal && (
-            <SignalDetailModal item={selectedSignal.item} type={selectedSignal.type} onClose={() => setSelectedSignal(null)} />
-          )}
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
         </div>

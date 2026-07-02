@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { PortfolioDashboard } from '@/components/portfolio-dashboard'
+import { getDashboardData } from '@/app/actions/profile'
 
 export default function AssetsPage() {
   const router = useRouter()
@@ -17,16 +18,15 @@ export default function AssetsPage() {
   useEffect(() => {
     if (isPending) return
     if (!session) { setLoading(false); router.push('/'); return }
-    import('@/app/actions/profile').then(m =>
-      m.getDashboardData().then(data => {
-        if (!data) { setLoading(false); router.push('/'); return }
-        setIsPlus(data.subscription?.acapPlus ?? false)
-        const latest = data.quizResults?.[data.quizResults.length - 1]
-        setInvestorType(latest?.investorType ?? null)
-        setQuizTaken(data.quizResults.length > 0)
-        setLoading(false)
-      })
-    ).catch(() => { setLoading(false); router.push('/') })
+    const timeout = new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+    Promise.race([getDashboardData(), timeout]).then(data => {
+      if (!data) { setLoading(false); router.push('/'); return }
+      setIsPlus(data.subscription?.acapPlus ?? false)
+      const latest = data.quizResults?.[data.quizResults.length - 1]
+      setInvestorType(latest?.investorType ?? null)
+      setQuizTaken(data.quizResults.length > 0)
+      setLoading(false)
+    }).catch(() => { setLoading(false); router.push('/') })
   }, [session, isPending, router])
 
   if (isPending || loading) {

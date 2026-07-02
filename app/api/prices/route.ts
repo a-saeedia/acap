@@ -6,6 +6,18 @@ import { randomUUID } from 'node:crypto'
 export const revalidate = 10
 
 export async function GET() {
+  try {
+    const result = await Promise.race([
+      fetchPrices(),
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
+    ])
+    return result
+  } catch {
+    return Response.json({ prices: {}, irrRate: 0, stockPrices: {} })
+  }
+}
+
+async function fetchPrices() {
   let insCodeMap: Record<string, string> = {}
   let stocks: any[] = []
 
@@ -72,13 +84,14 @@ export async function GET() {
     } catch {}
   }
 
-  const finalPrices: typeof prices = {}
+  const finalPrices: Record<string, { price: number; currency: string; change: number }> = {}
   for (const symbol of allSymbols) {
     const live = prices[symbol] ?? stockPrices[symbol]
     if (live) {
-      finalPrices[symbol] = { price: live.price, currency: live.currency ?? 'IRR', change: live.change }
+      const change = 'change' in live ? Number((live as any).change ?? 0) : 0
+      finalPrices[symbol] = { price: live.price, currency: live.currency ?? 'IRR', change }
     } else if (dbFallbackPrices[symbol]) {
-      finalPrices[symbol] = { ...dbFallbackPrices[symbol], change: 0 }
+      finalPrices[symbol] = { price: dbFallbackPrices[symbol].price, currency: dbFallbackPrices[symbol].currency ?? 'IRR', change: 0 }
     }
   }
 

@@ -125,9 +125,9 @@ export default function AdminPage() {
     setUsers(users.map(u => u.id === userId ? {
       ...u,
       subscription: u.subscription ? { ...u.subscription, acapPlus: !current } : null,
-    } : u))
+    } : u) as any)
     if (selectedUser?.id === userId) {
-      setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, acapPlus: !current } : null } : null)
+      setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, acapPlus: !current } : null } : null as any)
     }
   }
 
@@ -138,9 +138,9 @@ export default function AdminPage() {
       setUsers(users.map(u => u.id === userId ? {
         ...u,
         subscription: u.subscription ? { ...u.subscription, scannerActive: !current } : null,
-      } : u))
+      } : u) as any)
       if (selectedUser?.id === userId) {
-        setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, scannerActive: !current } : null } : null)
+        setSelectedUser(prev => prev ? { ...prev, subscription: prev.subscription ? { ...prev.subscription, scannerActive: !current } : null } : null as any)
       }
     } catch { } finally {
       setScannerToggling(false)

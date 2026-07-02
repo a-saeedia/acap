@@ -388,7 +388,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
       setStockResults([])
       return
     }
-    clearTimeout(searchTimer.current)
+    clearTimeout(searchTimer.current ?? undefined)
     setStockSearching(true)
     searchTimer.current = setTimeout(async () => {
       try {
@@ -397,7 +397,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
       } catch {}
       setStockSearching(false)
     }, 400)
-    return () => clearTimeout(searchTimer.current)
+    return () => clearTimeout(searchTimer.current ?? undefined)
   }, [stockSearch, form.type])
 
   const totalValue = assets.reduce((sum, a) => sum + getCurrentValue(a, prices, stockPrices), 0)

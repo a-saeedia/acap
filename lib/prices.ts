@@ -91,8 +91,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     for (const [slug, sym] of Object.entries(goldSlugs)) {
       const p = extractPrice(slug)
       if (p) {
-        const isGlobal = slug === 'ons'
-        prices[sym] = { price: p, currency: isGlobal ? 'USD' : 'IRR' }
+        prices[sym] = { price: p, currency: 'IRR' }
       }
     }
     
@@ -175,8 +174,7 @@ export async function fetchTgjuData(): Promise<{
       }
       for (const [slug, sym] of Object.entries(goldSlugs)) {
         if (c[slug]?.p) {
-          const isGlobal = slug === 'ons'
-          prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: isGlobal ? 'USD' : 'IRR' }
+          prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
         }
       }
 

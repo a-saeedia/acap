@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
+import { getMyAssets } from '@/app/actions/assets'
 import {
   User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown
 } from 'lucide-react'
@@ -40,7 +41,8 @@ export function DashboardClient() {
     if (isPending) return
     if (!session) { router.push('/'); return }
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
-    getDashboardData().then(data => {
+    const timeout = new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+    Promise.race([getDashboardData(), timeout]).then(data => {
       if (!data) { router.push('/'); return }
       setDashData(data)
       setLoading(false)
@@ -49,19 +51,22 @@ export function DashboardClient() {
 
   useEffect(() => {
     if (!dashData) return
-    import('@/app/actions/assets').then(m => m.getMyAssets()).then(a => setAssetsCount(a.length)).catch(() => {})
-    fetch('/api/prices').then(r => r.json()).then(d => {
+    getMyAssets().then(a => setAssetsCount(a.length)).catch(() => {})
+    const controller = new AbortController()
+    const tid = setTimeout(() => controller.abort(), 8000)
+    fetch('/api/prices', { signal: controller.signal }).then(r => r.json()).then(d => {
       const merged: Record<string, {price: number; currency: string; change: number}> = {}
       if (d.prices) for (const [k, v] of Object.entries(d.prices) as [string, any][]) merged[k] = v
       if (d.stockPrices) for (const [k, v] of Object.entries(d.stockPrices) as [string, any][]) merged[k] = v
       setPriceData(merged)
     }).catch(() => {})
-    fetch('/api/signals').then(r => r.json()).then((signals: any[]) => {
+    fetch('/api/signals', { signal: controller.signal }).then(r => r.json()).then((signals: any[]) => {
       if (signals.length > 0) {
         const wins = signals.filter((s: any) => (s.actualProfit ?? 0) > 0).length
         setSignalStats({ total: signals.length, wins, winRate: Math.round((wins / signals.length) * 100) })
       }
     }).catch(() => {})
+    return () => { clearTimeout(tid); controller.abort() }
   }, [dashData])
 
   if (isPending || loading) return (

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
-import { BarChart3, Wallet, TrendingUp, Zap, Crown, BookOpen, LogOut, Menu, X } from 'lucide-react'
+import { BarChart3, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, LogOut, Menu, X } from 'lucide-react'
 import { AISupport } from '@/components/ai-support'
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
   { href: '/app/signals', label: 'درآمد A|CAP', icon: Zap },
   { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },
+  { href: '/app/academy', label: 'آکادمی', icon: GraduationCap },
   { href: '/blog', label: 'وبلاگ', icon: BookOpen },
 ]
 

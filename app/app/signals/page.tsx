@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Zap, Clock, X, ArrowLeft } from 'lucide-react'
 
 const TIME_RANGES = [
@@ -154,6 +155,7 @@ function SignalCard({ item, onClick }: { item: any; onClick: () => void }) {
 }
 
 export default function SignalsPage() {
+  const router = useRouter()
   const [signals, setSignals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState(3)
