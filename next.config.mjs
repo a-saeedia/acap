@@ -12,6 +12,9 @@ const csp = [
 ].join('; ')
 
 const nextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
   typescript: {
     ignoreBuildErrors: false,
   },

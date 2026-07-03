@@ -1,0 +1,46 @@
+# Project: A-CAP — Persian Fintech Platform
+
+## Critical Rules (violating these caused bugs)
+
+### Tailwind CSS v4 — NOT v3
+- **CSS-first**: `@import 'tailwindcss'` in globals.css, NO `tailwind.config.js`
+- **Class scanning**: Tailwind v4 ONLY detects classes in JSX `className` attributes. It DOES NOT scan template literals, string variables, or concatenated strings.
+- **Always use React elements** for dynamic content. Never do:
+  ```tsx
+  // WRONG — classes won't be generated
+  `<h2 class="text-2xl font-bold">${text}</h2>`
+  ```
+  Instead:
+  ```tsx
+  // RIGHT — Tailwind v4 detects className
+  <h2 className="text-2xl font-bold">{text}</h2>
+  ```
+- **Typography plugin**: `prose` class requires `@tailwindcss/typography` package + `@plugin '@tailwindcss/typography'` in CSS. Verify it's installed before using.
+- **Tailwind v3 modifier syntax** like `prose-headings:text-white` does NOT work in v4. Use `prose` alone with default plugin styles, or customize via CSS `@plugin` options.
+
+### Always Verify Before Committing
+1. **Check package.json** before using any library — don't assume it's installed
+2. **Test regex patterns** with `node -e` before putting them in production code — regex bugs are invisible during build
+3. **Read the actual source file** — don't guess or assume based on similar projects
+4. **Run full `npm run build`** (not just dev server) and check for real errors, not just "Compiled successfully"
+
+### Content Rendering Pipeline (blog/article-client.tsx)
+- `renderContent()` detects HTML vs markdown via regex `/<[a-z][a-z0-9]*[>\s]/i`
+- HTML content → `dangerouslySetInnerHTML` inside a wrapper div. Styling comes from the parent `prose prose-invert max-w-none` div
+- Markdown content → parsed into React `<h2>`, `<h3>`, `<p>`, `<ul>/<li>` elements with explicit `className` (so Tailwind v4 detects them)
+- The outer `prose` div wraps ALL content — both HTML and markdown paths
+
+### RTL/Persian Layout
+- Margins: RTL means `ml-*` = margin-right (logical), `mr-*` = margin-left (logical)
+- Borders: `border-r-*` = right border, `border-l-*` = left border
+- Text: `text-justify` for body text, Persian numerals via `Intl.NumberFormat('fa-IR')`
+
+### Error Handling
+- Never use empty catch blocks `catch {}` — always log: `catch (e) { console.error('...', e) }`
+- Never commit `Math.random()` or placeholder values in database seeds
+
+### Build Commands
+```bash
+npm run build    # Full production build with TypeScript check
+npm run dev      # Development server
+```
