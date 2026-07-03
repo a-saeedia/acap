@@ -15,42 +15,46 @@ function formatDate(dateStr: string | Date) {
   } catch { return String(dateStr) }
 }
 
-function markdownToHtml(text: string) {
-  const lines = text.split('\n')
-  const html: string[] = []
-  let inList = false
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) {
-      if (inList) { html.push('</ul>'); inList = false }
-      continue
-    }
-    if (trimmed.startsWith('## ')) {
-      if (inList) { html.push('</ul>'); inList = false }
-      html.push(`<h2 class="text-2xl font-bold text-white mt-8 mb-4">${trimmed.slice(3)}</h2>`)
-    } else if (trimmed.startsWith('### ')) {
-      if (inList) { html.push('</ul>'); inList = false }
-      html.push(`<h3 class="text-xl font-bold text-white mt-6 mb-3">${trimmed.slice(4)}</h3>`)
-    } else if (trimmed.startsWith('- ')) {
-      if (!inList) { html.push('<ul class="space-y-2 my-4 pr-5 list-disc marker:text-crimson-400">'); inList = true }
-      html.push(`<li class="text-gray-300 leading-relaxed">${trimmed.slice(2)}</li>`)
-    } else {
-      if (inList) { html.push('</ul>'); inList = false }
-      html.push(`<p class="text-gray-300 leading-relaxed mb-4 text-justify">${trimmed}</p>`)
-    }
-  }
-  if (inList) html.push('</ul>')
-  return html.join('\n')
-}
-
 function renderContent(text: string) {
   const hasHtml = /<[a-z][\s>]/i.test(text)
   if (hasHtml) {
-    return <div className="article-content" dangerouslySetInnerHTML={{ __html: text }} />
+    return <div className="prose-headings:text-white prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4 prose-ul:space-y-2 prose-ul:my-4 prose-li:text-gray-300 prose-li:leading-relaxed" dangerouslySetInnerHTML={{ __html: text }} />
   }
-  const html = markdownToHtml(text)
-  return <div className="article-content" dangerouslySetInnerHTML={{ __html: html }} />
+  const lines = text.split('\n')
+  const elements: React.ReactElement[] = []
+  let listItems: string[] = []
+  let listKey = 0
+  let key = 0
+  function flushList() {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`ul-${listKey++}`} className="space-y-2 my-4 pr-5">
+          {listItems.map((item, i) => (
+            <li key={i} className="text-gray-300 leading-relaxed list-disc marker:text-crimson-400">{item}</li>
+          ))}
+        </ul>
+      )
+      listItems = []
+    }
+  }
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) { flushList(); continue }
+    if (trimmed.startsWith('## ')) {
+      flushList()
+      elements.push(<h2 key={`h2-${key++}`} className="text-2xl font-bold text-white mt-8 mb-4">{trimmed.slice(3)}</h2>)
+    } else if (trimmed.startsWith('- ')) {
+      listItems.push(trimmed.slice(2))
+    } else if (trimmed.startsWith('### ')) {
+      flushList()
+      elements.push(<h3 key={`h3-${key++}`} className="text-xl font-bold text-white mt-6 mb-3">{trimmed.slice(4)}</h3>)
+    } else {
+      flushList()
+      elements.push(<p key={`p-${key++}`} className="text-gray-300 leading-relaxed mb-4 text-justify">{trimmed}</p>)
+    }
+  }
+  flushList()
+  return elements
 }
 
 const containerVariants = {
