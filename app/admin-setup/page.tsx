@@ -37,7 +37,7 @@ export default function AdminSetupPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black">تنظیم مدیر سیستم</h1>
-          <p className="text-gray-400 mt-2 text-sm">یک بار تنظیم کنید. فقط وقتی قابل استفاده است که هیچ مدیری وجود نداشته باشد.</p>
+          <p className="text-gray-400 mt-2 text-sm">ایمیلی را وارد کنید که با آن ثبت‌نام کرده‌اید و هم‌اکنون با آن لاگین هستید.</p>
         </div>
 
         {status === 'success' ? (
