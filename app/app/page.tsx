@@ -17,6 +17,9 @@ const TYPE_COLORS: Record<string, string> = {
 
 export default function AppPage() {
   const router = useRouter()
+
+  useEffect(() => { router.replace('/app/assets') }, [])
+
   const [assets, setAssets] = useState<Asset[]>([])
   const [prices, setPrices] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
