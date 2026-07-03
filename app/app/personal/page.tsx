@@ -113,11 +113,11 @@ export default function PersonalPage() {
   return (
     <div dir="rtl" className="space-y-5">
       {/* Back to dashboard */}
-      <button onClick={() => router.push('/dashboard')}
+      <button onClick={() => router.push('/app')}
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        بازگشت به داشبورد
+        بازگشت
       </button>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center">

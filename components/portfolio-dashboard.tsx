@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset, deduplicateAssets } from '@/app/actions/assets'
 import {
-  Plus, X, RefreshCw, Loader2, Crown, Target,
+  Plus, X, RefreshCw, Loader2, Crown, Target, Wallet,
 } from 'lucide-react'
 
 import { AISupport } from '@/components/ai-support'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
+import { formatToman } from '@/lib/utils'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 
@@ -38,6 +39,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; 
   stock: { label: 'بورس ایران', icon: '📈', color: '#2979FF', gradient: 'from-blue-500/20 to-blue-600/10' },
   gold: { label: 'طلا', icon: 'Au', color: '#F59E0B', gradient: 'from-yellow-500/20 to-amber-600/10' },
   currency: { label: 'ارز', icon: '💵', color: '#10B981', gradient: 'from-emerald-500/20 to-green-600/10' },
+  cash: { label: 'وجه نقد', icon: '💳', color: '#06B6D4', gradient: 'from-cyan-500/20 to-teal-600/10' },
   other: { label: 'سایر', icon: '💰', color: '#8B5CF6', gradient: 'from-purple-500/20 to-violet-600/10' },
 }
 
@@ -54,6 +56,7 @@ const ASSET_TYPES = [
   { value: 'stock', label: 'بورس ایران' },
   { value: 'gold', label: 'طلا' },
   { value: 'currency', label: 'ارز' },
+  { value: 'cash', label: 'وجه نقد' },
   { value: 'other', label: 'سایر' },
 ]
 
@@ -72,11 +75,7 @@ const INITIAL_FORM: AssetForm = {
 }
 
 function formatCurrency(n: number): string {
-  if (n >= 1_000_000_000_000) return (n / 1_000_000_000_000).toFixed(2) + ' تریلیون'
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + ' میلیارد'
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + ' میلیون'
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + ' هزار'
-  return n.toLocaleString('fa-IR')
+  return formatToman(n)
 }
 
 function formatQuantity(n: number, symbol: string): string {
@@ -112,10 +111,12 @@ function getAssetPriceIr(
 }
 
 function getTotalCost(asset: Asset): number {
+  if (asset.type === 'cash') return asset.quantity
   return (asset.purchasePrice ?? 0) * asset.quantity
 }
 
 function getCurrentValue(asset: Asset, prices: PriceMap, stockPrices: Record<string, number>): number {
+  if (asset.type === 'cash') return asset.quantity
   const price = getAssetPriceIr(asset.symbol, prices, stockPrices)
   if (price === null) return 0
   return price * asset.quantity
@@ -194,73 +195,6 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
   )
 }
 
-function PerformanceBars({ assets, prices, stockPrices }: {
-  assets: Asset[]
-  prices: PriceMap
-  stockPrices: Record<string, number>
-}) {
-  const maxVal = Math.max(
-    ...assets.map(a => Math.abs(getCurrentValue(a, prices, stockPrices) - getTotalCost(a))),
-    1
-  )
-
-  return (
-    <div className="space-y-2.5" dir="ltr">
-      {assets.map(a => {
-        const val = getCurrentValue(a, prices, stockPrices)
-        const cost = getTotalCost(a)
-        const diff = val - cost
-        const isProfit = diff >= 0
-        const barWidth = maxVal > 0 ? (Math.abs(diff) / maxVal) * 100 : 0
-        const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.other
-        return (
-          <motion.div
-            key={a.id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-center gap-2 text-xs"
-          >
-            <span
-              className="w-16 sm:w-20 truncate font-semibold text-foreground text-right shrink-0"
-              style={{ direction: 'rtl' }}
-            >
-              {a.label}
-            </span>
-            <div className="flex-1 h-5 relative flex items-center">
-              {isProfit ? (
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${barWidth}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-3 rounded-sm"
-                  style={{ background: 'linear-gradient(90deg, #10B98140, #10B981)' }}
-                />
-              ) : (
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${barWidth}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-3 rounded-sm"
-                  style={{
-                    background: 'linear-gradient(90deg, #EF4444, #EF444440)',
-                    marginInlineStart: `${100 - barWidth}%`,
-                  }}
-                />
-              )}
-            </div>
-            <span
-              className={`w-20 sm:w-24 text-left font-bold shrink-0 font-mono ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}
-            >
-              {isProfit ? '+' : ''}{formatCurrency(Math.round(diff))}
-            </span>
-          </motion.div>
-        )
-      })}
-    </div>
-  )
-}
-
 const AssetCard = memo(function AssetCard({ asset, value, cost, pnl, diff, cfg, onEdit, onDelete }: {
   asset: Asset; value: number; cost: number; pnl: number; diff: number;
   cfg: { icon: string; color: string }; onEdit: () => void; onDelete: () => void
@@ -283,11 +217,6 @@ const AssetCard = memo(function AssetCard({ asset, value, cost, pnl, diff, cfg, 
       <div className="text-sm font-bold text-foreground mt-1" dir="ltr">
         {value > 0 ? formatCurrency(value) : '—'}
       </div>
-      {cost > 0 && (
-        <div className={`text-xs font-semibold mt-0.5 ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-          {diff >= 0 ? '+' : ''}{pnl.toFixed(1)}%
-        </div>
-      )}
       <button onClick={(e) => { e.stopPropagation(); onDelete() }}
         className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
       >
@@ -307,6 +236,9 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [showCashModal, setShowCashModal] = useState(false)
+  const [cashAmount, setCashAmount] = useState(0)
+  const [cashSubmitting, setCashSubmitting] = useState(false)
   const [showAdvisor, setShowAdvisor] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AssetForm>(INITIAL_FORM)
@@ -610,6 +542,12 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
             >
               <RefreshCw className="w-4 h-4 text-muted-foreground" />
             </button>
+            <button onClick={() => setShowCashModal(true)}
+              className="w-9 h-9 rounded-xl bg-cyan-600 flex items-center justify-center text-white hover:bg-cyan-500 transition-colors"
+              title="افزودن وجه نقد"
+            >
+              <Wallet className="w-4 h-4" />
+            </button>
             <button onClick={openAdd}
               className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"
             >
@@ -618,18 +556,26 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           </div>
         </div>
 
-        {/* ── Quick Stats Row ── */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'تعداد دارایی‌ها', value: String(assets.length) },
-            { label: 'دسته‌بندی', value: String(Object.keys(byType).length) },
-            { label: 'سود / زیان', value: totalCost > 0 ? `${(((totalValue - totalCost) / totalCost) * 100).toFixed(1)}%` : '—' },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-card border border-border rounded-2xl py-3 px-3 text-center">
-              <div className="text-lg font-bold text-foreground">{stat.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+        {/* ── Asset Count by Type ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {Object.entries(byType).length > 0 ? (
+            Object.entries(byType).sort((a, b) => b[1].count - a[1].count).map(([type, data]) => {
+              const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.other
+              return (
+                <div key={type} className="bg-card border border-border rounded-2xl py-3 px-3 text-center">
+                  <div className="text-lg font-bold text-foreground">{data.count}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: cfg.color }} />
+                    {cfg.label}
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            <div className="col-span-full bg-card border border-border rounded-2xl py-3 px-4 text-center">
+              <div className="text-xs text-muted-foreground">هیچ دارایی ثبت نشده</div>
             </div>
-          ))}
+          )}
         </div>
 
         {/* ── Donut Chart + Distribution ── */}
@@ -718,7 +664,7 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {[...assets]
                 .sort((a, b) => getCurrentValue(b, prices, stockPrices) - getCurrentValue(a, prices, stockPrices))
                 .map((a) => {
@@ -854,6 +800,42 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
           </div>
         </div>
       )}
+      {/* Cash Modal */}
+      {showCashModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowCashModal(false) }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-base font-bold text-foreground">افزودن وجه نقد</h2>
+            <p className="text-xs text-muted-foreground">مبلغ ریال یا تومان نقدی خود را وارد کنید</p>
+            <input value={cashAmount || ''} onChange={e => setCashAmount(Number(e.target.value))} type="number" placeholder="مبلغ به تومان"
+              className="w-full px-3 py-3 rounded-xl bg-accent border border-border text-foreground text-lg font-bold outline-none text-center" />
+            <div className="flex gap-2">
+              <button onClick={async () => {
+                if (!cashAmount || cashAmount <= 0) return
+                setCashSubmitting(true)
+                try {
+                  await createAsset({ type: 'cash', symbol: 'CASH', label: 'وجه نقد', quantity: cashAmount })
+                  setShowCashModal(false)
+                  setCashAmount(0)
+                  setAssets(await getMyAssets())
+                  showToast('وجه نقد با موفقیت اضافه شد')
+                } catch { showToast('خطا در ثبت وجه نقد', 'error') }
+                setCashSubmitting(false)
+              }} disabled={cashSubmitting || !cashAmount}
+                className="flex-1 bg-cyan-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-cyan-500 transition-colors disabled:opacity-50"
+              >
+                {cashSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ثبت وجه نقد'}
+              </button>
+              <button onClick={() => setShowCashModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
+              >انصراف</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Advisor Modal */}
       {showAdvisor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAdvisor(false)}>

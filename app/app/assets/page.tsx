@@ -18,15 +18,14 @@ export default function AssetsPage() {
   useEffect(() => {
     if (isPending) return
     if (!session) { setLoading(false); router.push('/'); return }
-    const timeout = new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
-    Promise.race([getDashboardData(), timeout]).then(data => {
-      if (!data) { setLoading(false); router.push('/'); return }
+    getDashboardData().then(data => {
+      if (!data) { setLoading(false); return }
       setIsPlus(data.subscription?.acapPlus ?? false)
       const latest = data.quizResults?.[data.quizResults.length - 1]
       setInvestorType(latest?.investorType ?? null)
       setQuizTaken(data.quizResults.length > 0)
       setLoading(false)
-    }).catch(() => { setLoading(false); router.push('/') })
+    }).catch(() => setLoading(false))
   }, [session, isPending, router])
 
   if (isPending || loading) {
@@ -42,11 +41,11 @@ export default function AssetsPage() {
       {/* Header */}
       <header className="glass border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <button onClick={() => router.push('/dashboard')}
+          <button onClick={() => router.push('/app')}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
           >
             <ArrowRight className="w-4 h-4" />
-            بازگشت به داشبورد
+            بازگشت
           </button>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">مدیریت سبد سرمایه</span>

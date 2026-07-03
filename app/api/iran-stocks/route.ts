@@ -27,7 +27,8 @@ export async function GET(request: Request) {
       stocks = await db.select().from(iranStock)
     }
     return Response.json(stocks.length ? stocks : DEFAULT_STOCKS)
-  } catch {
+  } catch (e) {
+    console.error('search iran_stocks error:', e)
     if (search) {
       const q = search
       return Response.json(DEFAULT_STOCKS.filter(s => s.symbol.includes(q) || s.name.includes(q)))

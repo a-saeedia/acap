@@ -12,7 +12,8 @@ export async function GET() {
       new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
     ])
     return result
-  } catch {
+  } catch (e) {
+    console.error('prices timeout/fetch error:', e)
     return Response.json({ prices: {}, irrRate: 0, stockPrices: {} })
   }
 }
@@ -48,7 +49,7 @@ async function fetchPrices() {
       if (code) {
         try {
           await pool.query('UPDATE iran_stock SET "tsetmc_code" = $1 WHERE symbol = $2', [code, s.symbol])
-        } catch {}
+        } catch (e) { console.error('update tsetmc_code error:', e) }
         insCodeMap[s.symbol] = code
       }
     })
@@ -63,7 +64,7 @@ async function fetchPrices() {
   try {
     const r = await pool.query('SELECT DISTINCT symbol FROM asset_price')
     existingAssetPrices = new Set(r.rows.map((row: any) => row.symbol))
-  } catch {}
+    } catch (e) { console.error('fetch existing asset_prices error:', e) }
 
   // Merge live prices with DB fallback — use batch DB query
   const allSymbols = [...new Set([...Object.keys(prices), ...Object.keys(stockPrices)])]
@@ -81,7 +82,7 @@ async function fetchPrices() {
           if (row.price > 0) dbFallbackPrices[row.symbol] = { price: row.price, currency: row.currency ?? 'IRR' }
         }
       }
-    } catch {}
+    } catch (e) { console.error('batch fetch fallback prices error:', e) }
   }
 
   const finalPrices: Record<string, { price: number; currency: string; change: number }> = {}
@@ -110,11 +111,11 @@ async function fetchPrices() {
         `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6}, $${i * 6 + 7})`
       ).join(',')
       const params = inserts.flatMap(v => [v.id, 'crypto', v.sym, v.price, v.currency, v.source, v.now])
-      try { await pool.query(`INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ${placeholders} ON CONFLICT DO NOTHING`, params) } catch {}
+      try { await pool.query(`INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ${placeholders} ON CONFLICT DO NOTHING`, params) } catch (e) { console.error('batch insert prices error:', e) }
     }
     if (updates.length > 0) {
       for (const u of updates) {
-        try { await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [u.price, u.sym]) } catch {}
+        try { await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [u.price, u.sym]) } catch (e) { console.error('update price error:', e) }
       }
     }
   }
@@ -128,10 +129,10 @@ async function fetchPrices() {
         `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6}, $${i * 6 + 7})`
       ).join(',')
       const params = stockInserts.flatMap(sym => [randomUUID(), 'iran-stock', sym, stockPrices[sym].price, 'IRR', 'api', now])
-      try { await pool.query(`INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ${placeholders} ON CONFLICT DO NOTHING`, params) } catch {}
+      try { await pool.query(`INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ${placeholders} ON CONFLICT DO NOTHING`, params) } catch (e) { console.error('batch insert stock prices error:', e) }
     }
     for (const sym of stockUpdates) {
-      try { await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [stockPrices[sym].price, sym]) } catch {}
+      try { await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [stockPrices[sym].price, sym]) } catch (e) { console.error('update stock price error:', e) }
     }
   }
 
@@ -151,7 +152,7 @@ async function fetchPrices() {
           if (row.price > 0) dbStockPrices[row.symbol] = row.price
         }
       }
-    } catch {}
+          } catch (e) { console.error('batch fetch db stock prices error:', e) }
   }
 
   const fallbackStockPrices: Record<string, { price: number; change: number }> = {}
@@ -169,7 +170,7 @@ async function fetchPrices() {
   const mlPrices: Record<string, number> = {}
   for (const [sym, d] of Object.entries(prices)) mlPrices[sym] = d.price
   for (const [sym, d] of Object.entries(stockPrices)) mlPrices[sym] = d.price
-  detectAnomalies(mlPrices).catch(() => {})
+  detectAnomalies(mlPrices).catch((e) => { console.error('detectAnomalies error:', e) })
 
   return Response.json(
     { prices: finalPrices, irrRate, stockPrices: fallbackStockPrices },

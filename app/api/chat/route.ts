@@ -72,8 +72,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const model = googleAI!.getGenerativeModel({ model: "gemini-2.0-flash-001" })
-    const result = await model.generateContent(`${ACAP_CONTEXT}\n\nUser: ${message}`)
+    const model = googleAI!.getGenerativeModel({
+      model: "gemini-2.0-flash-001",
+      systemInstruction: ACAP_CONTEXT,
+    })
+    const result = await model.generateContent(message)
     const response = result.response.text()
     if (!response) throw new Error('Empty response')
     return Response.json({ response })

@@ -1,10 +1,22 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { course, enrollment, learningPath, article, articleCategory } from '@/lib/db/schema'
+import { course, enrollment, learningPath, article, articleCategory, user as userTable } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc, asc, and } from 'drizzle-orm'
+
+async function requireAdmin() {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Unauthorized')
+  const [u] = await db.select().from(userTable).where(eq(userTable.id, session.user.id)).limit(1)
+  if (u?.role !== 'admin') throw new Error('Forbidden')
+  return session.user
+}
+
+function sanitize(str: string, maxLen = 2000) {
+  return str.replace(/[<>]/g, '').trim().slice(0, maxLen)
+}
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -127,4 +139,153 @@ export async function getCategoryBySlug(slug: string) {
 export async function getCategoryById(id: string) {
   const [c] = await db.select().from(articleCategory).where(eq(articleCategory.id, id)).limit(1)
   return c || null
+}
+
+// --- Admin: Article CRUD ---
+
+export async function createArticle(data: {
+  title: string; slug: string; excerpt: string; content: string;
+  categoryId?: string; author?: string; authorRole?: string;
+  image?: string; tags?: string[]; readingTime?: number;
+  isFeatured?: boolean; publishedAt?: string;
+}) {
+  await requireAdmin()
+  const { randomUUID } = await import('node:crypto')
+  const id = randomUUID()
+  await db.insert(article).values({
+    id,
+    title: sanitize(data.title, 200),
+    slug: data.slug,
+    excerpt: sanitize(data.excerpt, 500),
+    content: data.content,
+    categoryId: data.categoryId || null,
+    author: data.author || 'تیم A|CAP',
+    authorRole: data.authorRole || 'تحلیلگر بازارهای مالی',
+    image: data.image || null,
+    tags: data.tags ? JSON.parse(JSON.stringify(data.tags)) : null,
+    readingTime: data.readingTime || 5,
+    isFeatured: data.isFeatured || false,
+    publishedAt: data.publishedAt ? new Date(data.publishedAt) : new Date(),
+  })
+  return id
+}
+
+export async function updateArticle(id: string, data: {
+  title?: string; slug?: string; excerpt?: string; content?: string;
+  categoryId?: string; author?: string; authorRole?: string;
+  image?: string; tags?: string[]; readingTime?: number;
+  isFeatured?: boolean; publishedAt?: string;
+}) {
+  await requireAdmin()
+  await db.update(article).set({
+    ...(data.title && { title: sanitize(data.title, 200) }),
+    ...(data.slug && { slug: data.slug }),
+    ...(data.excerpt && { excerpt: sanitize(data.excerpt, 500) }),
+    ...(data.content && { content: data.content }),
+    ...(data.categoryId !== undefined && { categoryId: data.categoryId || null }),
+    ...(data.author && { author: data.author }),
+    ...(data.authorRole !== undefined && { authorRole: data.authorRole || null }),
+    ...(data.image !== undefined && { image: data.image || null }),
+    ...(data.tags && { tags: JSON.parse(JSON.stringify(data.tags)) }),
+    ...(data.readingTime && { readingTime: data.readingTime }),
+    ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
+    ...(data.publishedAt && { publishedAt: new Date(data.publishedAt) }),
+    updatedAt: new Date(),
+  }).where(eq(article.id, id))
+}
+
+export async function deleteArticle(id: string) {
+  await requireAdmin()
+  await db.delete(article).where(eq(article.id, id))
+}
+
+// --- Admin: Course CRUD ---
+
+export async function createCourse(data: {
+  title: string; slug: string; description: string; category: string;
+  instructor: string; instructorName: string; price: number;
+  originalPrice?: number; duration?: string; level?: string;
+  lessons?: number; videoHours?: number; thumbnail?: string;
+  color?: string; icon?: string; isPopular?: boolean; isNew?: boolean;
+  isBestseller?: boolean; rating?: number; studentsCount?: number;
+  prerequisites?: string; whatYouLearn?: string[]; syllabus?: any;
+  publishedAt?: string;
+}) {
+  await requireAdmin()
+  const { randomUUID } = await import('node:crypto')
+  const id = randomUUID()
+  await db.insert(course).values({
+    id,
+    title: sanitize(data.title, 200),
+    slug: data.slug,
+    description: sanitize(data.description, 1000),
+    longDescription: null,
+    category: data.category,
+    instructor: data.instructor,
+    instructorName: data.instructorName,
+    price: data.price,
+    originalPrice: data.originalPrice || null,
+    duration: data.duration || null,
+    level: data.level || 'beginner',
+    lessons: data.lessons || 0,
+    videoHours: data.videoHours || 0,
+    thumbnail: data.thumbnail || null,
+    color: data.color || '#3B82F6',
+    icon: data.icon || 'BookOpen',
+    isPopular: data.isPopular || false,
+    isNew: data.isNew || false,
+    isBestseller: data.isBestseller || false,
+    rating: data.rating || 0,
+    studentsCount: data.studentsCount || 0,
+    prerequisites: data.prerequisites || null,
+    whatYouLearn: data.whatYouLearn ? JSON.parse(JSON.stringify(data.whatYouLearn)) : null,
+    syllabus: data.syllabus ? JSON.parse(JSON.stringify(data.syllabus)) : null,
+    publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
+  })
+  return id
+}
+
+export async function updateCourse(id: string, data: {
+  title?: string; slug?: string; description?: string; category?: string;
+  instructor?: string; instructorName?: string; price?: number;
+  originalPrice?: number; duration?: string; level?: string;
+  lessons?: number; videoHours?: number; thumbnail?: string;
+  color?: string; icon?: string; isPopular?: boolean; isNew?: boolean;
+  isBestseller?: boolean; rating?: number; studentsCount?: number;
+  prerequisites?: string; whatYouLearn?: string[]; syllabus?: any;
+  publishedAt?: string;
+}) {
+  await requireAdmin()
+  await db.update(course).set({
+    ...(data.title && { title: sanitize(data.title, 200) }),
+    ...(data.slug && { slug: data.slug }),
+    ...(data.description && { description: sanitize(data.description, 1000) }),
+    ...(data.category && { category: data.category }),
+    ...(data.instructor && { instructor: data.instructor }),
+    ...(data.instructorName && { instructorName: data.instructorName }),
+    ...(data.price !== undefined && { price: data.price }),
+    ...(data.originalPrice !== undefined && { originalPrice: data.originalPrice || null }),
+    ...(data.duration !== undefined && { duration: data.duration || null }),
+    ...(data.level && { level: data.level }),
+    ...(data.lessons !== undefined && { lessons: data.lessons }),
+    ...(data.videoHours !== undefined && { videoHours: data.videoHours }),
+    ...(data.thumbnail !== undefined && { thumbnail: data.thumbnail || null }),
+    ...(data.color && { color: data.color }),
+    ...(data.icon && { icon: data.icon }),
+    ...(data.isPopular !== undefined && { isPopular: data.isPopular }),
+    ...(data.isNew !== undefined && { isNew: data.isNew }),
+    ...(data.isBestseller !== undefined && { isBestseller: data.isBestseller }),
+    ...(data.rating !== undefined && { rating: data.rating }),
+    ...(data.studentsCount !== undefined && { studentsCount: data.studentsCount }),
+    ...(data.prerequisites !== undefined && { prerequisites: data.prerequisites || null }),
+    ...(data.whatYouLearn && { whatYouLearn: JSON.parse(JSON.stringify(data.whatYouLearn)) }),
+    ...(data.syllabus && { syllabus: JSON.parse(JSON.stringify(data.syllabus)) }),
+    ...(data.publishedAt !== undefined && { publishedAt: data.publishedAt ? new Date(data.publishedAt) : null }),
+    updatedAt: new Date(),
+  }).where(eq(course.id, id))
+}
+
+export async function deleteCourse(id: string) {
+  await requireAdmin()
+  await db.delete(course).where(eq(course.id, id))
 }

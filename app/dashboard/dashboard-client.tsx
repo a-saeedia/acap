@@ -1,12 +1,12 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import { getMyAssets } from '@/app/actions/assets'
 import {
-  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
@@ -34,6 +34,7 @@ export function DashboardClient() {
   const [phoneMsg, setPhoneMsg] = useState('')
   const [dismissBanner, setDismissBanner] = useState(false)
   const [assetsCount, setAssetsCount] = useState(0)
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null)
   const [priceData, setPriceData] = useState<Record<string, {price: number; currency: string; change: number}>>({})
   const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
 
@@ -41,12 +42,14 @@ export function DashboardClient() {
     if (isPending) return
     if (!session) { router.push('/'); return }
     fetch('/api/admin-check').then(r => r.json()).then(d => setIsAdmin(d.admin)).catch(() => {})
-    const timeout = new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
-    Promise.race([getDashboardData(), timeout]).then(data => {
-      if (!data) { router.push('/'); return }
+    getDashboardData().then(data => {
+      if (!data) return
       setDashData(data)
+      if (typeof window !== 'undefined' && !localStorage.getItem('acap_tutorial_done')) {
+        setTimeout(() => setTutorialStep(0), 500)
+      }
       setLoading(false)
-    }).catch(() => { router.push('/') })
+    }).catch(() => setLoading(false))
   }, [session, isPending, router])
 
   useEffect(() => {
@@ -112,7 +115,7 @@ export function DashboardClient() {
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <header className="glass border-b border-border sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push('/')} className="flex items-center gap-2 group">
+          <button onClick={() => router.push('/app')} className="flex items-center gap-2 group">
             <span className="font-black text-xl sm:text-2xl tracking-widest text-foreground group-hover:text-primary transition-colors">
               A <span className="text-primary">|</span> CAP
             </span>
@@ -127,10 +130,10 @@ export function DashboardClient() {
               </button>
             )}
             <button onClick={() => router.push('/')}
-              className="hidden sm:flex items-center gap-1.5 glass border border-border hover:border-primary/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-all"
+              className="flex items-center gap-1.5 glass border border-border hover:border-primary/40 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-all"
             >
               <Home className="w-4 h-4" />
-              صفحه اصلی
+              <span className="hidden sm:inline">صفحه اصلی</span>
             </button>
             <button onClick={handleSignOut}
               className="flex items-center gap-1.5 glass border border-border hover:border-red-400/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-red-400 transition-all"
@@ -142,7 +145,7 @@ export function DashboardClient() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           {/* Welcome Header */}
           <motion.div variants={itemVariants} className="flex items-center justify-between gap-3 mb-4">
@@ -402,14 +405,14 @@ export function DashboardClient() {
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
                   ].map(btn => (
                     <button key={btn.label} onClick={btn.action}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-xs font-semibold ${btn.color || 'text-foreground'}`}
+                      className={`flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold ${btn.color || 'text-foreground'}`}
                     >
-                      <btn.icon className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <btn.icon className="w-4 h-4 shrink-0 text-muted-foreground" />
                       {btn.label}
                     </button>
                   ))}
                   <a href="https://t.me/acapitalsbot?start=ref_3bCj2pqq" target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-xs font-semibold text-foreground col-span-2"
+                    className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground col-span-2"
                   >
                     <User className="w-3 h-3 shrink-0 text-muted-foreground" />
                     لینک سفیر
@@ -419,7 +422,101 @@ export function DashboardClient() {
             </div>
           </motion.div>
         </motion.div>
+
+        {/* Onboarding Tutorial */}
+        <AnimatePresence>
+          {tutorialStep !== null && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => {
+                if (tutorialStep >= steps.length - 1) {
+                  localStorage.setItem('acap_tutorial_done', 'true')
+                  setTutorialStep(null)
+                } else {
+                  setTutorialStep(tutorialStep + 1)
+                }
+              }}
+            >
+              <motion.div
+                key={tutorialStep}
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="bg-card border border-border rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="text-center mb-5">
+                  <div className="text-5xl mb-3">{steps[tutorialStep].icon}</div>
+                  <h2 className="text-xl font-black text-foreground">{steps[tutorialStep].title}</h2>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{steps[tutorialStep].desc}</p>
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5 mb-5">
+                  {steps.map((_, i) => (
+                    <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === tutorialStep ? 'bg-primary w-5' : i < tutorialStep ? 'bg-primary/40' : 'bg-border'}`} />
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={() => {
+                    if (tutorialStep >= steps.length - 1) {
+                      localStorage.setItem('acap_tutorial_done', 'true')
+                      setTutorialStep(null)
+                    } else {
+                      setTutorialStep(tutorialStep + 1)
+                    }
+                  }}
+                    className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+                  >
+                    {tutorialStep >= steps.length - 1 ? 'شروع کن!' : 'بعدی'}
+                    <ArrowLeft className="w-4 h-4 inline-block mr-1.5" />
+                  </button>
+                  <button onClick={() => {
+                    localStorage.setItem('acap_tutorial_done', 'true')
+                    setTutorialStep(null)
+                  }}
+                    className="px-4 py-3 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+                  >
+                    رد کردن
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   )
 }
+
+const steps = [
+  {
+    icon: '👋',
+    title: 'به A|CAP خوش اومدی!',
+    desc: 'این داشبورد مرکز مدیریت سرمایه‌تست. از اینجا می‌تونی همه کارهای مالی‌ت رو انجام بدی.'
+  },
+  {
+    icon: '📊',
+    title: 'مدیریت سبد سرمایه',
+    desc: 'با کلیک روی کارت «مدیریت سبد سرمایه» می‌تونی دارایی‌هات رو اضافه کنی - از رمزارز و طلا و سهام گرفته تا وجه نقد. قابلیت افزودن سریع وجه نقد با دکمه کیف پول اضافه شده.'
+  },
+  {
+    icon: '💎',
+    title: 'سیگنال‌ها و A|CAP+',
+    desc: 'با فعال‌سازی A|CAP+ سیگنال‌های خرید و فروش اختصاصی، تحلیل پرتفوی هوشمند و پشتیبانی VIP دریافت می‌کنی.'
+  },
+  {
+    icon: '📚',
+    title: 'آکادمی و وبلاگ',
+    desc: 'دوره‌های آموزشی ICT، هوش مصنوعی، فارکس و بورس رو در آکادمی ببین. وبلاگ هم پر از مقالات تحلیلی و آموزشی روزانه‌ست.'
+  },
+  {
+    icon: '🚀',
+    title: 'آماده شروع هستی!',
+    desc: 'همین حالا می‌تونی دارایی‌هات رو اضافه کنی، تست شخصیت مالی بدی و از همه امکانات استفاده کنی. موفق باشی!'
+  }
+]

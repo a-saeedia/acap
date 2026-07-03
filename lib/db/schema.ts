@@ -54,7 +54,7 @@ export const verification = pgTable('verification', {
 // App tables
 export const userProfile = pgTable('user_profile', {
   id: text('id').primaryKey(),
-  userId: text('userId').notNull(),
+  userId: text('userId').notNull().unique(),
   phone: text('phone').notNull(),
   age: integer('age'),
   investmentCapital: bigint('investmentCapital', { mode: 'number' }),
@@ -80,6 +80,8 @@ export const subscription = pgTable('subscription', {
   acapPlus: boolean('acapPlus').notNull().default(false),
   acapPlusSince: timestamp('acapPlusSince'),
   acapPlusUntil: timestamp('acapPlusUntil'),
+  trialEndsAt: timestamp('trialEndsAt'),
+  requestedAt: timestamp('requestedAt'),
   scannerActive: boolean('scannerActive').notNull().default(true),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
@@ -163,12 +165,15 @@ export const userEvent = pgTable('user_event', {
 
 export const signal = pgTable('signal', {
   id: text('id').primaryKey(),
-  type: text('type').notNull(), // 'crypto' | 'stock' | 'gold'
+  type: text('type').notNull(),
   symbol: text('symbol').notNull(),
   title: text('title').notNull(),
   description: text('description'),
-  action: text('action').notNull(), // 'buy' | 'sell'
+  action: text('action').notNull(),
+  investorType: text('investorType'),
+  expectedProfit: real('expectedProfit'),
   priceAtPublish: real('priceAtPublish').notNull(),
+  expiresAt: timestamp('expiresAt'),
   publishedAt: timestamp('publishedAt').notNull().defaultNow(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })

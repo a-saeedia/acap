@@ -11,6 +11,7 @@ import {
   Calendar, Eye, Loader2, Star, ArrowLeft
 } from 'lucide-react'
 import { getArticles, getFeaturedArticles, getArticleCategories } from '@/app/actions/academy'
+import { getArticleImage } from '@/lib/article-images'
 
 const crimson = '#A51C30'
 const gold = '#D4A843'
@@ -233,18 +234,13 @@ export default function BlogPage() {
                     variants={itemVariants}
                     whileHover={{ y: -4 }}
                     onClick={() => router.push(`/blog/${article.slug}`)}
-                    className="group cursor-pointer rounded-2xl bg-gray-800/50 border border-gray-700/50 hover:border-crimson-500/30 overflow-hidden transition-all duration-300 flex-shrink-0 w-[340px]"
+                    className="group cursor-pointer rounded-2xl bg-gray-800/50 border border-gray-700/50 hover:border-crimson-500/30 overflow-hidden transition-all duration-300 flex-shrink-0 w-[280px] sm:w-[340px]"
                     style={{ scrollSnapAlign: 'start' }}
                   >
                     <div
-                      className="h-44 flex items-center justify-center relative overflow-hidden"
-                      style={{ background: `linear-gradient(135deg, ${cat?.color || crimson}22, ${cat?.color || crimson}44)` }}
+                      className="h-44 bg-cover bg-center relative overflow-hidden"
+                      style={{ backgroundImage: `url(${getArticleImage(article.title, cat?.color || crimson)})` }}
                     >
-                      <div
-                        className="absolute inset-0 opacity-10"
-                        style={{ background: `radial-gradient(circle at 50% 50%, ${cat?.color || crimson}, transparent 70%)` }}
-                      />
-                      <CatIcon className="w-14 h-14 opacity-30 group-hover:opacity-50 transition-opacity" style={{ color: cat?.color || crimson }} />
                       <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-crimson-500/20 text-crimson-400 text-xs font-medium border border-crimson-500/20">
                         ویژه
                       </span>
@@ -334,7 +330,7 @@ export default function BlogPage() {
             </div>
           ) : (
             <>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {articles.map((article, i) => {
                   const cat = article.categoryId ? categoryMap()[article.categoryId] : null
                   const CatIcon = cat ? getIcon(cat.icon || 'BookOpen') : BookOpen
@@ -347,14 +343,9 @@ export default function BlogPage() {
                       className="group cursor-pointer rounded-2xl bg-gray-800/50 border border-gray-700/50 hover:border-crimson-500/30 overflow-hidden transition-all duration-300"
                     >
                       <div
-                        className="h-40 flex items-center justify-center relative overflow-hidden"
-                        style={{ background: `linear-gradient(135deg, ${cat?.color || crimson}22, ${cat?.color || crimson}44)` }}
+                        className="h-40 bg-cover bg-center relative overflow-hidden"
+                        style={{ backgroundImage: `url(${getArticleImage(article.title, cat?.color || crimson)})` }}
                       >
-                        <div
-                          className="absolute inset-0 opacity-10"
-                          style={{ background: `radial-gradient(circle at 50% 50%, ${cat?.color || crimson}, transparent 70%)` }}
-                        />
-                        <CatIcon className="w-12 h-12 opacity-30 group-hover:opacity-50 transition-opacity" style={{ color: cat?.color || crimson }} />
                         {article.isFeatured && (
                           <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-medium border border-amber-500/20 flex items-center gap-1">
                             <Star className="w-3 h-3" /> ویژه

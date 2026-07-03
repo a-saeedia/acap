@@ -1,12 +1,26 @@
 import { pool } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
+import { eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { user } from '@/lib/db/schema'
 
 export async function GET() {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const users = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1)
+    if (users[0]?.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 })
+  } catch {
+    return Response.json({ error: 'Auth check failed' }, { status: 401 })
+  }
   try {
     const [
       totalUsers, plusUsers, totalAssets, totalSignals,
       totalSuggestions, openTickets,
       dailyUsers, pageViews, eventCount, topPages,
       heatMap, anomalies,
+      totalCourses, totalArticles, totalEnrollments, revenue,
     ] = await Promise.all([
       pool.query(`SELECT COUNT(*)::int FROM "user"`),
       pool.query(`SELECT COUNT(*)::int FROM subscription WHERE "acapPlus" = true`),
@@ -55,6 +69,14 @@ export async function GET() {
         FROM asset_price WHERE "updatedAt" > NOW() - INTERVAL '1 day'
         ORDER BY "updatedAt" DESC
       `),
+      pool.query(`SELECT COUNT(*)::int FROM course`),
+      pool.query(`SELECT COUNT(*)::int FROM article`),
+      pool.query(`SELECT COUNT(*)::int FROM enrollment`),
+      pool.query(`
+        SELECT c.title, c.price, COUNT(e.id)::int as enrollments
+        FROM course c LEFT JOIN enrollment e ON e."courseId" = c.id
+        GROUP BY c.id, c.title, c.price ORDER BY enrollments DESC
+      `),
     ])
 
     return Response.json({
@@ -64,6 +86,10 @@ export async function GET() {
       totalSignals: totalSignals.rows[0]?.count || 0,
       totalSuggestions: totalSuggestions.rows[0]?.count || 0,
       openTickets: openTickets.rows[0]?.count || 0,
+      totalCourses: totalCourses.rows[0]?.count || 0,
+      totalArticles: totalArticles.rows[0]?.count || 0,
+      totalEnrollments: totalEnrollments.rows[0]?.count || 0,
+      courseRevenue: revenue.rows,
       dailyUsers: dailyUsers.rows,
       pageViews: pageViews.rows,
       eventCounts: eventCount.rows,

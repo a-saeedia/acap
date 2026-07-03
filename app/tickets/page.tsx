@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
 import { motion } from 'framer-motion'
 import { createTicket, getUserTickets, getTicketMessages, addMessage } from '@/app/actions/tickets'
+import { MessageSquare, Loader2, Send, Plus } from 'lucide-react'
 
 type Ticket = Awaited<ReturnType<typeof getUserTickets>>[number]
 type Message = Awaited<ReturnType<typeof getTicketMessages>>[number]
@@ -17,6 +18,9 @@ export default function TicketsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [msgs, setMsgs] = useState<Message[]>([])
   const [newMsg, setNewMsg] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [loadingMsgs, setLoadingMsgs] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) router.push('/')
@@ -24,26 +28,38 @@ export default function TicketsPage() {
   }, [session, isPending])
 
   async function loadTickets() {
-    setTickets(await getUserTickets())
+    setLoading(true)
+    try { setTickets(await getUserTickets() || []) } catch {}
+    setLoading(false)
   }
 
   async function handleCreate() {
     if (!subject.trim()) return
-    await createTicket(subject)
-    setSubject('')
-    loadTickets()
+    setSending(true)
+    try {
+      await createTicket(subject)
+      setSubject('')
+      loadTickets()
+    } catch {}
+    setSending(false)
   }
 
   async function openTicket(id: string) {
     setSelected(id)
-    setMsgs(await getTicketMessages(id))
+    setLoadingMsgs(true)
+    try { setMsgs(await getTicketMessages(id) || []) } catch {}
+    setLoadingMsgs(false)
   }
 
   async function handleReply() {
     if (!newMsg.trim() || !selected) return
-    await addMessage(selected, newMsg)
-    setNewMsg('')
-    setMsgs(await getTicketMessages(selected))
+    setSending(true)
+    try {
+      await addMessage(selected, newMsg)
+      setNewMsg('')
+      setMsgs(await getTicketMessages(selected) || [])
+    } catch {}
+    setSending(false)
   }
 
   if (isPending) return (
@@ -54,40 +70,95 @@ export default function TicketsPage() {
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6" dir="rtl">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold mb-6">تیکت‌های پشتیبانی</h1>
+    <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto p-4 md:p-8">
+        <h1 className="text-2xl md:text-3xl font-black mb-6">تیکت‌های پشتیبانی</h1>
 
         <div className="flex gap-2 mb-8">
-          <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="موضوع تیکت جدید..." className="flex-1 p-2 rounded bg-gray-800 border border-gray-700" />
-          <button onClick={handleCreate} className="px-4 py-2 bg-emerald-600 rounded">ایجاد تیکت</button>
+          <input value={subject} onChange={e => setSubject(e.target.value)}
+            placeholder="موضوع تیکت جدید..."
+            className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 text-sm"
+            onKeyDown={e => e.key === 'Enter' && handleCreate()}
+          />
+          <button onClick={handleCreate} disabled={sending || !subject.trim()}
+            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-sm font-bold transition-colors"
+          >
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            ایجاد تیکت
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold mb-2">تیکت‌های من</h2>
-            {tickets.length === 0 ? <p className="text-gray-500">تیکتی وجود ندارد</p> : tickets.map(t => (
-              <div key={t.id} onClick={() => openTicket(t.id)} className={`bg-gray-900 p-3 rounded cursor-pointer border ${selected === t.id ? 'border-emerald-500' : 'border-gray-800'}`}>
-                <p className="font-medium">{t.subject}</p>
-                <p className="text-xs text-gray-400">{t.status === 'open' ? 'باز' : 'بسته شده'} - {new Date(t.createdAt).toLocaleDateString('fa-IR')}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h2 className="text-lg font-bold mb-3">تیکت‌های من</h2>
+            {loading ? (
+              <div className="space-y-2">
+                {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-gray-800/50 animate-pulse" />)}
               </div>
-            ))}
-          </div>
-          <div className="space-y-4">
-            {selected && (
-              <>
-                <h2 className="text-lg font-semibold">پیام‌ها</h2>
-                {msgs.map(m => (
-                  <div key={m.id} className="bg-gray-900 p-3 rounded">
-                    <p className="text-sm">{m.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">{new Date(m.createdAt).toLocaleString('fa-IR')}</p>
+            ) : tickets.length === 0 ? (
+              <div className="text-center py-12 bg-gray-900/50 border border-gray-800 rounded-2xl">
+                <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-600" />
+                <p className="text-gray-400 text-sm">تیکتی وجود ندارد</p>
+                <p className="text-gray-600 text-xs mt-1">با نوشتن موضوع تیکت جدید، اولین تیکت را ایجاد کنید</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {tickets.map(t => (
+                  <div key={t.id} onClick={() => openTicket(t.id)}
+                    className={`p-3.5 rounded-xl cursor-pointer border transition-all ${
+                      selected === t.id ? 'bg-blue-600/15 border-blue-500/30' : 'bg-gray-900/60 border-gray-800 hover:border-gray-700'
+                    }`}
+                  >
+                    <p className="font-semibold text-sm">{t.subject}</p>
+                    <p className="text-xs mt-1">
+                      <span className={`${t.status === 'open' ? 'text-emerald-400' : 'text-gray-500'}`}>
+                        {t.status === 'open' ? 'باز' : 'بسته شده'}
+                      </span>
+                      <span className="text-gray-600 mr-2">{new Date(t.createdAt).toLocaleDateString('fa-IR')}</span>
+                    </p>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            {selected && (
+              <>
+                <h2 className="text-lg font-bold mb-3">پیام‌ها</h2>
+                {loadingMsgs ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-4">
+                    {msgs.map(m => (
+                      <div key={m.id} className="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5">
+                        <p className="text-sm leading-relaxed">{m.message}</p>
+                        <p className="text-xs text-gray-600 mt-2">{new Date(m.createdAt).toLocaleString('fa-IR')}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  <input value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="پیام شما..." className="flex-1 p-2 rounded bg-gray-800 border border-gray-700" />
-                  <button onClick={handleReply} className="px-4 py-2 bg-emerald-600 rounded">ارسال</button>
+                  <input value={newMsg} onChange={e => setNewMsg(e.target.value)}
+                    placeholder="پیام شما..."
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 text-sm"
+                    onKeyDown={e => e.key === 'Enter' && handleReply()}
+                  />
+                  <button onClick={handleReply} disabled={sending || !newMsg.trim()}
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-sm font-bold transition-colors"
+                  >
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    ارسال
+                  </button>
                 </div>
               </>
+            )}
+            {!selected && !loading && tickets.length > 0 && (
+              <div className="text-center py-16 text-gray-500 text-sm">
+                یک تیکت را برای مشاهده پیام‌ها انتخاب کنید
+              </div>
             )}
           </div>
         </div>

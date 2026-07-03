@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, ArrowLeft } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowLeft, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const PERSIAN_LABELS: Record<string, string> = {
@@ -173,11 +173,11 @@ export default function PricesPage() {
   return (
     <div className="min-h-screen">
       {/* Back to dashboard */}
-      <button onClick={() => router.push('/dashboard')}
+      <button onClick={() => router.push('/app')}
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold mb-4 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        بازگشت به داشبورد
+        بازگشت
       </button>
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 no-scrollbar" dir="rtl">
@@ -197,6 +197,20 @@ export default function PricesPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : Object.keys(prices).length === 0 ? (
+        <div className="text-center py-20">
+          <div className="w-14 h-14 rounded-2xl bg-gray-800/50 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-gray-500" />
+          </div>
+          <p className="text-gray-400">در حال حاضر داده قیمتی در دسترس نیست</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm font-semibold transition-colors">
+            تلاش مجدد
+          </button>
+        </div>
+      ) : filteredItems.length === 0 && activeTab !== 'all' ? (
+        <div className="text-center py-16">
+          <p className="text-gray-500">هیچ قیمتی در این دسته یافت نشد</p>
         </div>
       ) : (
         <div className="space-y-6">

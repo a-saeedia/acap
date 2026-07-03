@@ -10,12 +10,14 @@ export async function GET() {
     if (!session?.user) return Response.json({ isPlus: false, suggestions: [] })
     const sub = await db.select().from(subscription).where(eq(subscription.userId, session.user.id)).limit(1)
     const isPlus = sub[0]?.acapPlus ?? false
+    const hasRequested = !!sub[0]?.requestedAt
     let suggestions: any[] = []
     if (isPlus) {
-      try { suggestions = await db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)) } catch {}
+      try { suggestions = await db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)) } catch (e) { console.error('fetch suggestions error:', e) }
     }
-    return Response.json({ isPlus, suggestions })
-  } catch {
+    return Response.json({ isPlus, suggestions, hasRequested })
+  } catch (e) {
+    console.error('acap-plus error:', e)
     return Response.json({ isPlus: false, suggestions: [] })
   }
 }

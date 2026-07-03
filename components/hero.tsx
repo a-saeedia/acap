@@ -402,10 +402,10 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
               transition={{ delay: 0.28, duration: 0.65 }}
             >
               <h1
-                className="font-black text-foreground whitespace-nowrap"
-                style={{ fontSize: 'clamp(1.75rem, 4.8vw, 3.6rem)', lineHeight: 1.3, letterSpacing: '-0.02em' }}
+                className="font-black text-foreground"
+                style={{ fontSize: 'clamp(1.5rem, 4.5vw, 3.6rem)', lineHeight: 1.3, letterSpacing: '-0.02em' }}
               >
-                سرمایه‌ات را <span className="text-brand-shimmer">هوشمند مدیریت کن</span>
+                سرمایه‌ات را <span className="text-brand-shimmer whitespace-nowrap">هوشمند مدیریت کن</span>
               </h1>
             </motion.div>
 

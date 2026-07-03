@@ -297,7 +297,7 @@ export default function AcademyPage() {
             <p>هنوز دوره‌ای ثبت نشده است</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featured.map((course, i) => (
               <motion.div
                 key={course.id}
@@ -388,7 +388,7 @@ export default function AcademyPage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-crimple-400 group-hover:text-crimson-400 transition-colors">
+                    <div className="text-gray-400 group-hover:text-crimson-400 transition-colors">
                       <Play className="w-5 h-5" />
                     </div>
                   </div>
@@ -406,7 +406,7 @@ export default function AcademyPage() {
           <p className="text-gray-400 text-sm mt-1">یادگیری از بهترین‌های بازارهای مالی</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {instructors.map((inst, i) => (
             <motion.div
               key={inst.id}
@@ -460,7 +460,7 @@ export default function AcademyPage() {
             <p>هنوز مسیر یادگیری تعریف نشده است</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {paths.map((path, i) => {
               const PathIcon = getIcon(path.icon)
               const diffConfig: Record<string, { label: string; color: string }> = {

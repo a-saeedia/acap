@@ -1,10 +1,10 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset } from '@/lib/db/schema'
+import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 async function requireAdmin() {
@@ -120,6 +120,88 @@ export async function toggleScanner(userId: string, active: boolean) {
   }
 }
 
+// --- A|CAP+ Request System ---
+
+export async function requestAcapPlus(userId: string) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Unauthorized')
+  if (session.user.id !== userId) throw new Error('Forbidden')
+  const existing = await db.select().from(subscription).where(eq(subscription.userId, userId))
+  if (existing.length === 0) {
+    await db.insert(subscription).values({
+      id: randomUUID(),
+      userId,
+      requestedAt: new Date(),
+    })
+  } else {
+    await db.update(subscription).set({ requestedAt: new Date(), updatedAt: new Date() }).where(eq(subscription.userId, userId))
+  }
+}
+
+export async function approveAcapPlusRequest(userId: string, enabled: boolean, trialDays?: number) {
+  await requireAdmin()
+  const existing = await db.select().from(subscription).where(eq(subscription.userId, userId))
+  if (existing.length === 0) {
+    await db.insert(subscription).values({
+      id: randomUUID(),
+      userId,
+      acapPlus: enabled,
+      acapPlusSince: enabled ? new Date() : null,
+      acapPlusUntil: enabled ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) : null,
+      trialEndsAt: trialDays ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null,
+      requestedAt: null,
+    })
+  } else {
+    await db.update(subscription).set({
+      acapPlus: enabled,
+      acapPlusSince: enabled ? existing[0].acapPlusSince ?? new Date() : null,
+      acapPlusUntil: enabled ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) : null,
+      trialEndsAt: trialDays ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null,
+      requestedAt: null,
+      updatedAt: new Date(),
+    }).where(eq(subscription.userId, userId))
+  }
+}
+
+export async function getPendingAcapPlusRequests() {
+  await requireAdmin()
+  const users = await db.select().from(user).orderBy(desc(user.createdAt))
+  const subs = await db.select().from(subscription)
+  const subMap = Object.fromEntries(subs.map(s => [s.userId, s]))
+  const profiles = await db.select().from(userProfile)
+  const profileMap = Object.fromEntries(profiles.map(p => [p.userId, p]))
+  return users
+    .filter(u => {
+      const s = subMap[u.id]
+      return s?.requestedAt && !s.acapPlus
+    })
+    .map(u => ({
+      ...u,
+      profile: profileMap[u.id] ?? null,
+      subscription: subMap[u.id] ?? null,
+    }))
+}
+
+// Broadcast signal to all A|CAP+ users
+export async function broadcastSuggestion(title: string, content: string, profitPercent?: number, profitMessage?: string, expiresAt?: string) {
+  const admin = await requireAdmin()
+  if (!title || !content) throw new Error('All fields required')
+  const subs = await db.select().from(subscription).where(eq(subscription.acapPlus, true))
+  for (const sub of subs) {
+    await db.insert(suggestion).values({
+      id: randomUUID(),
+      userId: sub.userId,
+      adminId: admin.id,
+      title: sanitize(title, 200),
+      content: sanitize(content),
+      profitPercent: profitPercent && profitPercent > 0 ? profitPercent : null,
+      profitMessage: profitMessage ? sanitize(profitMessage, 500) : null,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    })
+  }
+  return subs.length
+}
+
 export async function getUserQuizResults(userId: string) {
   await requireAdmin()
   return db.select().from(quizResult).where(eq(quizResult.userId, userId)).orderBy(desc(quizResult.createdAt))
@@ -150,4 +232,45 @@ export async function replyToTicket(ticketId: string, message: string) {
 export async function closeTicket(ticketId: string) {
   await requireAdmin()
   await db.update(ticket).set({ status: 'closed', updatedAt: new Date() }).where(eq(ticket.id, ticketId))
+}
+
+export async function getAdminCourses() {
+  await requireAdmin()
+  const courses = await db.select().from(course).orderBy(desc(course.createdAt))
+  const enrollCounts = await db.execute(sql`
+    SELECT "courseId", COUNT(*)::int as count FROM enrollment GROUP BY "courseId"
+  `)
+  const enrollMap: Record<string, number> = {}
+  for (const row of enrollCounts.rows as any[]) {
+    enrollMap[row.courseId] = row.count
+  }
+  return courses.map(c => ({
+    ...c,
+    enrollmentCount: enrollMap[c.id] ?? 0,
+  }))
+}
+
+export async function getAdminArticles() {
+  await requireAdmin()
+  const articles = await db.select().from(article).orderBy(desc(article.publishedAt))
+  const cats = await db.select().from(articleCategory)
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c.name]))
+  return articles.map(a => ({
+    ...a,
+    categoryName: a.categoryId ? (catMap[a.categoryId] ?? null) : null,
+  }))
+}
+
+export async function getAdminEnrollments() {
+  await requireAdmin()
+  const enrollments = await db.select().from(enrollment).orderBy(desc(enrollment.startedAt))
+  const users = await db.select({ id: user.id, name: user.name, email: user.email }).from(user)
+  const courses = await db.select({ id: course.id, title: course.title }).from(course)
+  const userMap = Object.fromEntries(users.map(u => [u.id, u]))
+  const courseMap = Object.fromEntries(courses.map(c => [c.id, c]))
+  return enrollments.map(e => ({
+    ...e,
+    user: userMap[e.userId] ?? null,
+    course: courseMap[e.courseId] ?? null,
+  }))
 }

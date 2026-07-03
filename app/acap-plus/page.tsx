@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
 import { motion } from 'framer-motion'
-import { Crown, MessageCircle, ArrowLeft, Check, Star, TrendingUp, Shield, X } from 'lucide-react'
+import { Crown, MessageCircle, ArrowLeft, Check, Star, TrendingUp, Shield, X, Loader2, Send, Clock } from 'lucide-react'
 import { getUserSuggestions, markSuggestionRead } from '@/app/actions/admin'
 
 type Suggestion = Awaited<ReturnType<typeof getUserSuggestions>>[number]
@@ -14,6 +14,8 @@ export default function AcapPlusPage() {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
   const [isPlus, setIsPlus] = useState(false)
+  const [hasRequested, setHasRequested] = useState(false)
+  const [requesting, setRequesting] = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [selectedSug, setSelectedSug] = useState<Suggestion | null>(null)
 
@@ -24,6 +26,7 @@ export default function AcapPlusPage() {
     Promise.all([
       fetch('/api/acap-plus').then(r => r.json()).then(d => {
         setIsPlus(d.isPlus)
+        setHasRequested(d.hasRequested ?? false)
         if (d.isPlus) { router.push('/app/signals'); return }
       }).catch(() => {}),
       getUserSuggestions().then(setSuggestions).catch(() => {}),
@@ -86,15 +89,35 @@ export default function AcapPlusPage() {
               ))}
             </div>
 
-            <a
-              href="https://t.me/acapitalsbot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-6 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-amber-500/20 mb-4"
-            >
-              <MessageCircle className="w-5 h-5" />
-              فعال‌سازی از طریق تلگرام
-            </a>
+            {hasRequested ? (
+              <div className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-6 py-4 rounded-2xl text-sm font-bold mb-4 flex items-center justify-center gap-2">
+                <Clock className="w-5 h-5" />
+                درخواست شما ثبت شد. پس از تأیید ادمین فعال خواهد شد.
+              </div>
+            ) : (
+              <>
+                <button onClick={async () => {
+                  setRequesting(true)
+                  try {
+                    const { requestAcapPlus } = await import('@/app/actions/admin')
+                    await requestAcapPlus(session!.user.id)
+                    setHasRequested(true)
+                  } catch (e) { console.error(e) }
+                  setRequesting(false)
+                }} disabled={requesting}
+                  className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-l from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-6 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-emerald-500/20 mb-3"
+                >
+                  {requesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  درخواست A|CAP+
+                </button>
+                <a href="https://t.me/acapitalsbot" target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-6 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-amber-500/20 mb-4"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  فعال‌سازی از طریق تلگرام
+                </a>
+              </>
+            )}
 
             <button
               onClick={() => router.push('/dashboard')}

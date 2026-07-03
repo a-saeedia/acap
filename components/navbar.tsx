@@ -168,7 +168,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
               <button
                 onClick={() => setMenuOpen(o => !o)}
                 aria-label={menuOpen ? 'بستن منو' : 'منو'}
-                className="md:hidden w-9 h-9 flex items-center justify-center glass border border-border rounded-xl"
+                className="md:hidden w-11 h-11 flex items-center justify-center glass border border-border rounded-xl"
               >
                 {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>

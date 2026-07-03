@@ -1,5 +1,4 @@
 import { pool } from '@/lib/db'
-import { randomUUID } from 'node:crypto'
 
 const SIGNAL_DESCRIPTIONS: Record<string, { title: string; desc: string; personality: string }> = {
   BTC: { title: 'خرید بیت‌کوین', desc: 'بیت‌کوین در محدوده حمایت قوی قرار دارد. خرید در این ناحیه ریسک کمی دارد.', personality: 'conservative' },
@@ -16,41 +15,11 @@ const SIGNAL_DESCRIPTIONS: Record<string, { title: string; desc: string; persona
   'فملی': { title: 'خرید ملی صنایع مس', desc: 'فملی با رشد قیمت مس در بازار جهانی، پتانسیل صعود دارد.', personality: 'growth' },
 }
 
-const SIGNAL_TYPES: Record<string, string> = {
-  BTC: 'crypto', ETH: 'crypto',
-  GOLD18: 'gold', GOLD24: 'gold', COIN: 'gold',
-  'USD-IRR': 'forex', 'EUR-IRR': 'forex',
-  'فولاد': 'stock', 'خودرو': 'stock', 'شپنا': 'stock', 'وبملت': 'stock', 'فملی': 'stock',
-}
-
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url)
     const timeMonths = parseInt(url.searchParams.get('months') || '0')
 
-    // Create table + add expectedProfit column for existing DBs
-    await pool.query(`CREATE TABLE IF NOT EXISTS "signal" (
-      "id" text PRIMARY KEY NOT NULL,
-      "type" text NOT NULL,
-      "symbol" text NOT NULL,
-      "title" text NOT NULL,
-      "description" text,
-      "action" text NOT NULL,
-      "investorType" text,
-      "expectedProfit" real,
-      "priceAtPublish" real NOT NULL,
-      "expiresAt" timestamp,
-      "publishedAt" timestamp DEFAULT now() NOT NULL,
-      "createdAt" timestamp DEFAULT now() NOT NULL
-    )`)
-    try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "investorType" text`) } catch {}
-    try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "expectedProfit" real`) } catch {}
-    try { await pool.query(`ALTER TABLE "signal" ADD COLUMN IF NOT EXISTS "expiresAt" timestamp`) } catch {}
-    try { await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "expiresAt" timestamp`) } catch {}
-    try { await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "actualProfit" real`) } catch {}
-    try { await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "actual_profit" real`) } catch {}
-
-    // Get latest prices from DB for currentPrice display only
     const priceRows = await pool.query(
       `SELECT DISTINCT ON (symbol) symbol, price FROM asset_price WHERE price > 0 ORDER BY symbol, "updatedAt" DESC`
     )
@@ -67,46 +36,6 @@ export async function GET(req: Request) {
     }
     const prices: Record<string, number> = { ...FALLBACK, ...dbPrices }
 
-    // Clear old signals that were seeded without expectedProfit (negative profits bug)
-    try { await pool.query(`DELETE FROM signal WHERE "expectedProfit" IS NULL`) } catch {}
-
-    // Seed only if empty — each signal has a deterministic expectedProfit (≈1% per day)
-    const existing = await pool.query('SELECT COUNT(*) FROM signal')
-    if (Number(existing.rows[0].count) === 0) {
-      const seed = [
-        { symbol: 'USD-IRR', daysAgo: 3,  profit: 3.2,  type: 'forex' },
-        { symbol: 'EUR-IRR', daysAgo: 5,  profit: -2.1, type: 'forex' },
-        { symbol: 'فملی',    daysAgo: 7,  profit: 8.5,  type: 'stock' },
-        { symbol: 'GOLD18',  daysAgo: 10, profit: 9.1,  type: 'gold' },
-        { symbol: 'شپنا',    daysAgo: 12, profit: -4.3, type: 'stock' },
-        { symbol: 'BTC',     daysAgo: 14, profit: 16.2, type: 'crypto' },
-        { symbol: 'COIN',    daysAgo: 17, profit: -5.8, type: 'gold' },
-        { symbol: 'وبملت',   daysAgo: 20, profit: 22.0, type: 'stock' },
-        { symbol: 'GOLD24',  daysAgo: 23, profit: 24.1, type: 'gold' },
-        { symbol: 'ETH',     daysAgo: 25, profit: -7.5, type: 'crypto' },
-        { symbol: 'خودرو',   daysAgo: 28, profit: 30.5, type: 'stock' },
-        { symbol: 'فولاد',   daysAgo: 31, profit: 33.2, type: 'stock' },
-        { symbol: 'USD-IRR', daysAgo: 38, profit: -3.5, type: 'forex' },
-        { symbol: 'GOLD18',  daysAgo: 45, profit: 38.4, type: 'gold' },
-        { symbol: 'BTC',     daysAgo: 52, profit: 42.6, type: 'crypto' },
-      ]
-      for (const s of seed) {
-        const currentPrice = prices[s.symbol]
-        if (!currentPrice) continue
-        const info = SIGNAL_DESCRIPTIONS[s.symbol]
-        if (!info) continue
-        // priceAtPublish = currentPrice discounted so that profit = expectedProfit
-        const priceAtPublish = Math.round(currentPrice / (1 + s.profit / 100) * 100) / 100
-        const publishedAt = new Date(Date.now() - s.daysAgo * 24 * 60 * 60 * 1000)
-        const expiresAt = new Date(publishedAt.getTime() + Math.max(s.daysAgo, 30) * 24 * 60 * 60 * 1000)
-        await pool.query(
-          'INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "expectedProfit", "priceAtPublish", "expiresAt", "publishedAt", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())',
-          [randomUUID(), s.type, s.symbol, info.title, info.desc, 'buy', info.personality, s.profit, priceAtPublish, expiresAt, publishedAt]
-        )
-      }
-    }
-
-    // Read signals with time range filter
     let signals
     if (timeMonths > 0) {
       const cutoff = new Date(Date.now() - timeMonths * 30 * 24 * 60 * 60 * 1000)
@@ -120,7 +49,6 @@ export async function GET(req: Request) {
       signals = rows
     }
 
-    // Enrich: use deterministic expectedProfit, compute actualProfit from live prices
     const enriched = signals.map((s: any) => {
       const currentPrice = prices[s.symbol] ?? s.priceAtPublish
       const expected = s.expectedProfit ?? 0

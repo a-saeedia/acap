@@ -1,13 +1,6 @@
 import { betterAuth } from 'better-auth'
-import { Pool } from 'pg'
+import { pool } from './db'
 import { sendResetPasswordEmail } from './email'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 5000,
-  max: 1,
-})
 
 const getBaseURL = () => {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL

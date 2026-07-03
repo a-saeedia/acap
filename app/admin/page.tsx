@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, toggleScanner, getUserQuizResults } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
+import { Loader2, Plus, Edit3, Trash2, X } from 'lucide-react'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
 type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
@@ -11,7 +12,7 @@ type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
 export default function AdminPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics'>('users')
+  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'plus-requests'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -26,6 +27,7 @@ export default function AdminPage() {
   const [sugProfit, setSugProfit] = useState('')
   const [sugProfitMsg, setSugProfitMsg] = useState('')
   const [sugExpiresAt, setSugExpiresAt] = useState('')
+  const [sugBroadcast, setSugBroadcast] = useState(false)
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -40,10 +42,12 @@ export default function AdminPage() {
   const [scanLoading, setScanLoading] = useState(false)
   const [scannerToggling, setScannerToggling] = useState(false)
 
+  const [adminError, setAdminError] = useState('')
+
   useEffect(() => {
     if (!isPending && !session) router.push('/')
     if (!isPending && session) {
-      getUsers().then(setUsers).catch(() => router.push('/'))
+      getUsers().then(setUsers).catch(e => setAdminError(e.message))
       loadTickets()
     }
   }, [session, isPending])
@@ -158,14 +162,21 @@ export default function AdminPage() {
     setSugSuccess('')
     try {
       const profit = sugProfit ? parseFloat(sugProfit) : undefined
-      await sendSuggestion(userId, sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined)
+      if (sugBroadcast) {
+        const { broadcastSuggestion } = await import('@/app/actions/admin')
+        const count = await broadcastSuggestion(sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined)
+        setSugSuccess(`پیشنهاد برای ${count} کاربر A|CAP+ ارسال شد`)
+      } else {
+        await sendSuggestion(userId, sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined)
+        setSugSuccess('پیشنهاد با موفقیت ارسال شد')
+        loadHistory(userId)
+      }
       setSugTitle('')
       setSugContent('')
       setSugProfit('')
       setSugProfitMsg('')
       setSugExpiresAt('')
-      setSugSuccess('پیشنهاد با موفقیت ارسال شد')
-      loadHistory(userId)
+      setSugBroadcast(false)
     } catch (e) {
       setSugError(e instanceof Error ? e.message : 'خطا در ارسال پیشنهاد')
     } finally {
@@ -250,6 +261,16 @@ export default function AdminPage() {
     </div>
   )
   if (!session) return null
+  if (adminError) return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 rounded-3xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">!</div>
+        <h1 className="text-xl font-black text-white mb-2">دسترسی محدود</h1>
+        <p className="text-sm text-gray-400 mb-4">شما دسترسی مدیر سیستم را ندارید. برای تنظیم مدیر، به صفحه تنظیمات مراجعه کنید.</p>
+        <a href="/admin-setup" className="inline-block px-6 py-3 rounded-xl bg-crimson-600 hover:bg-crimson-700 text-white font-medium transition-all">تنظیم مدیر سیستم</a>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
@@ -269,6 +290,14 @@ export default function AdminPage() {
           <button onClick={() => setTab('analytics')}
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'analytics' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             آمار و رویدادها
+          </button>
+          <button onClick={() => setTab('content')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'content' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            دوره‌ها و مقالات
+          </button>
+          <button onClick={() => setTab('plus-requests')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'plus-requests' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            درخواست‌های A|CAP+
           </button>
           <a href="/api/export-csv" download
             className="px-4 py-2 rounded-lg text-sm whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-colors">
@@ -367,6 +396,10 @@ export default function AdminPage() {
                             placeholder="تاریخ انقضا (مثلاً: ۱۴۰۴/۱۲/۳۰ یا ۲۰۲۶-۰۳-۲۱)" type="text"
                             className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-emerald-500/50 focus:outline-none transition-colors" />
                         </div>
+                        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                          <input type="checkbox" checked={sugBroadcast} onChange={e => setSugBroadcast(e.target.checked)} className="rounded" />
+                          ارسال به همه کاربران A|CAP+
+                        </label>
                         {sugError && <p className="text-red-400 text-xs">{sugError}</p>}
                         {sugSuccess && <p className="text-emerald-400 text-xs">{sugSuccess}</p>}
                         <button onClick={() => handleSuggestion(selectedUser.id)} disabled={sugSending}
@@ -675,8 +708,412 @@ export default function AdminPage() {
           </div>
         )}
 
+        {tab === 'content' && <AdminContent />}
+        {tab === 'plus-requests' && <AdminPlusRequests />}
         {tab === 'analytics' && <AdminAnalytics />}
       </div>
+    </div>
+  )
+}
+
+function AdminContent() {
+  const [courses, setCourses] = useState<any[]>([])
+  const [articles, setArticles] = useState<any[]>([])
+  const [enrollments, setEnrollments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [contentTab, setContentTab] = useState<'courses' | 'articles' | 'enrollments'>('courses')
+  const [cats, setCats] = useState<any[]>([])
+
+  // Modal states
+  const [showForm, setShowForm] = useState<'article' | 'course' | null>(null)
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
+  const [editId, setEditId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // Article form
+  const [af, setAf] = useState({ title: '', slug: '', excerpt: '', content: '', categoryId: '', author: '', authorRole: '', readingTime: 5, isFeatured: false })
+  // Course form
+  const [cf, setCf] = useState({ title: '', slug: '', description: '', category: 'trading', instructor: '', instructorName: '', price: 0, originalPrice: 0, duration: '', level: 'beginner', lessons: 0, videoHours: 0, color: '#3B82F6', icon: 'BookOpen', isPopular: false, isNew: false })
+
+  const loadData = useCallback(async () => {
+    const [analyticsResult, arts, crs, enrolls, articleCats] = await Promise.all([
+      fetch('/api/admin/analytics').then(r => r.json()).catch(() => ({})),
+      import('@/app/actions/admin').then(m => m.getAdminArticles()),
+      import('@/app/actions/admin').then(m => m.getAdminCourses()),
+      import('@/app/actions/admin').then(m => m.getAdminEnrollments()),
+      import('@/app/actions/academy').then(m => m.getArticleCategories()).catch(() => []),
+    ])
+    setArticles(arts)
+    setCourses(crs)
+    setEnrollments(enrolls)
+    setCats(articleCats)
+  }, [])
+
+  useEffect(() => { loadData().catch(() => {}).finally(() => setLoading(false)) }, [loadData])
+
+  function openArticleForm(a?: any) {
+    if (a) {
+      setFormMode('edit'); setEditId(a.id)
+      setAf({ title: a.title, slug: a.slug, excerpt: a.excerpt, content: a.content, categoryId: a.categoryId || '', author: a.author, authorRole: a.authorRole || '', readingTime: a.readingTime, isFeatured: a.isFeatured })
+    } else {
+      setFormMode('create'); setEditId(null)
+      setAf({ title: '', slug: '', excerpt: '', content: '', categoryId: '', author: '', authorRole: '', readingTime: 5, isFeatured: false })
+    }
+    setShowForm('article')
+  }
+
+  function openCourseForm(c?: any) {
+    if (c) {
+      setFormMode('edit'); setEditId(c.id)
+      setCf({ title: c.title, slug: c.slug, description: c.description, category: c.category, instructor: c.instructor, instructorName: c.instructorName, price: c.price, originalPrice: c.originalPrice || 0, duration: c.duration || '', level: c.level, lessons: c.lessons, videoHours: c.videoHours || 0, color: c.color, icon: c.icon, isPopular: c.isPopular, isNew: c.isNew })
+    } else {
+      setFormMode('create'); setEditId(null)
+      setCf({ title: '', slug: '', description: '', category: 'trading', instructor: '', instructorName: '', price: 0, originalPrice: 0, duration: '', level: 'beginner', lessons: 0, videoHours: 0, color: '#3B82F6', icon: 'BookOpen', isPopular: false, isNew: false })
+    }
+    setShowForm('course')
+  }
+
+  async function saveArticle() {
+    if (!af.title || !af.slug || !af.excerpt || !af.content) return
+    setSaving(true)
+    try {
+      const m = await import('@/app/actions/academy')
+      if (formMode === 'create') await m.createArticle(af)
+      else if (editId) await m.updateArticle(editId, af)
+      setShowForm(null)
+      await loadData()
+    } catch (e) { console.error(e) }
+    setSaving(false)
+  }
+
+  async function saveCourse() {
+    if (!cf.title || !cf.slug || !cf.description) return
+    setSaving(true)
+    try {
+      const m = await import('@/app/actions/academy')
+      if (formMode === 'create') await m.createCourse(cf)
+      else if (editId) await m.updateCourse(editId, cf)
+      setShowForm(null)
+      await loadData()
+    } catch (e) { console.error(e) }
+    setSaving(false)
+  }
+
+  async function handleDeleteArticle(id: string) {
+    if (!confirm('حذف مقاله؟')) return
+    const m = await import('@/app/actions/academy')
+    await m.deleteArticle(id)
+    await loadData()
+  }
+
+  async function handleDeleteCourse(id: string) {
+    if (!confirm('حذف دوره؟')) return
+    const m = await import('@/app/actions/academy')
+    await m.deleteCourse(id)
+    await loadData()
+  }
+
+  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+
+  const formOverlay = showForm && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowForm(null) }}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold">{formMode === 'create' ? 'افزودن' : 'ویرایش'} {showForm === 'article' ? 'مقاله' : 'دوره'}</h3>
+          <button onClick={() => setShowForm(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+        {showForm === 'article' ? (
+          <div className="space-y-3">
+            <input value={af.title} onChange={e => setAf(p => ({ ...p, title: e.target.value }))} placeholder="عنوان" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <input value={af.slug} onChange={e => setAf(p => ({ ...p, slug: e.target.value }))} placeholder="slug (مثال: my-article)" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500 ltr" dir="ltr" />
+            <textarea value={af.excerpt} onChange={e => setAf(p => ({ ...p, excerpt: e.target.value }))} placeholder="خلاصه" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <textarea value={af.content} onChange={e => setAf(p => ({ ...p, content: e.target.value }))} placeholder="محتوا (می‌تواند HTML باشد)" rows={6} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <div className="flex gap-2">
+              <select value={af.categoryId} onChange={e => setAf(p => ({ ...p, categoryId: e.target.value }))} className="flex-1 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+                <option value="">بدون دسته</option>
+                {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <input value={af.readingTime} onChange={e => setAf(p => ({ ...p, readingTime: Number(e.target.value) }))} type="number" placeholder="دقیقه" className="w-20 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            </div>
+            <input value={af.author} onChange={e => setAf(p => ({ ...p, author: e.target.value }))} placeholder="نویسنده" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <input value={af.authorRole} onChange={e => setAf(p => ({ ...p, authorRole: e.target.value }))} placeholder="سمت نویسنده" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input type="checkbox" checked={af.isFeatured} onChange={e => setAf(p => ({ ...p, isFeatured: e.target.checked }))} className="rounded" />
+              ویژه
+            </label>
+            <button onClick={saveArticle} disabled={saving}
+              className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors disabled:opacity-50">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <input value={cf.title} onChange={e => setCf(p => ({ ...p, title: e.target.value }))} placeholder="عنوان دوره" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <input value={cf.slug} onChange={e => setCf(p => ({ ...p, slug: e.target.value }))} placeholder="slug" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500 ltr" dir="ltr" />
+            <textarea value={cf.description} onChange={e => setCf(p => ({ ...p, description: e.target.value }))} placeholder="توضیحات کوتاه" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <div className="grid grid-cols-2 gap-2">
+              <select value={cf.category} onChange={e => setCf(p => ({ ...p, category: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+                {[{ v: 'ict', l: 'ICT' }, { v: 'ai', l: 'هوش مصنوعی' }, { v: 'stock', l: 'بورس' }, { v: 'forex', l: 'فارکس' }, { v: 'crypto', l: 'ارز دیجیتال' }, { v: 'blockchain', l: 'بلاکچین' }, { v: 'trading', l: 'معامله‌گری' }, { v: 'psychology', l: 'روانشناسی' }].map(o => (
+                  <option key={o.v} value={o.v}>{o.l}</option>
+                ))}
+              </select>
+              <select value={cf.level} onChange={e => setCf(p => ({ ...p, level: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+                <option value="beginner">مبتدی</option>
+                <option value="intermediate">متوسط</option>
+                <option value="advanced">پیشرفته</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={cf.instructor} onChange={e => setCf(p => ({ ...p, instructor: e.target.value }))} placeholder="شناسه مدرس" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+              <input value={cf.instructorName} onChange={e => setCf(p => ({ ...p, instructorName: e.target.value }))} placeholder="نام مدرس" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={cf.price} onChange={e => setCf(p => ({ ...p, price: Number(e.target.value) }))} type="number" placeholder="قیمت (تومان)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+              <input value={cf.originalPrice} onChange={e => setCf(p => ({ ...p, originalPrice: Number(e.target.value) }))} type="number" placeholder="قیمت اصلی" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <input value={cf.duration} onChange={e => setCf(p => ({ ...p, duration: e.target.value }))} placeholder="مدت (مثلاً 12 ساعت)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+              <input value={cf.lessons} onChange={e => setCf(p => ({ ...p, lessons: Number(e.target.value) }))} type="number" placeholder="جلسات" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+              <input value={cf.videoHours} onChange={e => setCf(p => ({ ...p, videoHours: Number(e.target.value) }))} type="number" step="0.5" placeholder="ساعت ویدیو" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            </div>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-1.5 text-sm text-gray-300"><input type="checkbox" checked={cf.isPopular} onChange={e => setCf(p => ({ ...p, isPopular: e.target.checked }))} /> محبوب</label>
+              <label className="flex items-center gap-1.5 text-sm text-gray-300"><input type="checkbox" checked={cf.isNew} onChange={e => setCf(p => ({ ...p, isNew: e.target.checked }))} /> جدید</label>
+            </div>
+            <button onClick={saveCourse} disabled={saving}
+              className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors disabled:opacity-50">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <div dir="rtl">
+      {formOverlay}
+      {/* Sub-tab bar */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        {(['courses', 'articles', 'enrollments'] as const).map(t => (
+          <button key={t} onClick={() => setContentTab(t)}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
+              contentTab === t ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}>
+            {t === 'courses' ? `دوره‌ها (${courses.length})` : t === 'articles' ? `مقالات (${articles.length})` : `ثبت‌نام‌ها (${enrollments.length})`}
+          </button>
+        ))}
+      </div>
+
+      {contentTab === 'courses' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+            <span className="text-xs text-gray-500">مدیریت دوره‌ها</span>
+            <button onClick={() => openCourseForm()} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors">
+              <Plus className="w-3.5 h-3.5" /> دوره جدید
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
+                  <th className="text-right py-3 px-3">عنوان</th>
+                  <th className="text-right py-3 px-3">دسته</th>
+                  <th className="text-right py-3 px-3">مدرس</th>
+                  <th className="text-right py-3 px-3">سطح</th>
+                  <th className="text-right py-3 px-3">قیمت</th>
+                  <th className="text-right py-3 px-3">ثبت‌نام</th>
+                  <th className="text-right py-3 px-3">عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courses.map(c => (
+                  <tr key={c.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td className="py-2.5 px-3 font-medium text-sm max-w-[180px] truncate">{c.title}</td>
+                    <td className="py-2.5 px-3 text-gray-400 text-xs">{c.category}</td>
+                    <td className="py-2.5 px-3 text-gray-400 text-xs">{c.instructorName}</td>
+                    <td className="py-2.5 px-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        c.level === 'beginner' ? 'bg-emerald-500/20 text-emerald-400' :
+                        c.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {c.level === 'beginner' ? 'مبتدی' : c.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-xs">{c.price.toLocaleString()} تومان</td>
+                    <td className="py-2.5 px-3 text-xs font-bold text-emerald-400">{c.enrollmentCount}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => openCourseForm(c)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                        <button onClick={() => handleDeleteCourse(c.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {courses.length === 0 && <p className="text-center py-8 text-gray-500">دوره‌ای یافت نشد</p>}
+        </div>
+      )}
+
+      {contentTab === 'articles' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+            <span className="text-xs text-gray-500">مدیریت مقالات</span>
+            <button onClick={() => openArticleForm()} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors">
+              <Plus className="w-3.5 h-3.5" /> مقاله جدید
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
+                  <th className="text-right py-3 px-3">عنوان</th>
+                  <th className="text-right py-3 px-3">دسته</th>
+                  <th className="text-right py-3 px-3">بازدید</th>
+                  <th className="text-right py-3 px-3">زمان</th>
+                  <th className="text-right py-3 px-3">تاریخ</th>
+                  <th className="text-right py-3 px-3">عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {articles.map(a => (
+                  <tr key={a.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td className="py-2.5 px-3 font-medium text-sm max-w-[200px] truncate">{a.title}</td>
+                    <td className="py-2.5 px-3 text-gray-400 text-xs">{a.categoryName ?? '—'}</td>
+                    <td className="py-2.5 px-3 text-xs">{a.views.toLocaleString('fa-IR')}</td>
+                    <td className="py-2.5 px-3 text-xs">{a.readingTime} دقیقه</td>
+                    <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(a.publishedAt).toLocaleDateString('fa-IR')}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => openArticleForm(a)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                        <button onClick={() => handleDeleteArticle(a.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {articles.length === 0 && <p className="text-center py-8 text-gray-500">مقاله‌ای یافت نشد</p>}
+        </div>
+      )}
+
+      {contentTab === 'enrollments' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
+                  <th className="text-right py-3 px-3">کاربر</th>
+                  <th className="text-right py-3 px-3">دوره</th>
+                  <th className="text-right py-3 px-3">پیشرفت</th>
+                  <th className="text-right py-3 px-3">شروع</th>
+                  <th className="text-right py-3 px-3">وضعیت</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enrollments.map(e => (
+                  <tr key={e.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td className="py-2.5 px-3 font-medium text-xs">{e.user?.name ?? '—'}</td>
+                    <td className="py-2.5 px-3 text-gray-400 text-xs max-w-[200px] truncate">{e.course?.title ?? '—'}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden max-w-[80px]">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${e.progress}%` }} />
+                        </div>
+                        <span className="text-xs text-gray-400">{Math.round(e.progress)}%</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(e.startedAt).toLocaleDateString('fa-IR')}</td>
+                    <td className="py-2.5 px-3">
+                      {e.completedAt ? (
+                        <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">تکمیل شده</span>
+                      ) : (
+                        <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">در حال یادگیری</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {enrollments.length === 0 && <p className="text-center py-8 text-gray-500">ثبت‌نامی یافت نشد</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdminPlusRequests() {
+  const [requests, setRequests] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [approving, setApproving] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const { getPendingAcapPlusRequests } = await import('@/app/actions/admin')
+    setRequests(await getPendingAcapPlusRequests())
+  }, [])
+
+  useEffect(() => { load().finally(() => setLoading(false)) }, [load])
+
+  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+
+  return (
+    <div dir="rtl" className="space-y-3">
+      <h2 className="text-sm font-bold text-amber-400 mb-3">درخواست‌های A|CAP+</h2>
+      {requests.length === 0 ? (
+        <p className="text-gray-500 text-center py-8">درخواستی وجود ندارد</p>
+      ) : requests.map(r => (
+        <div key={r.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-bold truncate">{r.name || 'بی‌نام'}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{r.email} {r.profile?.phone ? `| ${r.profile.phone}` : ''}</p>
+            {r.subscription?.requestedAt && (
+              <p className="text-xs text-gray-500 mt-1">
+                درخواست در {new Date(r.subscription.requestedAt).toLocaleDateString('fa-IR')}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={async () => {
+              setApproving(r.id)
+              try {
+                const { approveAcapPlusRequest } = await import('@/app/actions/admin')
+                await approveAcapPlusRequest(r.id, true, 3)
+                await load()
+              } catch (e) { console.error(e) }
+              setApproving(null)
+            }} disabled={approving === r.id}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors disabled:opacity-50">
+              {approving === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'تأیید + آزمایشی ۳ روزه'}
+            </button>
+            <button onClick={async () => {
+              setApproving(r.id)
+              try {
+                const { approveAcapPlusRequest } = await import('@/app/actions/admin')
+                await approveAcapPlusRequest(r.id, true)
+                await load()
+              } catch (e) { console.error(e) }
+              setApproving(null)
+            }} disabled={approving === r.id}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors disabled:opacity-50">
+              تأیید کامل
+            </button>
+            <button onClick={async () => {
+              if (!confirm('رد درخواست؟')) return
+              const { approveAcapPlusRequest } = await import('@/app/actions/admin')
+              await approveAcapPlusRequest(r.id, false)
+              await load()
+            }}
+              className="px-3 py-1.5 bg-red-600/50 hover:bg-red-600 rounded-lg text-xs font-bold transition-colors">
+              رد
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -704,9 +1141,9 @@ function AdminAnalytics() {
         {[
           { label: 'کاربران', value: data.totalUsers, color: 'text-blue-400' },
           { label: 'A|CAP+', value: data.plusUsers, color: 'text-amber-400' },
-          { label: 'دارایی‌ها', value: data.totalAssets, color: 'text-emerald-400' },
-          { label: 'سیگنال‌ها', value: data.totalSignals, color: 'text-purple-400' },
-          { label: 'پیشنهادات', value: data.totalSuggestions, color: 'text-cyan-400' },
+          { label: 'دوره‌ها', value: data.totalCourses, color: 'text-emerald-400' },
+          { label: 'مقالات', value: data.totalArticles, color: 'text-purple-400' },
+          { label: 'ثبت‌نام‌ها', value: data.totalEnrollments, color: 'text-cyan-400' },
           { label: 'تیکت‌های باز', value: data.openTickets, color: 'text-rose-400' },
         ].map(card => (
           <div key={card.label} className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
@@ -715,6 +1152,35 @@ function AdminAnalytics() {
           </div>
         ))}
       </div>
+
+      {/* Course Revenue */}
+      {data.courseRevenue && data.courseRevenue.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold">درآمد دوره‌ها</h3>
+            <span className="text-xs text-gray-500">
+              {data.courseRevenue.reduce((s: number, r: any) => s + (r.price || 0) * r.enrollments, 0).toLocaleString()} تومان پتانسیل
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {data.courseRevenue.map((r: any, i: number) => {
+              const maxE = Math.max(...data.courseRevenue.map((x: any) => x.enrollments), 1)
+              const revenue = (r.price || 0) * r.enrollments
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 w-4">{i + 1}</span>
+                  <span className="text-xs text-gray-300 w-40 sm:w-56 truncate">{r.title}</span>
+                  <div className="flex-1 h-4 bg-gray-800 rounded overflow-hidden">
+                    <div className="h-full bg-amber-600/70 rounded" style={{ width: `${(r.enrollments / maxE) * 100}%` }} />
+                  </div>
+                  <span className="text-xs text-gray-400 w-12 text-left">{r.enrollments}</span>
+                  <span className="text-xs text-emerald-400 w-28 text-left">{revenue.toLocaleString()} تومان</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Activity Heat Map */}
       {data.heatMap && data.heatMap.length > 0 && (

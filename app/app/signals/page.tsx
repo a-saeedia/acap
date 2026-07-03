@@ -42,6 +42,12 @@ function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
   const isUp = (item.actualProfit ?? 0) >= 0
   const isExpired = item.expiresAt ? new Date(item.expiresAt) < new Date() : false
 
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg bg-card border border-border rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -53,7 +59,7 @@ function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
               </div>
               <h2 className="text-xl font-black text-foreground leading-tight">{item.title}</h2>
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/20 hover:bg-black/30 text-muted-foreground hover:text-foreground transition-all shrink-0">
+            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl bg-black/20 hover:bg-black/30 text-muted-foreground hover:text-foreground transition-all shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -158,17 +164,23 @@ export default function SignalsPage() {
   const router = useRouter()
   const [signals, setSignals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [range, setRange] = useState(3)
   const [selected, setSelected] = useState<any | null>(null)
 
-  useEffect(() => {
+  function loadSignals(months: number) {
     setLoading(true)
-    const months = range > 0 ? range : 0
+    setError('')
     fetch(`/api/signals${months > 0 ? `?months=${months}` : ''}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('خطا در دریافت سیگنال‌ها'); return r.json() })
       .then(d => { if (Array.isArray(d)) setSignals(d) })
-      .catch(() => {})
+      .catch(e => { setError(e.message); setSignals([]) })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    const months = range > 0 ? range : 0
+    loadSignals(months)
   }, [range])
 
   const { avgReturn, successRate, signalCount, grouped } = useMemo(() => {
@@ -193,11 +205,11 @@ export default function SignalsPage() {
   return (
     <div dir="rtl" className="space-y-5">
       {/* Back to dashboard */}
-      <button onClick={() => window.history.length > 2 ? window.history.back() : router.push('/dashboard')}
+      <button onClick={() => router.push('/app')}
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        بازگشت به داشبورد
+        بازگشت
       </button>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -224,18 +236,18 @@ export default function SignalsPage() {
       </div>
 
       {!loading && signals.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-card border border-border rounded-2xl p-3 text-center">
-            <div className="text-[10px] text-muted-foreground">میانگین بازدهی</div>
-            <div className="text-lg font-black text-emerald-400 mt-0.5">+{avgReturn.toFixed(1)}%</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="bg-card border border-border rounded-2xl p-3 sm:p-4 text-center">
+            <div className="text-xs text-muted-foreground">میانگین بازدهی</div>
+            <div className="text-lg sm:text-xl font-black text-emerald-400 mt-0.5">+{avgReturn.toFixed(1)}%</div>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-3 text-center">
-            <div className="text-[10px] text-muted-foreground">نرخ موفقیت</div>
-            <div className="text-lg font-black text-blue-400 mt-0.5">{successRate.toFixed(0)}%</div>
+          <div className="bg-card border border-border rounded-2xl p-3 sm:p-4 text-center">
+            <div className="text-xs text-muted-foreground">نرخ موفقیت</div>
+            <div className="text-lg sm:text-xl font-black text-blue-400 mt-0.5">{successRate.toFixed(0)}%</div>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-3 text-center">
-            <div className="text-[10px] text-muted-foreground">تعداد</div>
-            <div className="text-lg font-black text-foreground mt-0.5">{signalCount}</div>
+          <div className="bg-card border border-border rounded-2xl p-3 sm:p-4 text-center">
+            <div className="text-xs text-muted-foreground">تعداد</div>
+            <div className="text-lg sm:text-xl font-black text-foreground mt-0.5">{signalCount}</div>
           </div>
         </div>
       )}
@@ -243,6 +255,16 @@ export default function SignalsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="bg-card border border-red-500/20 rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-3">
+            <Zap className="w-6 h-6 text-red-400" />
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <button onClick={() => loadSignals(range > 0 ? range : 0)}
+            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/80 transition-colors"
+          >تلاش مجدد</button>
         </div>
       ) : signals.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-8 text-center">

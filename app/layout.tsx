@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   metadataBase: new URL(BASE_URL),
-  alternates: { canonical: '/' },
+  alternates: { canonical: BASE_URL },
   keywords: ['مدیریت سرمایه', 'سرمایه‌گذاری', 'تحلیل بازار', 'قیمت طلا', 'قیمت دلار', 'قیمت بیت‌کوین', 'شخصیت مالی', 'پرتفوی', 'بورس ایران', 'TGJU', 'A|CAP'],
   authors: { name: 'A|CAP' },
   openGraph: {
@@ -37,6 +37,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
     { media: '(prefers-color-scheme: dark)', color: '#040D21' },

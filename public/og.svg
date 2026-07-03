@@ -1,0 +1,61 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D1B2A"/>
+      <stop offset="50%" stop-color="#11243A"/>
+      <stop offset="100%" stop-color="#0D1B2A"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#8DB8FF"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#8DB8FF" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <!-- Decorative glow orbs -->
+  <circle cx="150" cy="150" r="280" fill="url(#glowGrad)"/>
+  <circle cx="1050" cy="480" r="320" fill="url(#glowGrad)"/>
+  <circle cx="600" cy="315" r="200" fill="url(#glowGrad)"/>
+  <!-- Subtle grid pattern -->
+  <g opacity="0.03">
+    <line x1="0" y1="105" x2="1200" y2="105" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="210" x2="1200" y2="210" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="315" x2="1200" y2="315" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="420" x2="1200" y2="420" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="525" x2="1200" y2="525" stroke="white" stroke-width="0.5"/>
+  </g>
+  <!-- Border frame -->
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.2"/>
+  <!-- Top accent bar -->
+  <rect x="300" y="0" width="600" height="4" rx="2" fill="url(#accentLine)"/>
+  <!-- Brand Name -->
+  <text x="600" y="260" font-family="Arial,Helvetica,sans-serif" font-size="100" font-weight="900" fill="white" text-anchor="middle" letter-spacing="12">
+    A<tspan fill="#3B82F6" letter-spacing="4"> |</tspan> CAP
+  </text>
+  <!-- Divider line -->
+  <rect x="450" y="300" width="300" height="2" rx="1" fill="#3B82F6" opacity="0.4"/>
+  <!-- Tagline -->
+  <text x="600" y="355" font-family="Tahoma,'Noto Sans Arabic',sans-serif" font-size="26" fill="#8DB8FF" text-anchor="middle" letter-spacing="1">
+    اولین پلتفرم هوشمند مدیریت سرمایه در ایران
+  </text>
+  <!-- Features row -->
+  <g transform="translate(0, 420)">
+    <rect x="240" y="0" width="16" height="16" rx="4" fill="#3B82F6" opacity="0.6"/>
+    <text x="266" y="13" font-family="Tahoma,sans-serif" font-size="16" fill="#6B8DB5">تحلیل بازار</text>
+    <rect x="440" y="0" width="16" height="16" rx="4" fill="#10B981" opacity="0.6"/>
+    <text x="466" y="13" font-family="Tahoma,sans-serif" font-size="16" fill="#6B8DB5">مدیریت سرمایه</text>
+    <rect x="660" y="0" width="16" height="16" rx="4" fill="#F59E0B" opacity="0.6"/>
+    <text x="686" y="13" font-family="Tahoma,sans-serif" font-size="16" fill="#6B8DB5">آکادمی تخصصی</text>
+    <rect x="870" y="0" width="16" height="16" rx="4" fill="#A855F7" opacity="0.6"/>
+    <text x="896" y="13" font-family="Tahoma,sans-serif" font-size="16" fill="#6B8DB5">سیگنال هوشمند</text>
+  </g>
+  <!-- URL -->
+  <text x="600" y="510" font-family="Arial,sans-serif" font-size="20" fill="#3B82F6" text-anchor="middle" opacity="0.5">
+    a-cap.xyz
+  </text>
+</svg>
