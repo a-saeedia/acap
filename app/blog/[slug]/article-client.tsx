@@ -16,9 +16,9 @@ function formatDate(dateStr: string | Date) {
 }
 
 function renderContent(text: string) {
-  const hasHtml = /<[a-z][\s>]/i.test(text)
+  const hasHtml = /<[a-z][a-z0-9]*[>\s]/i.test(text)
   if (hasHtml) {
-    return <div className="prose-headings:text-white prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4 prose-ul:space-y-2 prose-ul:my-4 prose-li:text-gray-300 prose-li:leading-relaxed" dangerouslySetInnerHTML={{ __html: text }} />
+    return <div dangerouslySetInnerHTML={{ __html: text }} />
   }
   const lines = text.split('\n')
   const elements: React.ReactElement[] = []
