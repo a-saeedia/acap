@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
-import { BarChart3, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, LogOut, Menu, X, ChevronLeft } from 'lucide-react'
+import { Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, LogOut, Menu, X, ChevronLeft, ArrowRight } from 'lucide-react'
 import { AISupport } from '@/components/ai-support'
 
 const navItems = [
-  { href: '/app', label: 'خلاصه Portfolio', icon: BarChart3 },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
   { href: '/app/signals', label: 'درآمد A|CAP', icon: Zap },
@@ -116,6 +115,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <main className={`flex-1 pt-16 md:pt-0 min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:mr-64' : 'md:mr-0'}`}>
         <div className="max-w-6xl mx-auto p-4 md:p-8">
+          <button onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors mb-4 md:mb-6"
+          >
+            <ArrowRight className="w-4 h-4" /> بازگشت
+          </button>
           {children}
         </div>
       </main>
