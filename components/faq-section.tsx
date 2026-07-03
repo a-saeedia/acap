@@ -30,8 +30,19 @@ const faqs = [
 export function FaqSection() {
   const [open, setOpen] = useState<number | null>(null)
 
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(f => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  }
+
   return (
     <section id="faq" className="relative py-24 lg:py-32 overflow-hidden bg-card">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <div className="absolute inset-0 grid-pattern opacity-30 pointer-events-none" />
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">

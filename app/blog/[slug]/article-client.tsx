@@ -82,8 +82,27 @@ export function ArticleClient({ article, category }: { article: any; category: a
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(article?.title || '')}`, '_blank')
   }
 
+  const breadcrumbItems = [
+    { position: 1, name: 'خانه', url: 'https://a-cap.xyz' },
+    { position: 2, name: 'وبلاگ', url: 'https://a-cap.xyz/blog' },
+    ...(category ? [{ position: 3, name: category.name, url: `https://a-cap.xyz/blog?cat=${category.slug}` }] : []),
+    { position: category ? 4 : 3, name: article.title, url: `https://a-cap.xyz/blog/${article.slug}` },
+  ]
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbItems.map(item => ({
+      '@type': 'ListItem',
+      position: item.position,
+      name: item.name,
+      item: item.url,
+    })),
+  }
+
   return (
     <motion.div className="min-h-screen bg-gray-950 text-white" dir="rtl" variants={containerVariants} initial="hidden" animate="visible">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <motion.div variants={itemVariants} className="border-b border-gray-800 bg-gray-900/50">
         <div className="max-w-4xl mx-auto px-4 md:px-8 py-4">
           <div className="flex items-center gap-2 text-sm text-gray-400">
