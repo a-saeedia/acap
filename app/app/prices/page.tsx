@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, ArrowLeft, AlertCircle } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
 
 const PERSIAN_LABELS: Record<string, string> = {
   'BTC': 'بیت‌کوین', 'ETH': 'اتریوم', 'USDT': 'تتر', 'BNB': 'بایننس کوین',
@@ -123,7 +122,6 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
 }
 
 export default function PricesPage() {
-  const router = useRouter()
   const [activeTab, setActiveTab] = useState('all')
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
   const [loading, setLoading] = useState(true)
@@ -172,13 +170,6 @@ export default function PricesPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Back to dashboard */}
-      <button onClick={() => router.push('/app')}
-        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold mb-4 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        بازگشت
-      </button>
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 no-scrollbar" dir="rtl">
         {TABS.map(tab => (

@@ -41,9 +41,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className={`w-64 bg-gray-900/95 border-r border-gray-800 hidden md:flex flex-col fixed h-full z-30 transition-all duration-300 ${sidebarOpen ? 'right-0' : '-right-64'}`}>
         <div className="flex items-center justify-between p-4 pb-0">
-          <div className="text-2xl font-black tracking-widest">
+          <Link href="/" className="text-2xl font-black tracking-widest hover:opacity-80 transition-opacity">
             A <span className="text-blue-400">|</span> CAP
-          </div>
+          </Link>
           <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-all">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -84,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-20 bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 p-4 flex items-center justify-between">
         <button onClick={() => setMobileOpen(!mobileOpen)} className="text-foreground">{mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
-        <div className="font-bold">A | CAP</div>
+        <Link href="/" className="font-bold hover:opacity-80 transition-opacity">A | CAP</Link>
         <div className="w-8" />
       </div>
 

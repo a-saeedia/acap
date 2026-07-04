@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { Zap, Clock, X, ArrowLeft, DollarSign } from 'lucide-react'
 
 const TIME_RANGES = [
@@ -163,7 +162,6 @@ function SignalCard({ item, onClick }: { item: any; onClick: () => void }) {
 const persianMonthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
 export default function SignalsPage() {
-  const router = useRouter()
   const [signals, setSignals] = useState<any[]>([])
   const [revenue, setRevenue] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -213,12 +211,6 @@ export default function SignalsPage() {
 
   return (
     <div dir="rtl" className="space-y-5">
-      <button onClick={() => router.push('/app')}
-        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        بازگشت
-      </button>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Zap className="w-5 h-5 text-primary" />
