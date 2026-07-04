@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Zap, Clock, X, ArrowLeft, DollarSign } from 'lucide-react'
+import { Zap, Clock, X, ArrowLeft, DollarSign, Filter } from 'lucide-react'
+import { formatPersianDate, formatPersianMonth, PERSIAN_MONTHS } from '@/lib/persian-date'
 
 const TIME_RANGES = [
   { label: '۱ ماهه', months: 1 },
@@ -18,23 +19,20 @@ const INVESTOR_STYLES: Record<string, { label: string; color: string }> = {
   aggressive: { label: 'تهاجمی', color: '#EF4444' },
 }
 
+const INVESTOR_TYPES = [
+  { key: 'all', label: 'همه' },
+  { key: 'conservative', label: 'محافظه‌کار', color: '#10B981' },
+  { key: 'balanced', label: 'متعادل', color: '#3B82F6' },
+  { key: 'growth', label: 'رشدگرا', color: '#F97316' },
+  { key: 'aggressive', label: 'تهاجمی', color: '#EF4444' },
+]
+
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
   crypto: { label: 'C', color: '#F7931A' },
   stock: { label: 'S', color: '#2979FF' },
   gold: { label: 'G', color: '#F59E0B' },
   forex: { label: 'F', color: '#8B5CF6' },
-}
-
-const PERSIAN_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
-
-function formatPersianDate(iso: string): string {
-  const d = new Date(iso)
-  return `${d.getDate()} ${PERSIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-}
-
-function formatPersianMonth(iso: string): string {
-  const d = new Date(iso)
-  return `${PERSIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+  dollar: { label: 'D', color: '#22C55E' },
 }
 
 function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
@@ -159,14 +157,13 @@ function SignalCard({ item, onClick }: { item: any; onClick: () => void }) {
   )
 }
 
-const persianMonthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
-
 export default function SignalsPage() {
   const [signals, setSignals] = useState<any[]>([])
   const [revenue, setRevenue] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [range, setRange] = useState(3)
+  const [investorFilter, setInvestorFilter] = useState('all')
   const [selected, setSelected] = useState<any | null>(null)
 
   function loadData(months: number) {
@@ -187,10 +184,15 @@ export default function SignalsPage() {
     loadData(months)
   }, [range])
 
+  const filteredSignals = useMemo(() => {
+    if (investorFilter === 'all') return signals
+    return signals.filter(s => s.investorType === investorFilter)
+  }, [signals, investorFilter])
+
   const { successRate, signalCount, grouped, totalRevenue } = useMemo(() => {
     const grouped: Record<string, any[]> = {}
     let successCount = 0
-    for (const s of signals) {
+    for (const s of filteredSignals) {
       const monthKey = new Date(s.publishedAt).toISOString().slice(0, 7)
       if (!grouped[monthKey]) grouped[monthKey] = []
       grouped[monthKey].push(s)
@@ -198,12 +200,12 @@ export default function SignalsPage() {
     }
     const rev = revenue.reduce((sum: number, r: any) => sum + r.amount, 0)
     return {
-      successRate: signals.length > 0 ? (successCount / signals.length) * 100 : 0,
-      signalCount: signals.length,
+      successRate: filteredSignals.length > 0 ? (successCount / filteredSignals.length) * 100 : 0,
+      signalCount: filteredSignals.length,
       grouped: Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)),
       totalRevenue: rev,
     }
-  }, [signals, revenue])
+  }, [filteredSignals, revenue])
 
   const sortedRevenue = useMemo(() => {
     return [...revenue].sort((a, b) => (b.year - a.year) || (b.month - a.month))
@@ -255,6 +257,24 @@ export default function SignalsPage() {
         </div>
       )}
 
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+        {INVESTOR_TYPES.map(it => (
+          <button key={it.key} onClick={() => setInvestorFilter(it.key)}
+            className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${
+              investorFilter === it.key
+                ? it.key === 'all'
+                  ? 'bg-primary/20 text-primary border border-primary/30'
+                  : 'text-white border'
+                : 'bg-white/[0.04] text-muted-foreground border border-transparent hover:bg-white/[0.08]'
+            }`}
+            style={investorFilter === it.key && it.key !== 'all' ? { background: `${it.color}20`, borderColor: `${it.color}50`, color: it.color } : {}}
+          >
+            {it.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -269,14 +289,14 @@ export default function SignalsPage() {
             className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/80 transition-colors"
           >تلاش مجدد</button>
         </div>
-      ) : signals.length === 0 && revenue.length === 0 ? (
+      ) : filteredSignals.length === 0 && revenue.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-8 text-center">
           <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
             <Zap className="w-6 h-6 text-muted-foreground" />
           </div>
           <p className="text-sm text-muted-foreground">هیچ داده‌ای در این بازه وجود ندارد</p>
         </div>
-      ) : (
+      ) : filteredSignals.length > 0 && (
         <div className="space-y-6">
           {grouped.map(([monthKey, monthItems]) => (
             <div key={monthKey}>
@@ -307,7 +327,7 @@ export default function SignalsPage() {
           <div className="space-y-2">
             {sortedRevenue.map((r: any) => (
               <div key={r.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                <span className="text-xs text-muted-foreground">{persianMonthNames[r.month - 1] || r.month} {r.year}</span>
+                <span className="text-xs text-muted-foreground">{PERSIAN_MONTHS[r.month - 1] || r.month} {r.year}</span>
                 <div className="text-left">
                   <span className="text-sm font-bold text-emerald-400">{Number(r.amount).toLocaleString()} تومان</span>
                   {r.description && <p className="text-[10px] text-muted-foreground mt-0.5">{r.description}</p>}

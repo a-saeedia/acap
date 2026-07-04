@@ -736,7 +736,7 @@ function AdminContent() {
   const [saving, setSaving] = useState(false)
 
   // Article form
-  const [af, setAf] = useState({ title: '', slug: '', excerpt: '', content: '', categoryId: '', author: '', authorRole: '', readingTime: 5, isFeatured: false })
+  const [af, setAf] = useState({ title: '', slug: '', excerpt: '', content: '', categoryId: '', author: '', authorRole: '', image: '', readingTime: 5, isFeatured: false })
   // Course form
   const [cf, setCf] = useState({ title: '', slug: '', description: '', category: 'trading', instructor: '', instructorName: '', price: 0, originalPrice: 0, duration: '', level: 'beginner', lessons: 0, videoHours: 0, color: '#3B82F6', icon: 'BookOpen', isPopular: false, isNew: false })
 
@@ -759,10 +759,10 @@ function AdminContent() {
   function openArticleForm(a?: any) {
     if (a) {
       setFormMode('edit'); setEditId(a.id)
-      setAf({ title: a.title, slug: a.slug, excerpt: a.excerpt, content: a.content, categoryId: a.categoryId || '', author: a.author, authorRole: a.authorRole || '', readingTime: a.readingTime, isFeatured: a.isFeatured })
+      setAf({ title: a.title, slug: a.slug, excerpt: a.excerpt, content: a.content, categoryId: a.categoryId || '', author: a.author, authorRole: a.authorRole || '', image: a.image || '', readingTime: a.readingTime, isFeatured: a.isFeatured })
     } else {
       setFormMode('create'); setEditId(null)
-      setAf({ title: '', slug: '', excerpt: '', content: '', categoryId: '', author: '', authorRole: '', readingTime: 5, isFeatured: false })
+      setAf({ title: '', slug: '', excerpt: '', content: '', categoryId: '', author: '', authorRole: '', image: '', readingTime: 5, isFeatured: false })
     }
     setShowForm('article')
   }
@@ -842,6 +842,7 @@ function AdminContent() {
             </div>
             <input value={af.author} onChange={e => setAf(p => ({ ...p, author: e.target.value }))} placeholder="نویسنده" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
             <input value={af.authorRole} onChange={e => setAf(p => ({ ...p, authorRole: e.target.value }))} placeholder="سمت نویسنده" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500" />
+            <input value={af.image} onChange={e => setAf(p => ({ ...p, image: e.target.value }))} placeholder="تصویر (URL)" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500 ltr" dir="ltr" />
             <label className="flex items-center gap-2 text-sm text-gray-300">
               <input type="checkbox" checked={af.isFeatured} onChange={e => setAf(p => ({ ...p, isFeatured: e.target.checked }))} className="rounded" />
               ویژه
@@ -1235,6 +1236,7 @@ function AdminSignals() {
               <option value="stock">سهام</option>
               <option value="gold">طلا</option>
               <option value="forex">فارکس</option>
+              <option value="dollar">دلار</option>
             </select>
             <input value={sf.symbol} onChange={e => setSf(p => ({ ...p, symbol: e.target.value }))} placeholder="نماد (مثلاً BTC)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr" dir="ltr" />
           </div>
@@ -1335,7 +1337,7 @@ function AdminSignals() {
                   <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                     <td className="py-2.5 px-3 font-medium text-sm max-w-[150px] truncate">{s.title}</td>
                     <td className="py-2.5 px-3 text-gray-400 text-xs">{s.symbol}</td>
-                    <td className="py-2.5 px-3 text-xs">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : 'فارکس'}</td>
+                    <td className="py-2.5 px-3 text-xs">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</td>
                     <td className="py-2.5 px-3"><span className={`text-xs px-2 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span></td>
                     <td className="py-2.5 px-3 text-xs">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</td>
                     <td className="py-2.5 px-3 text-xs">{Number(s.priceAtPublish).toLocaleString()}</td>
