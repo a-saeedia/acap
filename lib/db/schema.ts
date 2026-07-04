@@ -178,6 +178,15 @@ export const signal = pgTable('signal', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
+export const acapRevenue = pgTable('acap_revenue', {
+  id: text('id').primaryKey(),
+  amount: real('amount').notNull(),
+  description: text('description'),
+  month: integer('month').notNull(),
+  year: integer('year').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
 export const mlAnomaly = pgTable('ml_anomaly', {
   id: text('id').primaryKey(),
   symbol: text('symbol').notNull(),

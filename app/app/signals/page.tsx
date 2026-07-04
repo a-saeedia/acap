@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Clock, X, ArrowLeft } from 'lucide-react'
+import { Zap, Clock, X, ArrowLeft, DollarSign } from 'lucide-react'
 
 const TIME_RANGES = [
   { label: '۱ ماهه', months: 1 },
@@ -160,51 +160,59 @@ function SignalCard({ item, onClick }: { item: any; onClick: () => void }) {
   )
 }
 
+const persianMonthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+
 export default function SignalsPage() {
   const router = useRouter()
   const [signals, setSignals] = useState<any[]>([])
+  const [revenue, setRevenue] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [range, setRange] = useState(3)
   const [selected, setSelected] = useState<any | null>(null)
 
-  function loadSignals(months: number) {
+  function loadData(months: number) {
     setLoading(true)
     setError('')
     fetch(`/api/signals${months > 0 ? `?months=${months}` : ''}`)
-      .then(r => { if (!r.ok) throw new Error('خطا در دریافت سیگنال‌ها'); return r.json() })
-      .then(d => { if (Array.isArray(d)) setSignals(d) })
-      .catch(e => { setError(e.message); setSignals([]) })
+      .then(r => { if (!r.ok) throw new Error('خطا در دریافت اطلاعات'); return r.json() })
+      .then(d => {
+        if (Array.isArray(d.signals)) setSignals(d.signals)
+        if (Array.isArray(d.revenue)) setRevenue(d.revenue)
+      })
+      .catch(e => { setError(e.message); setSignals([]); setRevenue([]) })
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
     const months = range > 0 ? range : 0
-    loadSignals(months)
+    loadData(months)
   }, [range])
 
-  const { avgReturn, successRate, signalCount, grouped } = useMemo(() => {
+  const { successRate, signalCount, grouped, totalRevenue } = useMemo(() => {
     const grouped: Record<string, any[]> = {}
-    let totalReturn = 0
     let successCount = 0
     for (const s of signals) {
       const monthKey = new Date(s.publishedAt).toISOString().slice(0, 7)
       if (!grouped[monthKey]) grouped[monthKey] = []
       grouped[monthKey].push(s)
-      totalReturn += s.actualProfit ?? 0
       if ((s.actualProfit ?? 0) >= 0) successCount++
     }
+    const rev = revenue.reduce((sum: number, r: any) => sum + r.amount, 0)
     return {
-      avgReturn: signals.length > 0 ? totalReturn / signals.length : 0,
       successRate: signals.length > 0 ? (successCount / signals.length) * 100 : 0,
       signalCount: signals.length,
       grouped: Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)),
+      totalRevenue: rev,
     }
-  }, [signals])
+  }, [signals, revenue])
+
+  const sortedRevenue = useMemo(() => {
+    return [...revenue].sort((a, b) => (b.year - a.year) || (b.month - a.month))
+  }, [revenue])
 
   return (
     <div dir="rtl" className="space-y-5">
-      {/* Back to dashboard */}
       <button onClick={() => router.push('/app')}
         className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
       >
@@ -235,18 +243,21 @@ export default function SignalsPage() {
         ))}
       </div>
 
-      {!loading && signals.length > 0 && (
+      {!loading && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="bg-card border border-border rounded-2xl p-3 sm:p-4 text-center">
-            <div className="text-xs text-muted-foreground">میانگین بازدهی</div>
-            <div className="text-lg sm:text-xl font-black text-emerald-400 mt-0.5">+{avgReturn.toFixed(1)}%</div>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <span>درآمد A|CAP</span>
+            </div>
+            <div className="text-lg sm:text-xl font-black text-emerald-400 mt-0.5">{totalRevenue.toLocaleString()} <span className="text-[10px] font-medium">تومان</span></div>
           </div>
           <div className="bg-card border border-border rounded-2xl p-3 sm:p-4 text-center">
             <div className="text-xs text-muted-foreground">نرخ موفقیت</div>
             <div className="text-lg sm:text-xl font-black text-blue-400 mt-0.5">{successRate.toFixed(0)}%</div>
           </div>
           <div className="bg-card border border-border rounded-2xl p-3 sm:p-4 text-center">
-            <div className="text-xs text-muted-foreground">تعداد</div>
+            <div className="text-xs text-muted-foreground">تعداد سیگنال‌ها</div>
             <div className="text-lg sm:text-xl font-black text-foreground mt-0.5">{signalCount}</div>
           </div>
         </div>
@@ -262,16 +273,16 @@ export default function SignalsPage() {
             <Zap className="w-6 h-6 text-red-400" />
           </div>
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
-          <button onClick={() => loadSignals(range > 0 ? range : 0)}
+          <button onClick={() => loadData(range > 0 ? range : 0)}
             className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/80 transition-colors"
           >تلاش مجدد</button>
         </div>
-      ) : signals.length === 0 ? (
+      ) : signals.length === 0 && revenue.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-8 text-center">
           <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
             <Zap className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground">هیچ سیگنالی در این بازه وجود ندارد</p>
+          <p className="text-sm text-muted-foreground">هیچ داده‌ای در این بازه وجود ندارد</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -291,6 +302,27 @@ export default function SignalsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {sortedRevenue.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-bold text-muted-foreground px-2">درآمد ماهانه A|CAP</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="space-y-2">
+            {sortedRevenue.map((r: any) => (
+              <div key={r.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                <span className="text-xs text-muted-foreground">{persianMonthNames[r.month - 1] || r.month} {r.year}</span>
+                <div className="text-left">
+                  <span className="text-sm font-bold text-emerald-400">{Number(r.amount).toLocaleString()} تومان</span>
+                  {r.description && <p className="text-[10px] text-muted-foreground mt-0.5">{r.description}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

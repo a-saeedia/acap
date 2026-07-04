@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory } from '@/lib/db/schema'
+import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory, signal, acapRevenue } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc, sql } from 'drizzle-orm'
@@ -273,4 +273,96 @@ export async function getAdminEnrollments() {
     user: userMap[e.userId] ?? null,
     course: courseMap[e.courseId] ?? null,
   }))
+}
+
+// -------- Signals CRUD --------
+
+export async function getSignals() {
+  await requireAdmin()
+  return db.select().from(signal).orderBy(desc(signal.publishedAt))
+}
+
+export async function createSignal(data: {
+  type: string; symbol: string; title: string; description?: string
+  action: string; investorType?: string; expectedProfit?: number
+  priceAtPublish: number; expiresAt?: string
+}) {
+  await requireAdmin()
+  await db.insert(signal).values({
+    id: randomUUID(),
+    type: data.type,
+    symbol: data.symbol,
+    title: data.title,
+    description: data.description || null,
+    action: data.action,
+    investorType: data.investorType || null,
+    expectedProfit: data.expectedProfit || null,
+    priceAtPublish: data.priceAtPublish,
+    expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+    publishedAt: new Date(),
+  })
+}
+
+export async function updateSignal(id: string, data: {
+  type?: string; symbol?: string; title?: string; description?: string
+  action?: string; investorType?: string; expectedProfit?: number
+  priceAtPublish?: number; expiresAt?: string | null
+}) {
+  await requireAdmin()
+  const updateData: any = {}
+  if (data.type !== undefined) updateData.type = data.type
+  if (data.symbol !== undefined) updateData.symbol = data.symbol
+  if (data.title !== undefined) updateData.title = data.title
+  if (data.description !== undefined) updateData.description = data.description
+  if (data.action !== undefined) updateData.action = data.action
+  if (data.investorType !== undefined) updateData.investorType = data.investorType
+  if (data.expectedProfit !== undefined) updateData.expectedProfit = data.expectedProfit
+  if (data.priceAtPublish !== undefined) updateData.priceAtPublish = data.priceAtPublish
+  if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
+  await db.update(signal).set(updateData).where(eq(signal.id, id))
+}
+
+export async function deleteSignal(id: string) {
+  await requireAdmin()
+  await db.delete(signal).where(eq(signal.id, id))
+}
+
+// -------- ACAP Revenue CRUD --------
+
+export async function getAcapRevenue() {
+  await requireAdmin()
+  return db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+}
+
+export async function addAcapRevenue(amount: number, month: number, year: number, description?: string) {
+  await requireAdmin()
+  await db.insert(acapRevenue).values({
+    id: randomUUID(),
+    amount,
+    month,
+    year,
+    description: description || null,
+  })
+}
+
+export async function updateAcapRevenue(id: string, amount: number, description?: string, month?: number, year?: number) {
+  await requireAdmin()
+  const updateData: any = {}
+  if (amount !== undefined) updateData.amount = amount
+  if (description !== undefined) updateData.description = description
+  if (month !== undefined) updateData.month = month
+  if (year !== undefined) updateData.year = year
+  await db.update(acapRevenue).set(updateData).where(eq(acapRevenue.id, id))
+}
+
+export async function deleteAcapRevenue(id: string) {
+  await requireAdmin()
+  await db.delete(acapRevenue).where(eq(acapRevenue.id, id))
+}
+
+// -------- Public revenue API (no admin required) --------
+
+export async function getPublicAcapRevenue(months?: number) {
+  let query = db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+  return query
 }

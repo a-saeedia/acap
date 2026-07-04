@@ -67,9 +67,25 @@ export async function GET(req: Request) {
       }
     })
 
-    return Response.json(enriched)
+    // Fetch revenue data filtered by same time range
+    let revenueRows
+    if (timeMonths > 0) {
+      const cutoff = new Date(Date.now() - timeMonths * 30 * 24 * 60 * 60 * 1000)
+      const cutoffYear = cutoff.getFullYear()
+      const cutoffMonth = cutoff.getMonth() + 1
+      const { rows } = await pool.query(
+        'SELECT * FROM acap_revenue WHERE (year > $1 OR (year = $1 AND month >= $2)) ORDER BY year DESC, month DESC',
+        [cutoffYear, cutoffMonth]
+      )
+      revenueRows = rows
+    } else {
+      const { rows } = await pool.query('SELECT * FROM acap_revenue ORDER BY year DESC, month DESC')
+      revenueRows = rows
+    }
+
+    return Response.json({ signals: enriched, revenue: revenueRows || [] })
   } catch (e) {
     console.error('signals error:', e)
-    return Response.json([])
+    return Response.json({ signals: [], revenue: [] })
   }
 }

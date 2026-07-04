@@ -12,7 +12,7 @@ type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
 export default function AdminPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'plus-requests'>('users')
+  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -294,6 +294,10 @@ export default function AdminPage() {
           <button onClick={() => setTab('content')}
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'content' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             دوره‌ها و مقالات
+          </button>
+          <button onClick={() => setTab('signals')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'signals' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            سیگنال‌ها و درآمد
           </button>
           <button onClick={() => setTab('plus-requests')}
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'plus-requests' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
@@ -709,6 +713,7 @@ export default function AdminPage() {
         )}
 
         {tab === 'content' && <AdminContent />}
+        {tab === 'signals' && <AdminSignals />}
         {tab === 'plus-requests' && <AdminPlusRequests />}
         {tab === 'analytics' && <AdminAnalytics />}
       </div>
@@ -1114,6 +1119,292 @@ function AdminPlusRequests() {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function AdminSignals() {
+  const [signals, setSignals] = useState<any[]>([])
+  const [revenues, setRevenues] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [signalTab, setSignalTab] = useState<'signals' | 'revenue'>('signals')
+
+  // Signal form
+  const [showSignalForm, setShowSignalForm] = useState(false)
+  const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
+  const [editSignalId, setEditSignalId] = useState<string | null>(null)
+  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', priceAtPublish: '', expiresAt: '' })
+  const [signalSaving, setSignalSaving] = useState(false)
+
+  // Revenue form
+  const [showRevenueForm, setShowRevenueForm] = useState(false)
+  const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
+  const [editRevenueId, setEditRevenueId] = useState<string | null>(null)
+  const [rf, setRf] = useState({ amount: '', month: (new Date().getMonth() + 1).toString(), year: new Date().getFullYear().toString(), description: '' })
+  const [revenueSaving, setRevenueSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    const m = await import('@/app/actions/admin')
+    const [sigs, revs] = await Promise.all([m.getSignals(), m.getAcapRevenue()])
+    setSignals(sigs)
+    setRevenues(revs)
+  }, [])
+
+  useEffect(() => { load().catch(() => {}).finally(() => setLoading(false)) }, [load])
+
+  function openSignalForm(s?: any) {
+    if (s) {
+      setSignalFormMode('edit'); setEditSignalId(s.id)
+      setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', expiresAt: s.expiresAt ? new Date(s.expiresAt).toISOString().slice(0, 16) : '' })
+    } else {
+      setSignalFormMode('create'); setEditSignalId(null)
+      setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', priceAtPublish: '', expiresAt: '' })
+    }
+    setShowSignalForm(true)
+  }
+
+  function openRevenueForm(r?: any) {
+    if (r) {
+      setRevenueFormMode('edit'); setEditRevenueId(r.id)
+      setRf({ amount: r.amount.toString(), month: r.month.toString(), year: r.year.toString(), description: r.description || '' })
+    } else {
+      setRevenueFormMode('create'); setEditRevenueId(null)
+      setRf({ amount: '', month: (new Date().getMonth() + 1).toString(), year: new Date().getFullYear().toString(), description: '' })
+    }
+    setShowRevenueForm(true)
+  }
+
+  async function saveSignal() {
+    if (!sf.symbol || !sf.title || !sf.priceAtPublish) return
+    setSignalSaving(true)
+    try {
+      const m = await import('@/app/actions/admin')
+      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), expiresAt: sf.expiresAt || undefined }
+      if (signalFormMode === 'create') await m.createSignal(data)
+      else if (editSignalId) await m.updateSignal(editSignalId, data)
+      setShowSignalForm(false)
+      await load()
+    } catch (e) { console.error(e) }
+    setSignalSaving(false)
+  }
+
+  async function deleteSignal(id: string) {
+    if (!confirm('حذف سیگنال؟')) return
+    const m = await import('@/app/actions/admin')
+    await m.deleteSignal(id)
+    await load()
+  }
+
+  async function saveRevenue() {
+    if (!rf.amount) return
+    setRevenueSaving(true)
+    try {
+      const m = await import('@/app/actions/admin')
+      const amount = parseFloat(rf.amount)
+      const month = parseInt(rf.month)
+      const year = parseInt(rf.year)
+      if (revenueFormMode === 'create') await m.addAcapRevenue(amount, month, year, rf.description || undefined)
+      else if (editRevenueId) await m.updateAcapRevenue(editRevenueId, amount, rf.description || undefined, month, year)
+      setShowRevenueForm(false)
+      await load()
+    } catch (e) { console.error(e) }
+    setRevenueSaving(false)
+  }
+
+  async function deleteRevenue(id: string) {
+    if (!confirm('حذف درآمد؟')) return
+    const m = await import('@/app/actions/admin')
+    await m.deleteAcapRevenue(id)
+    await load()
+  }
+
+  const totalRevenue = revenues.reduce((sum: number, r: any) => sum + r.amount, 0)
+  const persianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+
+  const signalFormOverlay = showSignalForm && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowSignalForm(false) }}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold">{signalFormMode === 'create' ? 'افزودن' : 'ویرایش'} سیگنال</h3>
+          <button onClick={() => setShowSignalForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <select value={sf.type} onChange={e => setSf(p => ({ ...p, type: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+              <option value="crypto">ارز دیجیتال</option>
+              <option value="stock">سهام</option>
+              <option value="gold">طلا</option>
+              <option value="forex">فارکس</option>
+            </select>
+            <input value={sf.symbol} onChange={e => setSf(p => ({ ...p, symbol: e.target.value }))} placeholder="نماد (مثلاً BTC)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr" dir="ltr" />
+          </div>
+          <input value={sf.title} onChange={e => setSf(p => ({ ...p, title: e.target.value }))} placeholder="عنوان" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <textarea value={sf.description} onChange={e => setSf(p => ({ ...p, description: e.target.value }))} placeholder="توضیحات" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <select value={sf.action} onChange={e => setSf(p => ({ ...p, action: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+              <option value="buy">خرید</option>
+              <option value="sell">فروش</option>
+            </select>
+            <select value={sf.investorType} onChange={e => setSf(p => ({ ...p, investorType: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+              <option value="conservative">محافظه‌کار</option>
+              <option value="balanced">متعادل</option>
+              <option value="growth">رشدگرا</option>
+              <option value="aggressive">تهاجمی</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={sf.expectedProfit} onChange={e => setSf(p => ({ ...p, expectedProfit: e.target.value }))} placeholder="درصد سود مورد انتظار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <input value={sf.priceAtPublish} onChange={e => setSf(p => ({ ...p, priceAtPublish: e.target.value }))} placeholder="قیمت در زمان انتشار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          </div>
+          <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} type="datetime-local" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <button onClick={saveSignal} disabled={signalSaving}
+            className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors disabled:opacity-50">
+            {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const revenueFormOverlay = showRevenueForm && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowRevenueForm(false) }}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold">{revenueFormMode === 'create' ? 'افزودن' : 'ویرایش'} درآمد A|CAP</h3>
+          <button onClick={() => setShowRevenueForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="space-y-3">
+          <input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مبلغ (تومان)" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">
+              {persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}
+            </select>
+            <input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="سال" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          </div>
+          <textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="توضیحات (اختیاری)" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <button onClick={saveRevenue} disabled={revenueSaving}
+            className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors disabled:opacity-50">
+            {revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+
+  return (
+    <div dir="rtl">
+      {signalFormOverlay}
+      {revenueFormOverlay}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <button onClick={() => setSignalTab('signals')}
+          className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${signalTab === 'signals' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+          سیگنال‌ها ({signals.length})
+        </button>
+        <button onClick={() => setSignalTab('revenue')}
+          className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${signalTab === 'revenue' ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+          درآمد A|CAP ({revenues.length})
+        </button>
+      </div>
+
+      {signalTab === 'signals' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+            <span className="text-xs text-gray-500">مدیریت سیگنال‌ها</span>
+            <button onClick={() => openSignalForm()} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors">
+              <Plus className="w-3.5 h-3.5" /> سیگنال جدید
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
+                  <th className="text-right py-3 px-3">عنوان</th>
+                  <th className="text-right py-3 px-3">نماد</th>
+                  <th className="text-right py-3 px-3">نوع</th>
+                  <th className="text-right py-3 px-3">اقدام</th>
+                  <th className="text-right py-3 px-3">سود مورد انتظار</th>
+                  <th className="text-right py-3 px-3">قیمت</th>
+                  <th className="text-right py-3 px-3">تاریخ</th>
+                  <th className="text-right py-3 px-3">عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {signals.map(s => (
+                  <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td className="py-2.5 px-3 font-medium text-sm max-w-[150px] truncate">{s.title}</td>
+                    <td className="py-2.5 px-3 text-gray-400 text-xs">{s.symbol}</td>
+                    <td className="py-2.5 px-3 text-xs">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : 'فارکس'}</td>
+                    <td className="py-2.5 px-3"><span className={`text-xs px-2 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span></td>
+                    <td className="py-2.5 px-3 text-xs">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</td>
+                    <td className="py-2.5 px-3 text-xs">{Number(s.priceAtPublish).toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                        <button onClick={() => deleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {signals.length === 0 && <p className="text-center py-8 text-gray-500">سیگنالی یافت نشد</p>}
+        </div>
+      )}
+
+      {signalTab === 'revenue' && (
+        <div className="space-y-4">
+          {/* Summary */}
+          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">مجموع درآمد A|CAP</span>
+              <span className="text-xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</span>
+            </div>
+          </div>
+          {/* Revenue list */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+              <span className="text-xs text-gray-500">ثبت درآمد ماهانه</span>
+              <button onClick={() => openRevenueForm()} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors">
+                <Plus className="w-3.5 h-3.5" /> ثبت درآمد
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
+                    <th className="text-right py-3 px-3">ماه</th>
+                    <th className="text-right py-3 px-3">سال</th>
+                    <th className="text-right py-3 px-3">مبلغ</th>
+                    <th className="text-right py-3 px-3">توضیحات</th>
+                    <th className="text-right py-3 px-3">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {revenues.map(r => (
+                    <tr key={r.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                      <td className="py-2.5 px-3 font-medium text-sm">{persianMonths[r.month - 1] || r.month}</td>
+                      <td className="py-2.5 px-3 text-gray-400 text-xs">{r.year}</td>
+                      <td className="py-2.5 px-3 text-emerald-400 font-bold">{Number(r.amount).toLocaleString()} تومان</td>
+                      <td className="py-2.5 px-3 text-xs text-gray-400 max-w-[200px] truncate">{r.description || '—'}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex gap-1">
+                          <button onClick={() => openRevenueForm(r)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                          <button onClick={() => deleteRevenue(r.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {revenues.length === 0 && <p className="text-center py-8 text-gray-500">درآمدی ثبت نشده است</p>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
