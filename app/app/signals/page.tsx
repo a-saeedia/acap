@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { Zap, Clock, X, ArrowLeft, DollarSign, Filter } from 'lucide-react'
-import { formatPersianDate, formatPersianMonth, PERSIAN_MONTHS } from '@/lib/persian-date'
+import { formatPersianDate, formatPersianMonth, persianMonthKey, PERSIAN_MONTHS } from '@/lib/persian-date'
 
 const TIME_RANGES = [
   { label: '۱ ماهه', months: 1 },
@@ -193,7 +193,7 @@ export default function SignalsPage() {
     const grouped: Record<string, any[]> = {}
     let successCount = 0
     for (const s of filteredSignals) {
-      const monthKey = new Date(s.publishedAt).toISOString().slice(0, 7)
+      const monthKey = persianMonthKey(s.publishedAt)
       if (!grouped[monthKey]) grouped[monthKey] = []
       grouped[monthKey].push(s)
       if ((s.actualProfit ?? 0) >= 0) successCount++

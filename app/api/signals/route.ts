@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db'
+import { toJalaali } from 'jalaali-js'
 
 const SIGNAL_DESCRIPTIONS: Record<string, { title: string; desc: string; personality: string }> = {
   BTC: { title: 'خرید بیت‌کوین', desc: 'بیت‌کوین در محدوده حمایت قوی قرار دارد. خرید در این ناحیه ریسک کمی دارد.', personality: 'conservative' },
@@ -71,8 +72,9 @@ export async function GET(req: Request) {
     let revenueRows
     if (timeMonths > 0) {
       const cutoff = new Date(Date.now() - timeMonths * 30 * 24 * 60 * 60 * 1000)
-      const cutoffYear = cutoff.getFullYear()
-      const cutoffMonth = cutoff.getMonth() + 1
+      const j = toJalaali(cutoff.getFullYear(), cutoff.getMonth() + 1, cutoff.getDate())
+      const cutoffYear = j.jy
+      const cutoffMonth = j.jm
       const { rows } = await pool.query(
         'SELECT * FROM acap_revenue WHERE (year > $1 OR (year = $1 AND month >= $2)) ORDER BY year DESC, month DESC',
         [cutoffYear, cutoffMonth]

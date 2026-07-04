@@ -45,4 +45,11 @@ export function persianInputToGregorian(persianStr: string): Date | null {
   return new Date(g.gy, g.gm - 1, g.gd)
 }
 
+export function persianMonthKey(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  const j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+  return `${j.jy}-${String(j.jm).padStart(2, '0')}`
+}
+
 export { PERSIAN_MONTHS }

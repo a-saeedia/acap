@@ -3,18 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Crown, Clock, X, ArrowLeft } from 'lucide-react'
 import { getUserSuggestions } from '@/app/actions/admin'
-
-const PERSIAN_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
-
-function formatPersianDate(iso: string): string {
-  const d = new Date(iso)
-  return `${d.getDate()} ${PERSIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-}
-
-function formatPersianMonth(iso: string): string {
-  const d = new Date(iso)
-  return `${PERSIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-}
+import { formatPersianDate, formatPersianMonth, persianMonthKey, PERSIAN_MONTHS } from '@/lib/persian-date'
 
 function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
   const isExpired = item.expiresAt ? new Date(item.expiresAt) < new Date() : false
@@ -101,7 +90,7 @@ export default function PersonalPage() {
   const grouped = useMemo(() => {
     const grouped: Record<string, any[]> = {}
     for (const s of suggestions) {
-      const monthKey = new Date(s.createdAt).toISOString().slice(0, 7)
+      const monthKey = persianMonthKey(s.createdAt)
       if (!grouped[monthKey]) grouped[monthKey] = []
       grouped[monthKey].push(s)
     }

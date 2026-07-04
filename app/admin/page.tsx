@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, toggleScanner, getUserQuizResults } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { Loader2, Plus, Edit3, Trash2, X } from 'lucide-react'
+import { toJalaali } from 'jalaali-js'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
 type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
@@ -1141,7 +1142,7 @@ function AdminSignals() {
   const [showRevenueForm, setShowRevenueForm] = useState(false)
   const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
   const [editRevenueId, setEditRevenueId] = useState<string | null>(null)
-  const [rf, setRf] = useState({ amount: '', month: (new Date().getMonth() + 1).toString(), year: new Date().getFullYear().toString(), description: '' })
+  const [rf, setRf] = useState(() => { const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); return { amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '' } })
   const [revenueSaving, setRevenueSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -1170,7 +1171,7 @@ function AdminSignals() {
       setRf({ amount: r.amount.toString(), month: r.month.toString(), year: r.year.toString(), description: r.description || '' })
     } else {
       setRevenueFormMode('create'); setEditRevenueId(null)
-      setRf({ amount: '', month: (new Date().getMonth() + 1).toString(), year: new Date().getFullYear().toString(), description: '' })
+      const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); setRf({ amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '' })
     }
     setShowRevenueForm(true)
   }
