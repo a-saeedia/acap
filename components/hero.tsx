@@ -454,10 +454,10 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
               className="flex flex-wrap justify-center gap-3 mt-2"
             >
               {[
-                { v: '+۲۰۰۰', l: 'کاربر فعال' },
+                { v: '+۵۰۰', l: 'کاربر فعال' },
                 { v: '۶', l: 'بازار پوشش داده‌شده' },
                 { v: '۴', l: 'تیپ شخصیت مالی' },
-                { v: '۹۸٪', l: 'رضایت کاربران' },
+                { v: '۸۷٪', l: 'رضایت کاربران' },
               ].map(s => (
                 <div key={s.l} className="glass border border-border/50 rounded-xl px-5 py-3 text-center min-w-[96px]">
                   <div className="text-primary font-black text-xl">{s.v}</div>

@@ -62,7 +62,7 @@ const ASSET_TYPES = [
 
 const QUICK_CRYPTO = ['BTC', 'ETH', 'USDT', 'SOL', 'XRP', 'ADA', 'TRX', 'DOGE', 'BNB']
 const QUICK_CURRENCY = ['USD', 'EUR', 'AED', 'TRY']
-const QUICK_GOLD = [{ symbol: 'GOLD', label: 'طلای ۱۸ (گرم)' }]
+const QUICK_GOLD = [{ symbol: 'GOLD18', label: 'طلای ۱۸ (گرم)' }]
 
 const INITIAL_FORM: AssetForm = {
   type: 'crypto',

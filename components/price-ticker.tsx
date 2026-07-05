@@ -38,7 +38,7 @@ const TICKER_SYMBOLS = [
   { key: 'USD-IRR', label: 'دلار', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
   { key: 'EUR-IRR', label: 'یورو', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان` },
   { key: 'GOLD18', label: 'طلای ۱۸', format: (p: number) => `${(p / 10).toLocaleString('fa-IR')} تومان /گرم` },
-  { key: 'GOLD', label: 'انس', format: (p: number) => `$${p.toLocaleString()}` },
+
 ]
 
 export function PriceTicker() {

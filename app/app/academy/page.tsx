@@ -31,27 +31,27 @@ const instructors = [
     id: 'ali-borhan',
     name: 'علی برهان',
     title: 'بنیان‌گذار A|CAP | مدرس بازارهای مالی',
-    bio: 'بیش از ۱۵ سال سابقه در بازارهای مالی بین‌المللی. بنیان‌گذار آکادمی سرمایه‌گذاری هوشمند A|CAP و مدرس تخصصی ICT، پرایس اکشن و مدیریت سرمایه.',
+    bio: 'تحلیلگر بازارهای مالی، مدرس سبک ICT و متخصص مدیریت سرمایه با بیش از ۵ سال سابقه در بازارهای مالی بین‌المللی. بنیان‌گذار آکادمی سرمایه‌گذاری هوشمند A|CAP و مدرس تخصصی ICT و پرایس اکشن.',
     image: 'AB',
     gradient: 'from-blue-600 to-indigo-900',
-    stats: { courses: 8, students: 2400, rating: 4.9 },
+    stats: { courses: 8, students: 100, rating: 4.9 },
   },
   {
     id: 'arman-saeedi',
     name: 'آرمان سعیدی',
-    title: 'تحلیلگر بازارهای مالی | مدرس ارز دیجیتال',
-    bio: 'تحلیلگر حرفه‌ای بازارهای مالی با تخصص در ارزهای دیجیتال، تکنیکال پیشرفته و هوش مصنوعی در معاملات. مدرس دوره‌های تخصصی تریدینگ.',
+    title: 'هم‌بنیان‌گذار A|CAP | مدرس ارز دیجیتال و هوش مصنوعی',
+    bio: 'هم‌بنیان‌گذار و مدیر فناوری A|CAP، مدرس ارزهای دیجیتال، تحلیل تکنیکال پیشرفته و هوش مصنوعی در معاملات. بیش از ۵ سال سابقه در توسعه محصولات مالی و آموزش تریدینگ.',
     image: 'AS',
     gradient: 'from-purple-600 to-pink-900',
-    stats: { courses: 6, students: 1800, rating: 4.8 },
+    stats: { courses: 6, students: 100, rating: 4.8 },
   },
 ]
 
 const statItems = [
-  { icon: Users, value: 4200, label: 'تعداد دانشجویان', suffix: '+' },
+  { icon: Users, value: 200, label: 'تعداد دانشجویان', suffix: '+' },
   { icon: BookOpen, value: 14, label: 'دوره‌های تخصصی', suffix: '' },
   { icon: Clock, value: 280, label: 'ساعت آموزش', suffix: '+' },
-  { icon: Star, value: 97, label: 'نرخ رضایت', suffix: '%' },
+  { icon: Star, value: 87, label: 'نرخ رضایت', suffix: '%' },
 ]
 
 const levelConfig: Record<string, { label: string; color: string }> = {
@@ -229,10 +229,10 @@ export default function AcademyPage() {
             variants={containerVariants}
           >
             {[
-              { icon: Users, value: 4200, label: 'دانشجو', suffix: '+' },
+              { icon: Users, value: 200, label: 'دانشجو', suffix: '+' },
               { icon: BookOpen, value: 14, label: 'دوره', suffix: '' },
               { icon: Clock, value: 280, label: 'ساعت آموزش', suffix: '+' },
-              { icon: Star, value: 97, label: 'رضایت', suffix: '%' },
+              { icon: Star, value: 87, label: 'رضایت', suffix: '%' },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -565,7 +565,7 @@ export default function AcademyPage() {
             آماده شروع سفر سرمایه‌گذاری هوشمند هستید؟
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto mb-8 text-lg">
-            به جمع هزاران دانشجوی آکادمی A|CAP بپیوندید و از صفر تا صد بازارهای مالی را حرفه‌ای یاد بگیرید
+            به جمع دانشجویان آکادمی A|CAP بپیوندید و از صفر تا صد بازارهای مالی را حرفه‌ای یاد بگیرید
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <button

@@ -10,7 +10,7 @@ const PERSIAN_LABELS: Record<string, string> = {
   'TRX': 'ترون', 'USD-IRR': 'دلار', 'EUR-IRR': 'یورو', 'AED-IRR': 'درهم',
   'TRY-IRR': 'لیر', 'GBP-IRR': 'پوند', 'GOLD18': 'طلای ۱۸', 'GOLD24': 'طلای ۲۴',
   'COIN': 'سکه امامی', 'HALF_COIN': 'نیم سکه', 'QUARTER_COIN': 'ربع سکه',
-  'XAU': 'انس طلا', 'BTC-IRR': 'بیت‌کوین', 'ETH-IRR': 'اتریوم', 'USDT-IRR': 'تتر',
+  'BTC-IRR': 'بیت‌کوین', 'ETH-IRR': 'اتریوم', 'USDT-IRR': 'تتر',
   'GOLD': 'طلای ۱۸', 'USD': 'دلار', 'EUR': 'یورو',
 }
 
@@ -40,7 +40,7 @@ const TABS = [
 
 const CATEGORIES: Record<string, string[]> = {
   crypto: ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX', 'BNB'],
-  gold: ['GOLD18', 'GOLD24', 'COIN', 'HALF_COIN', 'QUARTER_COIN', 'XAU'],
+  gold: ['GOLD18', 'GOLD24', 'COIN', 'HALF_COIN', 'QUARTER_COIN'],
   forex: ['USD-IRR', 'EUR-IRR', 'AED-IRR', 'TRY-IRR', 'GBP-IRR'],
 }
 
@@ -64,7 +64,7 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
           style={{ background: meta.bg, color: meta.color }}>{meta.icon}</span>
       )
     }
-    if (symbol === 'GOLD18' || symbol === 'GOLD24' || symbol === 'XAU') {
+    if (symbol === 'GOLD18' || symbol === 'GOLD24') {
       return (
         <span className="w-9 h-9 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(217,119,6,0.2))' }}>

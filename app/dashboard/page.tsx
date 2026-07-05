@@ -1,7 +1,10 @@
 'use client'
 
-import { DashboardClient } from './dashboard-client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
-  return <DashboardClient />
+  const router = useRouter()
+  useEffect(() => { router.replace('/app') }, [])
+  return null
 }

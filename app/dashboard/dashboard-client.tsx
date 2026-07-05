@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
+import { toPersianDigits } from '@/lib/utils'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
@@ -317,7 +318,7 @@ export function DashboardClient() {
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground">شخصیت مالی</div>
                     <div className="font-black text-base" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
-                    <div className="text-xs text-muted-foreground">ریسک‌پذیری {latest.score}/۱۰۰</div>
+                    <div className="text-xs text-muted-foreground">ریسک‌پذیری {toPersianDigits(latest.score)}/۱۰۰</div>
                   </div>
                   <div className="w-20">
                     <div className="h-1.5 bg-accent rounded-full overflow-hidden">

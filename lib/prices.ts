@@ -33,7 +33,7 @@ export const DEFAULT_STOCKS = [
   { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی', tsetmcSearch: 'رمپنا' },
 ]
 
-export type PriceMap = Record<string, { price: number; currency: string }>
+export type PriceMap = Record<string, { price: number; currency: string; change?: number }>
 
 function parseTgjuPrice(val: string): number {
   return Number(val.replace(/,/g, ''))
@@ -48,24 +48,33 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     const prices: PriceMap = {}
     let irrRate = 0
     
-    // Use data-price attribute on tr element - more reliable
     const extractPrice = (selector: string): number | null => {
       const regex = new RegExp(`data-market-row="${selector}"[^>]*data-price="([\\d,]+)"`)
       const match = html.match(regex)
       if (match) return parseTgjuPrice(match[1])
-      // Fallback: look for td with price
       const regex2 = new RegExp(`data-market-row="${selector}"[^>]*>.*?<td[^>]*class="[^"]*nf[^"]*"[^>]*>([\\d,]+)</td>`, 's')
       const match2 = html.match(regex2)
       if (match2) return parseTgjuPrice(match2[1])
       return null
+    }
+    const extractChange = (selector: string): number | null => {
+      const regex = new RegExp(`data-market-row="${selector}"[^>]*data-change-percent="([\\d.-]+)"`)
+      const match = html.match(regex)
+      if (match) return parseFloat(match[1])
+      return null
+    }
+    
+    const setWithChange = (sym: string, price: number, currency: string, slug: string) => {
+      const change = extractChange(slug)
+      prices[sym] = { price, currency, ...(change !== null ? { change } : {}) }
     }
     
     const usdPrice = extractPrice('price_dollar_rl')
     if (usdPrice) {
       irrRate = usdPrice
       prices['USD'] = { price: 1, currency: 'USD' }
-      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+      setWithChange('USD-IRR', irrRate, 'IRR', 'price_dollar_rl')
+      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR', change: prices['USD-IRR']?.change }
     }
     
     const forexPairs: Record<string, string> = {
@@ -79,20 +88,18 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       const p = extractPrice(slug)
       if (p) {
         prices[sym] = { price: 1, currency: 'USD' }
-        prices[`${sym}-IRR`] = { price: p, currency: 'IRR' }
+        setWithChange(`${sym}-IRR`, p, 'IRR', slug)
       }
     }
     
     const goldSlugs: Record<string, string> = {
       geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
-      nim: 'HALF_COIN', rob: 'QUARTER_COIN', ons: 'XAU',
+      nim: 'HALF_COIN', rob: 'QUARTER_COIN',
       mesghal: 'MESGHAL',
     }
     for (const [slug, sym] of Object.entries(goldSlugs)) {
       const p = extractPrice(slug)
-      if (p) {
-        prices[sym] = { price: p, currency: 'IRR' }
-      }
+      if (p) setWithChange(sym, p, 'IRR', slug)
     }
     
     const cryptoIrSlugs: Record<string, string> = {
@@ -105,7 +112,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     }
     for (const [slug, sym] of Object.entries(cryptoIrSlugs)) {
       const p = extractPrice(slug)
-      if (p) prices[sym] = { price: p, currency: 'IRR' }
+      if (p) setWithChange(sym, p, 'IRR', slug)
     }
     
     const timestampMatch = html.match(/data-last-update="([^"]+)"/)
@@ -169,7 +176,7 @@ export async function fetchTgjuData(): Promise<{
 
       const goldSlugs: Record<string, string> = {
         geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
-        nim: 'HALF_COIN', rob: 'QUARTER_COIN', ons: 'XAU',
+        nim: 'HALF_COIN', rob: 'QUARTER_COIN',
         mesghal: 'MESGHAL',
       }
       for (const [slug, sym] of Object.entries(goldSlugs)) {
@@ -272,13 +279,13 @@ export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
 export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
   const geckoSymbols = symbols.filter(s => COINGECKO_IDS[s]).map(s => COINGECKO_IDS[s])
   if (geckoSymbols.length === 0) return {}
-  const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd`
+  const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd&include_24hr_change=true`
   try {
     const res = await fetch(url, { ...FETCH_OPTS })
     const data = await res.json()
     const result: PriceMap = {}
     for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
-      if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD' }
+      if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD', change: data[id].usd_24h_change ?? 0 }
     }
     return result
   } catch (e) { console.error('fetchCryptoPrices error:', e); return {} }
@@ -309,7 +316,7 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
   ])
 
   let irrRate = tgju.irrRate
-  const prices: PriceMap = { ...crypto, ...tgju.prices }
+  const prices: PriceMap = { ...tgju.prices, ...crypto }
 
   if (irrRate > 0) {
     for (const sym of Object.keys(crypto)) {
