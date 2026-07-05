@@ -118,6 +118,29 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     const timestampMatch = html.match(/data-last-update="([^"]+)"/)
     const timestamp = timestampMatch ? timestampMatch[1] : ''
     
+    // If main page is missing some coin prices, try the dedicated coin page
+    const hasAllCoins = prices['COIN'] && prices['HALF_COIN'] && prices['QUARTER_COIN']
+    if (!hasAllCoins && irrRate > 0) {
+      try {
+        const coinRes = await fetch('https://www.tgju.org/coin', {
+          cache: 'no-store', ...TGJU_FETCH_OPTS,
+        })
+        if (coinRes.ok) {
+          const coinHtml = await coinRes.text()
+          const coinSlugs: Record<string, string> = {
+            sekee: 'COIN', sekeb: 'COIN',
+            nim: 'HALF_COIN', rob: 'QUARTER_COIN',
+          }
+          for (const [slug, sym] of Object.entries(coinSlugs)) {
+            if (prices[sym]) continue
+            const cRegex = new RegExp(`data-market-row="${slug}"[^>]*data-price="([\\d,]+)"`)
+            const cMatch = coinHtml.match(cRegex)
+            if (cMatch) setWithChange(sym, parseTgjuPrice(cMatch[1]), 'IRR', slug)
+          }
+        }
+      } catch {}
+    }
+    
     return { prices, irrRate, timestamp }
   } catch { return { prices: {}, irrRate: 0, timestamp: '' } }
 }
@@ -174,6 +197,7 @@ export async function fetchTgjuData(): Promise<{
         }
       }
 
+      // Gold/coin from current object directly
       const goldSlugs: Record<string, string> = {
         geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
         nim: 'HALF_COIN', rob: 'QUARTER_COIN',
@@ -182,6 +206,23 @@ export async function fetchTgjuData(): Promise<{
       for (const [slug, sym] of Object.entries(goldSlugs)) {
         if (c[slug]?.p) {
           prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
+        }
+      }
+
+      // TGJU stores some gold/coin items in tolerance_high/tolerance_low arrays
+      // Map both TGJU name → our symbol
+      const toleranceNameMap: Record<string, string> = {
+        geram18: 'GOLD18', geram24: 'GOLD24',
+        sekee: 'COIN', sekeb: 'COIN',
+        nim: 'HALF_COIN', rob: 'QUARTER_COIN',
+        mesghal: 'MESGHAL',
+      }
+      for (const arr of [data.tolerance_high ?? [], data.tolerance_low ?? []]) {
+        for (const item of arr) {
+          const sym = toleranceNameMap[item.name]
+          if (sym && item.p && !prices[sym]) {
+            prices[sym] = { price: parseTgjuPrice(item.p), currency: 'IRR' }
+          }
         }
       }
 
