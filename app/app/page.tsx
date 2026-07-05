@@ -108,6 +108,15 @@ export default function MergedDashboard() {
     if (dashData !== null || isPending === false) setLoading(false)
   }, [dashData, isPending])
 
+  const byType = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const a of assets) {
+      const val = getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
+      map[a.type] = (map[a.type] || 0) + val
+    }
+    return map
+  }, [assets, prices, stockPrices])
+
   if (isPending || loading) return (
     <div className="flex items-center justify-center h-64">
       <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
@@ -126,15 +135,6 @@ export default function MergedDashboard() {
   const totalCost = assets.reduce((sum, a) => sum + ((a.purchasePrice || 0) * a.quantity), 0)
   const profit = totalValue - totalCost
   const profitPercent = totalCost > 0 ? (profit / totalCost) * 100 : 0
-
-  const byType = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const a of assets) {
-      const val = getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
-      map[a.type] = (map[a.type] || 0) + val
-    }
-    return map
-  }, [assets, prices, stockPrices])
 
   const hasAssets = assets.length > 0
 
