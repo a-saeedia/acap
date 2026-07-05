@@ -118,27 +118,47 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     const timestampMatch = html.match(/data-last-update="([^"]+)"/)
     const timestamp = timestampMatch ? timestampMatch[1] : ''
     
-    // If main page is missing some coin prices, try the dedicated coin page
-    const hasAllCoins = prices['COIN'] && prices['HALF_COIN'] && prices['QUARTER_COIN']
-    if (!hasAllCoins && irrRate > 0) {
+    // Fill missing gold/coin items from the TGJU AJAX tolerance arrays (always accurate)
+    if (irrRate > 0) {
       try {
-        const coinRes = await fetch('https://www.tgju.org/coin', {
+        const rev = Math.random().toString(36).substring(2, 12)
+        const ajaxRes = await fetch(`${TGJU_AJAX}?rev=${rev}`, {
           cache: 'no-store', ...TGJU_FETCH_OPTS,
         })
-        if (coinRes.ok) {
-          const coinHtml = await coinRes.text()
-          const coinSlugs: Record<string, string> = {
+        if (ajaxRes.ok) {
+          const ajaxData = await ajaxRes.json()
+          const toleranceNameMap: Record<string, string> = {
+            geram18: 'GOLD18', geram24: 'GOLD24',
             sekee: 'COIN', sekeb: 'COIN',
             nim: 'HALF_COIN', rob: 'QUARTER_COIN',
+            mesghal: 'MESGHAL',
           }
-          for (const [slug, sym] of Object.entries(coinSlugs)) {
-            if (prices[sym]) continue
-            const cRegex = new RegExp(`data-market-row="${slug}"[^>]*data-price="([\\d,]+)"`)
-            const cMatch = coinHtml.match(cRegex)
-            if (cMatch) setWithChange(sym, parseTgjuPrice(cMatch[1]), 'IRR', slug)
+          for (const arr of [ajaxData.tolerance_high ?? [], ajaxData.tolerance_low ?? []]) {
+            for (const item of arr) {
+              const sym = toleranceNameMap[item.name]
+              if (sym && item.p) {
+                const p = parseTgjuPrice(item.p)
+                if (p > 0) prices[sym] = { price: p, currency: 'IRR', ...(item.dp ? { change: parseFloat(item.dp) } : {}) }
+              }
+            }
           }
         }
       } catch {}
+      // Also fetch coin page for nim/rob if still missing from AJAX tolerances
+      for (const [slug, sym] of Object.entries({ nim: 'HALF_COIN', rob: 'QUARTER_COIN' })) {
+        if (prices[sym]) continue
+        try {
+          const coinRes = await fetch('https://www.tgju.org/coin', {
+            cache: 'no-store', ...TGJU_FETCH_OPTS,
+          })
+          if (coinRes.ok) {
+            const coinHtml = await coinRes.text()
+            // Only match the FIRST row in the "قیمت نقدی" section (before the next <thead>)
+            const sectionMatch = coinHtml.match(new RegExp(`<tr data-market-row="${slug}".*?<td[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\\d,]+)"`, 's'))
+            if (sectionMatch) setWithChange(sym, parseTgjuPrice(sectionMatch[1]), 'IRR', slug)
+          }
+        } catch {}
+      }
     }
     
     return { prices, irrRate, timestamp }
@@ -210,7 +230,6 @@ export async function fetchTgjuData(): Promise<{
       }
 
       // TGJU stores some gold/coin items in tolerance_high/tolerance_low arrays
-      // Map both TGJU name → our symbol
       const toleranceNameMap: Record<string, string> = {
         geram18: 'GOLD18', geram24: 'GOLD24',
         sekee: 'COIN', sekeb: 'COIN',
@@ -220,8 +239,9 @@ export async function fetchTgjuData(): Promise<{
       for (const arr of [data.tolerance_high ?? [], data.tolerance_low ?? []]) {
         for (const item of arr) {
           const sym = toleranceNameMap[item.name]
-          if (sym && item.p && !prices[sym]) {
-            prices[sym] = { price: parseTgjuPrice(item.p), currency: 'IRR' }
+          if (sym && item.p) {
+            const p = parseTgjuPrice(item.p)
+            if (p > 0) prices[sym] = { price: p, currency: 'IRR' }
           }
         }
       }
