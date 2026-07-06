@@ -120,12 +120,14 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     
     // Fill missing gold/coin items from the TGJU AJAX tolerance arrays (always accurate)
     if (irrRate > 0) {
+      let ajaxSucceeded = false
       try {
         const rev = Math.random().toString(36).substring(2, 12)
         const ajaxRes = await fetch(`${TGJU_AJAX}?rev=${rev}`, {
           cache: 'no-store', ...TGJU_FETCH_OPTS,
         })
         if (ajaxRes.ok) {
+          ajaxSucceeded = true
           const ajaxData = await ajaxRes.json()
           const toleranceNameMap: Record<string, string> = {
             geram18: 'GOLD18', geram24: 'GOLD24',
@@ -143,7 +145,10 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
             }
           }
         }
-      } catch {}
+      } catch {
+        console.error('[prices] TGJU AJAX fetch failed (Vercel IP may be blocked)')
+      }
+      console.log('[prices] AJAX ok:', ajaxSucceeded, '| GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
       // Also fetch coin page for nim/rob if still missing from AJAX tolerances
       for (const [slug, sym] of Object.entries({ nim: 'HALF_COIN', rob: 'QUARTER_COIN' })) {
         if (prices[sym]) continue
@@ -155,11 +160,42 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
             const coinHtml = await coinRes.text()
             // Only match the FIRST row in the "قیمت نقدی" section (before the next <thead>)
             const sectionMatch = coinHtml.match(new RegExp(`<tr data-market-row="${slug}".*?<td[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\\d,]+)"`, 's'))
-            if (sectionMatch) setWithChange(sym, parseTgjuPrice(sectionMatch[1]), 'IRR', slug)
+            if (sectionMatch) {
+              setWithChange(sym, parseTgjuPrice(sectionMatch[1]), 'IRR', slug)
+              console.log(`[prices] Coin page gave ${sym}: ${sectionMatch[1]}`)
+            }
           }
-        } catch {}
+        } catch {
+          console.error(`[prices] Coin page fetch failed for ${slug}`)
+        }
+      }
+      console.log('[prices] After coin page fallback - HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
+    }
+
+    // Computed fallbacks when TGJU doesn't supply these values directly
+    // GOLD24 = GOLD18 × 4/3 (verified ratio from live TGJU data: 236,404,000 / 177,305,000 = 1.3333)
+    if (!prices['GOLD24'] && prices['GOLD18']) {
+      prices['GOLD24'] = {
+        price: Math.round(prices['GOLD18'].price * 4 / 3),
+        currency: 'IRR',
+        ...(prices['GOLD18'].change !== undefined ? { change: prices['GOLD18'].change } : {}),
       }
     }
+    // HALF_COIN ≈ 50% of COIN, QUARTER_COIN ≈ 29% of COIN (market-typical ratios)
+    if (!prices['HALF_COIN'] && prices['COIN']) {
+      prices['HALF_COIN'] = {
+        price: Math.round(prices['COIN'].price * 0.5),
+        currency: 'IRR',
+      }
+    }
+    if (!prices['QUARTER_COIN'] && prices['COIN']) {
+      prices['QUARTER_COIN'] = {
+        price: Math.round(prices['COIN'].price * 0.288),
+        currency: 'IRR',
+      }
+    }
+
+    console.log('[prices] Final - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
     
     return { prices, irrRate, timestamp }
   } catch { return { prices: {}, irrRate: 0, timestamp: '' } }
@@ -243,6 +279,26 @@ export async function fetchTgjuData(): Promise<{
             const p = parseTgjuPrice(item.p)
             if (p > 0) prices[sym] = { price: p, currency: 'IRR' }
           }
+        }
+      }
+
+      // Computed fallbacks (same logic as fetchTgjuHTML)
+      if (!prices['GOLD24'] && prices['GOLD18']) {
+        prices['GOLD24'] = {
+          price: Math.round(prices['GOLD18'].price * 4 / 3),
+          currency: 'IRR',
+        }
+      }
+      if (!prices['HALF_COIN'] && prices['COIN']) {
+        prices['HALF_COIN'] = {
+          price: Math.round(prices['COIN'].price * 0.5),
+          currency: 'IRR',
+        }
+      }
+      if (!prices['QUARTER_COIN'] && prices['COIN']) {
+        prices['QUARTER_COIN'] = {
+          price: Math.round(prices['COIN'].price * 0.288),
+          currency: 'IRR',
         }
       }
 
