@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, toggleScanner, getUserQuizResults } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
+import { AdminSettings } from '@/components/admin/admin-settings'
+import { AdminComments } from '@/components/admin/admin-comments'
+import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 
@@ -13,7 +16,7 @@ type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
 export default function AdminPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests'>('users')
+  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests' | 'settings' | 'comments' | 'tasks'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -303,6 +306,18 @@ export default function AdminPage() {
           <button onClick={() => setTab('plus-requests')}
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'plus-requests' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             درخواست‌های A|CAP+
+          </button>
+          <button onClick={() => setTab('settings')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            تنظیمات سایت
+          </button>
+          <button onClick={() => setTab('comments')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'comments' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            نظرات صفحات
+          </button>
+          <button onClick={() => setTab('tasks')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'tasks' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            وظایف
           </button>
           <a href="/api/export-csv" download
             className="px-4 py-2 rounded-lg text-sm whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-colors">
@@ -717,6 +732,9 @@ export default function AdminPage() {
         {tab === 'signals' && <AdminSignals />}
         {tab === 'plus-requests' && <AdminPlusRequests />}
         {tab === 'analytics' && <AdminAnalytics />}
+        {tab === 'settings' && <AdminSettings />}
+        {tab === 'comments' && <AdminComments />}
+        {tab === 'tasks' && <AdminTasks />}
       </div>
     </div>
   )

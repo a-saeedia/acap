@@ -150,7 +150,7 @@ export default function MergedDashboard() {
   const byType = useMemo(() => {
     const map: Record<string, number> = {}
     for (const a of assets) {
-      const val = getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
+      const val = a.type === 'cash' ? a.quantity : getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
       map[a.type] = (map[a.type] || 0) + val
     }
     return map
@@ -172,8 +172,14 @@ export default function MergedDashboard() {
   const latest = quizResults?.[quizResults.length - 1] ?? null
   const typeInfo = latest ? TYPE_INFO[latest.investorType as InvestorKey] ?? TYPE_INFO.balanced : null
 
-  const totalValue = assets.reduce((sum, a) => sum + getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity, 0)
-  const totalCost = assets.reduce((sum, a) => sum + ((a.purchasePrice || 0) * a.quantity), 0)
+  const totalValue = assets.reduce((sum, a) => {
+    if (a.type === 'cash') return sum + a.quantity
+    return sum + getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
+  }, 0)
+  const totalCost = assets.reduce((sum, a) => {
+    if (a.type === 'cash') return sum + a.quantity
+    return sum + ((a.purchasePrice || 0) * a.quantity)
+  }, 0)
   const profit = totalValue - totalCost
   const hasAssets = assets.length > 0
 
@@ -311,7 +317,7 @@ export default function MergedDashboard() {
 
                     <div className="space-y-1 mt-3">
                       {assets.slice(0, 4).map(a => {
-                        const val = getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
+                        const val = a.type === 'cash' ? a.quantity : getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
                         return (
                           <div key={a.id} className="flex items-center justify-between py-1.5 border-b border-white/[0.06] last:border-0">
                             <div className="flex items-center gap-2 min-w-0">

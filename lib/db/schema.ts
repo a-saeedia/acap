@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, integer, bigint, jsonb, real } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, timestamp, integer, bigint, jsonb, real, uuid } from 'drizzle-orm/pg-core'
 
 // Better Auth required tables
 export const user = pgTable('user', {
@@ -257,6 +257,59 @@ export const learningPath = pgTable('learning_path', {
   requiredCapital: text('requiredCapital'),
   difficulty: text('difficulty').notNull().default('intermediate'),
   courseIds: jsonb('courseIds'), // Array of course IDs in order
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+// Admin / Site Settings
+export const siteSetting = pgTable('site_setting', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  value: text('value').notNull(),
+  label: text('label').notNull(),
+  description: text('description'),
+  type: text('type').notNull().default('text'), // 'text' | 'textarea' | 'boolean' | 'number' | 'image'
+  group: text('group').notNull().default('general'), // 'general' | 'landing' | 'pricing' | 'contact' | 'social'
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+  updatedBy: text('updatedBy'),
+})
+
+// Inline Site Comments (visual annotations on pages)
+export const siteComment = pgTable('site_comment', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  path: text('path').notNull(), // e.g. '/', '/acap-plus', '/app/assets'
+  selector: text('selector'), // CSS selector for the target element (optional)
+  section: text('section'), // named section key (alternative to selector)
+  content: text('content').notNull(),
+  status: text('status').notNull().default('open'), // 'open' | 'resolved' | 'wontfix'
+  resolvedAt: timestamp('resolvedAt'),
+  resolvedBy: text('resolvedBy'),
+  parentId: text('parentId'), // for threaded replies
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+// Task Management (Trello-like)
+export const task = pgTable('task', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  status: text('status').notNull().default('todo'), // 'todo' | 'in_progress' | 'review' | 'done'
+  priority: text('priority').notNull().default('medium'), // 'low' | 'medium' | 'high' | 'urgent'
+  assignedTo: text('assignedTo'),
+  createdBy: text('createdBy').notNull(),
+  order: integer('order').notNull().default(0),
+  tags: jsonb('tags'), // string[]
+  dueDate: timestamp('dueDate'),
+  completedAt: timestamp('completedAt'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const taskComment = pgTable('task_comment', {
+  id: text('id').primaryKey(),
+  taskId: text('taskId').notNull(),
+  userId: text('userId').notNull(),
+  content: text('content').notNull(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 

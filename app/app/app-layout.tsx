@@ -6,6 +6,7 @@ import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
 import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, LogOut, Menu, X, ChevronLeft, ArrowRight } from 'lucide-react'
 import { AISupport } from '@/components/ai-support'
+import { SiteCommentWidget } from '@/components/site-comment-widget'
 
 const navItems = [
   { href: '/app', label: 'خلاصه من', icon: LayoutDashboard },
@@ -127,6 +128,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
       <AISupport />
+      <SiteCommentWidget />
     </div>
   )
 }

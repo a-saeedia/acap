@@ -16,21 +16,151 @@ const COINGECKO_IDS: Record<string, string> = {
 }
 
 export const DEFAULT_STOCKS = [
+  // فلزات اساسی
   { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', sector: 'فلزات اساسی', tsetmcSearch: 'فولاد' },
-  { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو', tsetmcSearch: 'خودرو' },
-  { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری', tsetmcSearch: 'وغدیر' },
   { symbol: 'کگل', name: 'گل گهر', sector: 'فلزات اساسی', tsetmcSearch: 'کگل' },
   { symbol: 'فملی', name: 'ملی صنایع مس ایران', sector: 'فلزات اساسی', tsetmcSearch: 'فملی' },
-  { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری', tsetmcSearch: 'شستا' },
+  { symbol: 'ذوب', name: 'ذوب آهن اصفهان', sector: 'فلزات اساسی', tsetmcSearch: 'ذوب' },
+  { symbol: 'فسپا', name: 'سپاهان', sector: 'فلزات اساسی', tsetmcSearch: 'فسپا' },
+  { symbol: 'فخوز', name: 'فولاد خوزستان', sector: 'فلزات اساسی', tsetmcSearch: 'فخوز' },
+  { symbol: 'فایرا', name: 'آلومینیوم ایران', sector: 'فلزات اساسی', tsetmcSearch: 'فایرا' },
+  { symbol: 'فیروز', name: 'آلومراد', sector: 'فلزات اساسی', tsetmcSearch: 'فیروز' },
+  { symbol: 'فاسمین', name: 'آلومینای ایران', sector: 'فلزات اساسی', tsetmcSearch: 'فاسمین' },
+  { symbol: 'محیر', name: 'کالسیمین', sector: 'فلزات اساسی', tsetmcSearch: 'محیر' },
+
+  // خودرو
+  { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو', tsetmcSearch: 'خودرو' },
+  { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو', tsetmcSearch: 'خساپا' },
+  { symbol: 'خگستر', name: 'گسترش سرمایه گذاری ایران خودرو', sector: 'خودرو', tsetmcSearch: 'خگستر' },
+  { symbol: 'خزمست', name: 'زمستا', sector: 'خودرو', tsetmcSearch: 'خزمست' },
+  { symbol: 'خبهمن', name: 'بهمن', sector: 'خودرو', tsetmcSearch: 'خبهمن' },
+  { symbol: 'خمحور', name: 'محور خودرو', sector: 'خودرو', tsetmcSearch: 'خمحور' },
+  { symbol: 'خاذین', name: 'آذین خودرو', sector: 'خودرو', tsetmcSearch: 'خاذین' },
+  { symbol: 'ختور', name: 'تویو', sector: 'خودرو', tsetmcSearch: 'ختور' },
+
+  // بانک
   { symbol: 'وبملت', name: 'بانک ملت', sector: 'بانک', tsetmcSearch: 'وبملت' },
   { symbol: 'وتجارت', name: 'بانک تجارت', sector: 'بانک', tsetmcSearch: 'وتجارت' },
+  { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک', tsetmcSearch: 'وبصادر' },
+  { symbol: 'وبشهر', name: 'بانک شهر', sector: 'بانک', tsetmcSearch: 'وبشهر' },
+  { symbol: 'وبانک', name: 'بانک اقتصاد نوین', sector: 'بانک', tsetmcSearch: 'وبانک' },
+  { symbol: 'وبوعلی', name: 'بانک سرمایه', sector: 'بانک', tsetmcSearch: 'وبوعلی' },
+  { symbol: 'وسینا', name: 'بانک سینا', sector: 'بانک', tsetmcSearch: 'وسینا' },
+  { symbol: 'وپارس', name: 'بانک پارسیان', sector: 'بانک', tsetmcSearch: 'وپارس' },
+  { symbol: 'وبیمه', name: 'بانک ایران زمین', sector: 'بانک', tsetmcSearch: 'وبیمه' },
+  { symbol: 'وگردش', name: 'بانک گردشگری', sector: 'بانک', tsetmcSearch: 'وگردش' },
+  { symbol: 'ودانا', name: 'بانک دی', sector: 'بانک', tsetmcSearch: 'ودانا' },
+
+  // پتروشیمی
   { symbol: 'پارسان', name: 'پتروشیمی پارس', sector: 'پتروشیمی', tsetmcSearch: 'پارسان' },
-  { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری', tsetmcSearch: 'تاپیکو' },
+  { symbol: 'جم', name: 'پتروشیمی جم', sector: 'پتروشیمی', tsetmcSearch: 'جم' },
+  { symbol: 'خارک', name: 'پتروشیمی نفت خارک', sector: 'پتروشیمی', tsetmcSearch: 'خارک' },
+  { symbol: 'شجم', name: 'پتروشیمی شهید تندگویان', sector: 'پتروشیمی', tsetmcSearch: 'شجم' },
+  { symbol: 'زاگرس', name: 'پتروشیمی زاگرس', sector: 'پتروشیمی', tsetmcSearch: 'زاگرس' },
+  { symbol: 'پکرمان', name: 'پتروشیمی کرمان', sector: 'پتروشیمی', tsetmcSearch: 'پکرمان' },
+  { symbol: 'پترول', name: 'پتروشیمی بوعلی سینا', sector: 'پتروشیمی', tsetmcSearch: 'پترول' },
+  { symbol: 'شفن', name: 'پتروشیمی فن آوران', sector: 'پتروشیمی', tsetmcSearch: 'شفن' },
+  { symbol: 'شاراک', name: 'پتروشیمی اراک', sector: 'پتروشیمی', tsetmcSearch: 'شاراک' },
+  { symbol: 'پیروز', name: 'پتروشیمی تبریز', sector: 'پتروشیمی', tsetmcSearch: 'پیروز' },
+  { symbol: 'شصفها', name: 'پتروشیمی اصفهان', sector: 'پتروشیمی', tsetmcSearch: 'شصفها' },
+
+  // پالایشی
   { symbol: 'شپنا', name: 'پالایش نفت بندرعباس', sector: 'پالایشی', tsetmcSearch: 'شپنا' },
   { symbol: 'شتران', name: 'پالایش نفت تهران', sector: 'پالایشی', tsetmcSearch: 'شتران' },
-  { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو', tsetmcSearch: 'خساپا' },
-  { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک', tsetmcSearch: 'وبصادر' },
+  { symbol: 'تبرک', name: 'پالایش نفت تبریز', sector: 'پالایشی', tsetmcSearch: 'تبرک' },
+  { symbol: 'شبریز', name: 'پالایش نفت شیراز', sector: 'پالایشی', tsetmcSearch: 'شبریز' },
+  { symbol: 'شاهن', name: 'پالایش نفت اصفهان', sector: 'پالایشی', tsetmcSearch: 'شاهن' },
+  { symbol: 'شلاکه', name: 'پالایش نفت لاوان', sector: 'پالایشی', tsetmcSearch: 'شلاکه' },
+
+  // سرمایه گذاری
+  { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری', tsetmcSearch: 'وغدیر' },
+  { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری', tsetmcSearch: 'شستا' },
+  { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری', tsetmcSearch: 'تاپیکو' },
+  { symbol: 'وساپا', name: 'سرمایه گذاری سایپا', sector: 'سرمایه گذاری', tsetmcSearch: 'وساپا' },
+  { symbol: 'وهنر', name: 'سرمایه گذاری هنر', sector: 'سرمایه گذاری', tsetmcSearch: 'وهنر' },
+  { symbol: 'وصندوق', name: 'سرمایه گذاری صندوق بازنشستگی', sector: 'سرمایه گذاری', tsetmcSearch: 'وصندوق' },
+  { symbol: 'سهام', name: 'سرمایه گذاری سهام عدالت', sector: 'سرمایه گذاری', tsetmcSearch: 'سهام' },
+  { symbol: 'وبانوان', name: 'سرمایه گذاری بانوان', sector: 'سرمایه گذاری', tsetmcSearch: 'وبانوان' },
+
+  // انرژی
   { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی', tsetmcSearch: 'رمپنا' },
+  { symbol: 'حفاری', name: 'حفاری شمال', sector: 'انرژی', tsetmcSearch: 'حفاری' },
+  { symbol: 'حفا', name: 'حفاری آریا', sector: 'انرژی', tsetmcSearch: 'حفا' },
+  { symbol: 'نیشکر', name: 'نیشکر هفت تپه', sector: 'انرژی', tsetmcSearch: 'نیشکر' },
+  { symbol: 'مپنا', name: 'مپنا', sector: 'انرژی', tsetmcSearch: 'مپنا' },
+
+  // داروسازی
+  { symbol: 'دالبر', name: 'البرز دارو', sector: 'داروسازی', tsetmcSearch: 'دالبر' },
+  { symbol: 'درخشان', name: 'داروسازی رخشان', sector: 'داروسازی', tsetmcSearch: 'درخشان' },
+  { symbol: 'ددام', name: 'داروسازی ابوریحان', sector: 'داروسازی', tsetmcSearch: 'ددام' },
+  { symbol: 'دپارس', name: 'داروسازی پارس', sector: 'داروسازی', tsetmcSearch: 'دپارس' },
+  { symbol: 'دتولید', name: 'داروسازی تولید دارو', sector: 'داروسازی', tsetmcSearch: 'دتولید' },
+  { symbol: 'دشیمی', name: 'داروسازی شیمی', sector: 'داروسازی', tsetmcSearch: 'دشیمی' },
+  { symbol: 'دعبیدی', name: 'عبیدی', sector: 'داروسازی', tsetmcSearch: 'دعبیدی' },
+  { symbol: 'دزهراوی', name: 'زهراوی', sector: 'داروسازی', tsetmcSearch: 'دزهراوی' },
+
+  // غذایی
+  { symbol: 'غمارگ', name: 'مارگارین', sector: 'غذایی', tsetmcSearch: 'غمارگ' },
+  { symbol: 'غپونه', name: 'پونه', sector: 'غذایی', tsetmcSearch: 'غپونه' },
+  { symbol: 'غشهد', name: 'شهد', sector: 'غذایی', tsetmcSearch: 'غشهد' },
+  { symbol: 'غاذین', name: 'آذراب', sector: 'غذایی', tsetmcSearch: 'غاذین' },
+  { symbol: 'غصین', name: 'صنعتی بهشهر', sector: 'غذایی', tsetmcSearch: 'غصین' },
+  { symbol: 'غگل', name: 'گلستان', sector: 'غذایی', tsetmcSearch: 'غگل' },
+  { symbol: 'غفام', name: 'فامیلی', sector: 'غذایی', tsetmcSearch: 'غفام' },
+  { symbol: 'غزر', name: 'زر ماکارون', sector: 'غذایی', tsetmcSearch: 'غزر' },
+
+  // مخابرات و IT
+  { symbol: 'اخابر', name: 'مخابرات ایران', sector: 'مخابرات', tsetmcSearch: 'اخابر' },
+  { symbol: 'همراه', name: 'همراه اول', sector: 'مخابرات', tsetmcSearch: 'همراه' },
+  { symbol: 'وبانک', name: 'آسیاتک', sector: 'فناوری اطلاعات', tsetmcSearch: 'وبانک' },
+  { symbol: 'فناور', name: 'فناوری اطلاعات and', sector: 'فناوری اطلاعات', tsetmcSearch: 'فناور' },
+
+  // سیمان
+  { symbol: 'سیدکو', name: 'سیمان کردستان', sector: 'سیمان', tsetmcSearch: 'سیدکو' },
+  { symbol: 'سفاس', name: 'سیمان فارس', sector: 'سیمان', tsetmcSearch: 'سفاس' },
+  { symbol: 'ساهور', name: 'سیمان هورامان', sector: 'سیمان', tsetmcSearch: 'ساهور' },
+  { symbol: 'ساروم', name: 'سیمان ارومیه', sector: 'سیمان', tsetmcSearch: 'ساروم' },
+  { symbol: 'سخوز', name: 'سیمان خوزستان', sector: 'سیمان', tsetmcSearch: 'سخوز' },
+
+  // ساختمانی
+  { symbol: 'ثباغ', name: 'باغمیشه', sector: 'ساختمانی', tsetmcSearch: 'ثباغ' },
+  { symbol: 'ثامان', name: 'ساختمانی امید', sector: 'ساختمانی', tsetmcSearch: 'ثامان' },
+  { symbol: 'ثفارس', name: 'عمران فارس', sector: 'ساختمانی', tsetmcSearch: 'ثفارس' },
+  { symbol: 'ثشرق', name: 'عمران شرق', sector: 'ساختمانی', tsetmcSearch: 'ثشرق' },
+
+  // بیمه
+  { symbol: 'بیمه', name: 'بیمه ایران', sector: 'بیمه', tsetmcSearch: 'بیمه' },
+  { symbol: 'وبیمه', name: 'بیمه البرز', sector: 'بیمه', tsetmcSearch: 'وبیمه' },
+  { symbol: 'بیمه‌', name: 'بیمه آسیا', sector: 'بیمه', tsetmcSearch: 'بیمه' },
+
+  // حمل و نقل
+  { symbol: 'حمل', name: 'حمل و نقل', sector: 'حمل و نقل', tsetmcSearch: 'حمل' },
+  { symbol: 'رحوان', name: 'هواپیمایی آسمان', sector: 'حمل و نقل', tsetmcSearch: 'رحوان' },
+  { symbol: 'رخواند', name: 'هواپیمایی ماهان', sector: 'حمل و نقل', tsetmcSearch: 'رخواند' },
+  { symbol: 'ریبیر', name: 'بیمه ری', sector: 'حمل و نقل', tsetmcSearch: 'ریبیر' },
+
+  // شیمیایی
+  { symbol: 'شخارک', name: 'صنایع شیمیایی خارک', sector: 'شیمیایی', tsetmcSearch: 'شخارک' },
+  { symbol: 'شیران', name: 'صنایع شیمیایی ایران', sector: 'شیمیایی', tsetmcSearch: 'شیران' },
+  { symbol: 'شسم', name: 'صنایع شیمیایی سمند', sector: 'شیمیایی', tsetmcSearch: 'شسم' },
+  { symbol: 'شکبیر', name: 'صنایع شیمیایی کبیر', sector: 'شیمیایی', tsetmcSearch: 'شکبیر' },
+
+  // لاستیک و پلاستیک
+  { symbol: 'پکویر', name: 'پلیمر کرمانشاه', sector: 'پلیمر', tsetmcSearch: 'پکویر' },
+  { symbol: 'پلاس', name: 'پلاستیک', sector: 'پلیمر', tsetmcSearch: 'پلاس' },
+
+  // معدنی
+  { symbol: 'کگهر', name: 'گهرزمین', sector: 'معدنی', tsetmcSearch: 'کگهر' },
+  { symbol: 'کچاد', name: 'چادرملو', sector: 'معدنی', tsetmcSearch: 'کچاد' },
+  { symbol: 'کالسیمین', name: 'سیمین', sector: 'معدنی', tsetmcSearch: 'کالسیمین' },
+  { symbol: 'کاو', name: 'کاوه', sector: 'معدنی', tsetmcSearch: 'کاو' },
+
+  // هتل و گردشگری
+  { symbol: 'هتل', name: 'هتل پارسیان', sector: 'گردشگری', tsetmcSearch: 'هتل' },
+  { symbol: 'وآوا', name: 'آوا', sector: 'گردشگری', tsetmcSearch: 'وآوا' },
+
+  // سایر
+  { symbol: 'ونیکی', name: 'نیکی', sector: 'سایر', tsetmcSearch: 'ونیکی' },
 ]
 
 export type PriceMap = Record<string, { price: number; currency: string; change?: number }>
