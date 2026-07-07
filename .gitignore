@@ -23,3 +23,5 @@ pnpm-lock.yaml
 
 .env.vercel
 .env.vercel.*
+# temp scripts
+*.mjs

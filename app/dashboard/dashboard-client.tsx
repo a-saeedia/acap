@@ -79,7 +79,7 @@ export function DashboardClient() {
 
   useEffect(() => {
     if (!dashData) return
-    getMyReferralStats().then(setReferralStats).catch(() => {})
+    getMyReferralStats().then(setReferralStats)
   }, [dashData])
 
   if (isPending || loading) return (
@@ -387,11 +387,18 @@ export function DashboardClient() {
                       {btn.label}
                     </button>
                   ))}
-                  {referralStats && (
-                    <div className="col-span-2">
+                  <div className="col-span-2">
+                    {referralStats ? (
                       <ReferralCard stats={referralStats} />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="glass border border-border rounded-2xl p-5 text-center">
+                        <p className="text-sm text-muted-foreground mb-3">لینک معرف شما آماده نمایش نیست</p>
+                        <button onClick={() => getMyReferralStats().then(setReferralStats)} className="px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded-xl text-sm font-bold transition-colors">
+                          بارگذاری مجدد
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             </div>

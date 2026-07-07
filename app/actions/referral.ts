@@ -34,33 +34,38 @@ export async function ensureReferralCode(): Promise<string> {
 }
 
 export async function getMyReferralStats() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error('Unauthorized')
-  const profiles = await db.select().from(userProfile).where(eq(userProfile.userId, session.user.id)).limit(1)
-  const profile = profiles[0]
-  if (!profile) throw new Error('Profile not found')
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return null
+    const profiles = await db.select().from(userProfile).where(eq(userProfile.userId, session.user.id)).limit(1)
+    const profile = profiles[0]
+    if (!profile) return null
 
-  let code = profile.referralCode
-  if (!code) code = await ensureReferralCode()
+    let code = profile.referralCode
+    if (!code) code = await ensureReferralCode()
 
-  const referrals = await db.select().from(referral).where(eq(referral.referrerId, session.user.id)).orderBy(desc(referral.createdAt))
-  const totalInvites = referrals.length
-  const converted = referrals.filter(r => r.status === 'converted').length
+    const referrals = await db.select().from(referral).where(eq(referral.referrerId, session.user.id)).orderBy(desc(referral.createdAt))
+    const totalInvites = referrals.length
+    const converted = referrals.filter(r => r.status === 'converted').length
 
-  let quizCompleted = 0
-  if (totalInvites > 0) {
-    const referredIds = referrals.map(r => r.referredId)
-    const quizResultsData = await db.select({ userId: quizResult.userId }).from(quizResult).where(inArray(quizResult.userId, referredIds))
-    const uniqueQuizTakers = new Set(quizResultsData.map(r => r.userId))
-    quizCompleted = uniqueQuizTakers.size
-  }
+    let quizCompleted = 0
+    if (totalInvites > 0) {
+      const referredIds = referrals.map(r => r.referredId)
+      const quizResultsData = await db.select({ userId: quizResult.userId }).from(quizResult).where(inArray(quizResult.userId, referredIds))
+      const uniqueQuizTakers = new Set(quizResultsData.map(r => r.userId))
+      quizCompleted = uniqueQuizTakers.size
+    }
 
-  return {
-    code,
-    totalInvites,
-    converted,
-    quizCompleted,
-    inviteLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://a-cap.xyz'}?ref=${code}`,
+    return {
+      code,
+      totalInvites,
+      converted,
+      quizCompleted,
+      inviteLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://a-cap.xyz'}?ref=${code}`,
+    }
+  } catch (e) {
+    console.error('getMyReferralStats error:', e)
+    return null
   }
 }
 
