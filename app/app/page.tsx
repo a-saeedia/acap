@@ -8,6 +8,7 @@ import { getMyAssets } from '@/app/actions/assets'
 import { getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
+import { InvitationTab } from '@/components/invitation-tab'
 import {
   Wallet, TrendingUp, Crown, Brain, Shield,
   X, BarChart3, Loader2, HelpCircle, User
@@ -252,16 +253,6 @@ export default function MergedDashboard() {
                 <div className="text-lg font-black" style={{ color: '#888' }}>—</div>
               </div>
             )}
-            {[
-              { label: 'امتیاز ریسک', value: latest ? `${toPersianDigits(latest.score)}/۱۰۰` : '—', color: typeInfo?.color ?? '#888' },
-            ].map((stat, i) => (
-              <div key={stat.label}
-                className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all"
-              >
-                <div className="text-[10px] text-gray-400">{stat.label}</div>
-                <div className="text-lg font-black" style={{ color: stat.color }}>{stat.value}</div>
-              </div>
-            ))}
           </motion.div>
 
           {/* Main Content Grid */}
@@ -428,6 +419,11 @@ export default function MergedDashboard() {
               )}
             </div>
           </div>
+
+          {/* Invitation Tab */}
+          <motion.div variants={itemVariants}>
+            <InvitationTab />
+          </motion.div>
 
           {/* Portfolio Advisor Modal */}
           <AnimatePresence>
