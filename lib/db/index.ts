@@ -7,6 +7,7 @@ export const pool = new Pool({
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
   max: 5,
+  ssl: { rejectUnauthorized: false },
 })
 
 // Warm up pool on first import

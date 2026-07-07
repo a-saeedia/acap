@@ -7,6 +7,20 @@ import { headers } from 'next/headers'
 import { eq, and, desc, inArray, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(key: string, maxRequests = 5, windowMs = 60000): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
+    return true
+  }
+  if (entry.count >= maxRequests) return false
+  entry.count++
+  return true
+}
+
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -137,8 +151,10 @@ export async function getReferralLeaderboard(limit = 10) {
 export async function applyReferralCode(refCode: string) {
   const session = await getSessionOrNull()
   if (!session?.user) throw new Error('لطفاً ابتدا وارد حساب خود شوید')
+  if (!checkRateLimit(`ref:${session.user.id}`)) throw new Error('درخواست بیش از حد. لطفاً یک دقیقه صبر کنید')
 
   const code = refCode.toUpperCase().trim()
+  if (!/^ACAP-[A-Z0-9]{6}$/.test(code)) throw new Error('فرمت کد معرف معتبر نیست')
 
   const referrerProfiles = await db.select().from(userProfile).where(eq(userProfile.referralCode, code)).limit(1)
   if (referrerProfiles.length === 0) throw new Error('کد معرف معتبر نیست')
