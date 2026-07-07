@@ -350,21 +350,12 @@ export function DashboardClient() {
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    {[...quizResults].reverse().slice(0, 3).map((r, i) => {
-                      const t = TYPE_MAP[r.investorType as InvestorKey] ?? TYPE_MAP.balanced
-                      return (
-                        <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/30">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{t.emoji}</span>
-                            <div>
-                              <div className="font-bold text-xs text-foreground">{t.name}</div>
-                              <div className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</div>
-                            </div>
-                          </div>
-                          <div className="font-black text-sm" style={{ color: t.color }}>{r.score}</div>
-                        </div>
-                      )
-                    })}
+                    {[...quizResults].reverse().slice(0, 3).map((r, i) => (
+                      <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/30">
+                        <div className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</div>
+                        <div className="font-black text-sm text-foreground">{r.score}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </motion.div>
