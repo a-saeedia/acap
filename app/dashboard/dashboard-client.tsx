@@ -296,11 +296,10 @@ export function DashboardClient() {
             </motion.div>
           )}
 
-          {/* Profile Stats */}
+          {/* Profile Stats + Personality */}
           <motion.div variants={itemVariants} className="flex items-center gap-2 mb-4 overflow-x-auto pb-0.5">
             {[
               { label: 'تست‌ها', value: quizResults.length, color: '#2979FF' },
-              { label: 'شخصیت', value: typeInfo?.emoji ?? '—', color: typeInfo?.color ?? '#888' },
               { label: 'امتیاز', value: latest ? `${latest.score}` : '—', color: '#10B981' },
               { label: 'موبایل', value: phone ? '✓' : '✗', color: phone ? '#10B981' : '#EF4444' },
             ].map((stat, i) => (
@@ -311,36 +310,26 @@ export function DashboardClient() {
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
               </div>
             ))}
+            {typeInfo && latest && (
+              <div className="glass rounded-xl px-3 py-2 flex items-center gap-2 shrink-0" style={{ border: `1px solid ${typeInfo.color}30` }}>
+                <span className="text-lg">{typeInfo.emoji}</span>
+                <div className="min-w-0">
+                  <div className="text-[10px] text-muted-foreground leading-tight">شخصیت مالی</div>
+                  <div className="text-xs font-black leading-tight" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
+                  <div className="text-[10px] text-muted-foreground leading-tight">ریسک‌پذیری {toPersianDigits(latest.score)}/۱۰۰</div>
+                </div>
+                <div className="w-12">
+                  <div className="h-1 bg-accent rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${latest.score}%`, background: typeInfo.color }} />
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Two Column Content */}
           <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <div className="lg:col-span-2 space-y-3">
-              {typeInfo && latest && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass rounded-2xl p-4 flex items-center gap-3"
-                  style={{ border: `1px solid ${typeInfo.color}30` }}
-                >
-                  <div className="text-3xl">{typeInfo.emoji}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-muted-foreground">شخصیت مالی</div>
-                    <div className="font-black text-base" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
-                    <div className="text-xs text-muted-foreground">ریسک‌پذیری {toPersianDigits(latest.score)}/۱۰۰</div>
-                  </div>
-                  <div className="w-20">
-                    <div className="h-1.5 bg-accent rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${latest.score}%` }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                        className="h-full rounded-full" style={{ background: typeInfo.color }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
