@@ -1,10 +1,10 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { userProfile, referral, subscription, user } from '@/lib/db/schema'
+import { userProfile, referral, subscription, user, quizResult } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, inArray } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 const INVITE_MILESTONES = [
@@ -54,6 +54,15 @@ export async function getMyReferralStats() {
   const totalInvites = referrals.length
   const converted = referrals.filter(r => r.status === 'converted').length
 
+  // Count quiz completions among referred users
+  let quizCompleted = 0
+  if (totalInvites > 0) {
+    const referredIds = referrals.map(r => r.referredId)
+    const quizResultsData = await db.select({ userId: quizResult.userId }).from(quizResult).where(inArray(quizResult.userId, referredIds))
+    const uniqueQuizTakers = new Set(quizResultsData.map(r => r.userId))
+    quizCompleted = uniqueQuizTakers.size
+  }
+
   const sales = converted
   const getTier = (s: number) => {
     if (s <= 10) return { name: 'Partner', commission: 30, key: 'partner' }
@@ -69,6 +78,7 @@ export async function getMyReferralStats() {
     code,
     totalInvites,
     converted,
+    quizCompleted,
     pending: totalInvites - converted,
     tier: getTier(sales),
     referrals,

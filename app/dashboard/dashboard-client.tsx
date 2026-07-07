@@ -10,8 +10,9 @@ import {
   User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
-import { getMyReferralStats, ensureReferralCode } from '@/app/actions/referral'
+import { getMyReferralStats } from '@/app/actions/referral'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
+import { ReferralCard } from '@/components/referral-card'
 import { toPersianDigits } from '@/lib/utils'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
@@ -412,14 +413,9 @@ export function DashboardClient() {
                     </button>
                   ))}
                   {referralStats && (
-                    <button onClick={async () => {
-                      try { await navigator.clipboard.writeText(referralStats.inviteLink); alert(`لینک معرف کپی شد: ${referralStats.inviteLink}`) } catch {}
-                    }}
-                      className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground col-span-2"
-                    >
-                      <User className="w-3 h-3 shrink-0 text-muted-foreground" />
-                      {referralStats.totalInvites > 0 ? `${referralStats.totalInvites} دعوت • ` : ''}{referralStats.tier.name} • {referralStats.code}
-                    </button>
+                    <div className="col-span-2">
+                      <ReferralCard stats={referralStats} />
+                    </div>
                   )}
                 </div>
               </motion.div>

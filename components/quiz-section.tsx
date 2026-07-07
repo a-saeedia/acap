@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { RotateCcw, TrendingUp, Shield, Target, Flame, Loader2 } from 'lucide-react'
 import { saveQuizResult } from '@/app/actions/quiz'
 import { useSession } from '@/lib/auth-client'
+import { ensureReferralCode } from '@/app/actions/referral'
 
 // ─── Question bank — 14 questions across 5 sections ───────────────────────
 // Each option has: { text, risk, emotional, maturity }
@@ -240,6 +241,8 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState<(typeof PERSONALITY_TYPES)[0] | null>(null)
   const [scores, setScores] = useState<ScoreBreakdown>({ risk: 0, emotional: 0, maturity: 0 })
+  const [referralCode, setReferralCode] = useState('')
+  const [copiedRef, setCopiedRef] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const { data: session } = useSession()
 
@@ -272,6 +275,9 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
           investorType: personality.key,
           answers: Object.fromEntries(Object.entries(next).map(([k, v]) => [k, v.risk])),
         }).catch(() => {}).finally(() => setSaving(false))
+        if (session?.user) {
+          ensureReferralCode().then(setReferralCode).catch(() => {})
+        }
       }
     }, 380)
   }
@@ -523,6 +529,31 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
                     <div className="w-2 h-2 rounded-full" style={{ background: result.color }} />
                     سطح ریسک: {result.riskLabel}
                   </div>
+
+                  {/* Referral invite */}
+                  {session?.user && referralCode && (
+                    <div className="glass border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-bold text-foreground">برنامه سفیران A|CAP</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                        لینک اختصاصی تو ساخته شد! هر کی با لینک تو بیاد و بخره، تا ۴۵٪ کمیسیون می‌گیری.
+                      </p>
+                      <div className="flex items-center gap-2 bg-accent/50 rounded-xl p-2.5 border border-border/50 mb-3">
+                        <span className="text-xs font-mono font-bold text-foreground flex-1 truncate direction-ltr">
+                          {`https://a-cap.xyz?ref=${referralCode}`}
+                        </span>
+                        <button onClick={async () => {
+                          try { await navigator.clipboard.writeText(`https://a-cap.xyz?ref=${referralCode}`); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000) } catch {}
+                        }}
+                          className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold transition-colors"
+                        >
+                          {copiedRef ? 'کپی شد ✓' : 'کپی کن'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* CTAs */}
                   <div className="flex flex-col sm:flex-row gap-3">
