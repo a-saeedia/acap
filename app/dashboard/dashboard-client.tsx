@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { signOut, useSession } from '@/lib/auth-client'
+import { getMyReferralStats, ensureReferralCode } from '@/app/actions/referral'
 import { useState, useEffect } from 'react'
 import { getMyAssets } from '@/app/actions/assets'
 import {
@@ -412,12 +413,7 @@ export function DashboardClient() {
                       {btn.label}
                     </button>
                   ))}
-                  <a href="https://t.me/acapitalsbot?start=ref_3bCj2pqq" target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground col-span-2"
-                  >
-                    <User className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    لینک سفیر
-                  </a>
+                  <ReferralCard />
                 </div>
               </motion.div>
             </div>
@@ -491,6 +487,52 @@ export function DashboardClient() {
         </AnimatePresence>
       </main>
     </div>
+  )
+}
+
+function ReferralCard() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    getMyReferralStats().then(d => setData(d)).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const handleCopy = () => {
+    if (!data?.code) return
+    navigator.clipboard.writeText(data.inviteLink).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
+
+  if (loading) return <div className="col-span-2 py-3 text-center text-xs text-muted-foreground">...</div>
+  if (!data) return null
+
+  const tierColors: Record<string, string> = { partner: '#CD7F32', silver: '#C0C0C0', gold: '#1D9BF0', ambassador: '#6366F1' }
+  const tierColor = tierColors[data.tier.key] || '#888'
+
+  return (
+    <>
+      <button onClick={handleCopy}
+        className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-amber-500/20 hover:border-amber-500/40 transition-all text-sm font-semibold text-amber-400 col-span-2"
+        title="کپی لینک دعوت"
+      >
+        <User className="w-3 h-3 shrink-0" />
+        {copied ? '✓ کپی شد!' : `دعوت دوستان — ${data.totalInvites} نفر`}
+      </button>
+      {data.totalInvites > 0 && (
+        <div className="col-span-2 bg-amber-500/5 border border-amber-500/10 rounded-lg p-2 text-[10px] text-muted-foreground text-center">
+          {data.totalInvites} دعوت · {data.converted} خرید · {data.tier.name} ({data.tier.commission}%)
+        </div>
+      )}
+      {data.nextMilestone && (
+        <div className="col-span-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-[10px] text-emerald-400 text-center font-bold">
+          🎉 تبریک! به {data.nextMilestone.invites} دعوت رسیدید — {data.nextMilestone.reward}
+        </div>
+      )}
+    </>
   )
 }
 

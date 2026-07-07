@@ -206,9 +206,7 @@ export function Footer() {
                 اشتراک ACAP Plus
               </motion.a>
               <motion.a
-                href="https://t.me/acapitalsbot?start=ref_3bCj2pqq"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/#quiz"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className="glass border border-border hover:border-primary/30 text-muted-foreground hover:text-primary py-3 px-4 rounded-xl text-sm font-bold text-center transition-all"

@@ -59,6 +59,8 @@ export const userProfile = pgTable('user_profile', {
   age: integer('age'),
   investmentCapital: bigint('investmentCapital', { mode: 'number' }),
   role: text('role').notNull().default('user'),
+  referralCode: text('referralCode').unique(),
+  referredBy: text('referredBy'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
@@ -85,6 +87,16 @@ export const subscription = pgTable('subscription', {
   scannerActive: boolean('scannerActive').notNull().default(true),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const referral = pgTable('referral', {
+  id: text('id').primaryKey(),
+  referrerId: text('referrerId').notNull(),
+  referredId: text('referredId').notNull(),
+  email: text('email'),
+  status: text('status').notNull().default('active'), // 'active' | 'converted' | 'expired'
+  rewardMilestone: text('rewardMilestone'), // which invite reward milestone was granted
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
 export const suggestion = pgTable('suggestion', {
