@@ -1,18 +1,11 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { userProfile, referral, subscription, user, quizResult } from '@/lib/db/schema'
+import { userProfile, referral, user, quizResult } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { eq, and, desc, inArray } from 'drizzle-orm'
+import { eq, and, desc, inArray, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-
-const INVITE_MILESTONES = [
-  { invites: 5, reward: 'یک هفته اشتراک رایگان', action: 'free_week' },
-  { invites: 10, reward: 'یک ماه اشتراک رایگان', action: 'free_month' },
-  { invites: 20, reward: 'دو ماه اشتراک رایگان', action: 'free_2months' },
-  { invites: 50, reward: 'یک سال اشتراک رایگان ACAP Plus', action: 'free_year' },
-]
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -54,7 +47,6 @@ export async function getMyReferralStats() {
   const totalInvites = referrals.length
   const converted = referrals.filter(r => r.status === 'converted').length
 
-  // Count quiz completions among referred users
   let quizCompleted = 0
   if (totalInvites > 0) {
     const referredIds = referrals.map(r => r.referredId)
@@ -63,26 +55,11 @@ export async function getMyReferralStats() {
     quizCompleted = uniqueQuizTakers.size
   }
 
-  const sales = converted
-  const getTier = (s: number) => {
-    if (s <= 10) return { name: 'Partner', commission: 30, key: 'partner' }
-    if (s <= 50) return { name: 'Silver Partner', commission: 35, key: 'silver' }
-    if (s <= 200) return { name: 'Gold Partner', commission: 40, key: 'gold' }
-    return { name: 'Ambassador', commission: 45, key: 'ambassador' }
-  }
-
-  const grantedMilestones = referrals.filter(r => r.rewardMilestone).map(r => r.rewardMilestone)
-  const nextMilestone = INVITE_MILESTONES.find(m => !grantedMilestones.includes(m.action) && totalInvites >= m.invites)
-
   return {
     code,
     totalInvites,
     converted,
     quizCompleted,
-    pending: totalInvites - converted,
-    tier: getTier(sales),
-    referrals,
-    nextMilestone: nextMilestone ?? null,
     inviteLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://a-cap.xyz'}?ref=${code}`,
   }
 }
@@ -129,27 +106,7 @@ async function requireAdmin() {
 
 export async function markReferralConverted(referralId: string) {
   await requireAdmin()
-
-  const ref = await db.select().from(referral).where(eq(referral.id, referralId)).limit(1)
-  if (ref.length === 0) throw new Error('Referral not found')
-
   await db.update(referral).set({ status: 'converted' }).where(eq(referral.id, referralId))
-
-  const allReferrerRefs = await db.select().from(referral).where(
-    and(eq(referral.referrerId, ref[0].referrerId), eq(referral.status, 'converted'))
-  )
-  const convertedCount = allReferrerRefs.length
-
-  for (const m of INVITE_MILESTONES) {
-    if (convertedCount === m.invites) {
-      const existingSubs = await db.select().from(subscription).where(eq(subscription.userId, ref[0].referrerId)).limit(1)
-      if (existingSubs.length > 0) {
-        await db.update(subscription).set({ acapPlus: true }).where(eq(subscription.userId, ref[0].referrerId))
-      }
-      await db.update(referral).set({ rewardMilestone: m.action }).where(eq(referral.id, referralId))
-      break
-    }
-  }
 }
 
 export async function getAllReferrals() {
@@ -157,21 +114,26 @@ export async function getAllReferrals() {
   return db.select().from(referral).orderBy(desc(referral.createdAt))
 }
 
-export async function getReferralLeaderboard() {
+export async function generateCodesForAllQuizTakers() {
   await requireAdmin()
-  const profiles = await db.select({
-    referralCode: userProfile.referralCode,
-    userId: userProfile.userId,
-  }).from(userProfile)
+  const quizTakers = await db.select({ userId: quizResult.userId }).from(quizResult)
+  const uniqueUserIds = [...new Set(quizTakers.map(q => q.userId).filter(Boolean) as string[])]
 
-  const leaderboard: { userId: string; code: string; count: number }[] = []
-  for (const p of profiles) {
-    if (!p.referralCode) continue
-    const refs = await db.select().from(referral).where(eq(referral.referrerId, p.userId))
-    const converted = refs.filter(r => r.status === 'converted').length
-    if (converted > 0) {
-      leaderboard.push({ userId: p.userId, code: p.referralCode, count: converted })
+  let count = 0
+  for (const userId of uniqueUserIds) {
+    const profiles = await db.select().from(userProfile).where(eq(userProfile.userId, userId)).limit(1)
+    if (profiles.length === 0) continue
+    if (profiles[0].referralCode) continue
+    let code = generateCode()
+    let tries = 0
+    while (tries < 10) {
+      const existing = await db.select().from(userProfile).where(eq(userProfile.referralCode, code)).limit(1)
+      if (existing.length === 0) break
+      code = generateCode()
+      tries++
     }
+    await db.update(userProfile).set({ referralCode: code }).where(eq(userProfile.userId, userId))
+    count++
   }
-  return leaderboard.sort((a, b) => b.count - a.count).slice(0, 20)
+  return count
 }

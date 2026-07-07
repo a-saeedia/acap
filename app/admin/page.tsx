@@ -749,6 +749,8 @@ export default function AdminPage() {
 function AdminReferrals() {
   const [referrals, setReferrals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [genResult, setGenResult] = useState('')
 
   useEffect(() => {
     import('@/app/actions/referral').then(m => m.getAllReferrals()).then(d => { setReferrals(d); setLoading(false) }).catch(() => setLoading(false))
@@ -760,12 +762,42 @@ function AdminReferrals() {
     setReferrals(prev => prev.map(r => r.id === id ? { ...r, status: 'converted' } : r))
   }
 
+  async function generateForAll() {
+    setGenerating(true)
+    setGenResult('')
+    try {
+      const m = await import('@/app/actions/referral')
+      const count = await m.generateCodesForAllQuizTakers()
+      setGenResult(`${count} کد جدید ساخته شد`)
+    } catch(e) {
+      setGenResult('خطا: ' + (e instanceof Error ? e.message : 'unknown'))
+    }
+    setGenerating(false)
+  }
+
   if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+
+  const total = referrals.length
+  const converted = referrals.filter(r => r.status === 'converted').length
+  const pending = total - converted
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">مدیریت معرفی‌ها</h2>
-      <p className="text-sm text-gray-400">{referrals.length} معرفی</p>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">مدیریت معرفی‌ها</h2>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <span>{total} کل</span>
+          <span className="text-emerald-400">{converted} خرید</span>
+          <span className="text-amber-400">{pending} فعال</span>
+        </div>
+      </div>
+
+      <button onClick={generateForAll} disabled={generating}
+        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors">
+        {generating ? 'در حال ساخت...' : 'ساخت کد برای همه تست‌دهندگان'}
+      </button>
+      {genResult && <p className="text-sm text-emerald-400">{genResult}</p>}
+
       <div className="space-y-2">
         {referrals.map(r => (
           <div key={r.id} className="bg-gray-900 p-3 rounded-xl border border-gray-800 flex items-center justify-between">
@@ -773,15 +805,14 @@ function AdminReferrals() {
               <p className="text-sm font-medium">معرف: {r.referrerId.substring(0, 8)}...</p>
               <p className="text-xs text-gray-400">معرفی‌شده: {r.referredId.substring(0, 8)}... • {r.email || '—'}</p>
               <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString('fa-IR')}</p>
-              {r.rewardMilestone && <p className="text-xs text-amber-400">پاداش: {r.rewardMilestone}</p>}
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-1 rounded ${r.status === 'converted' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                {r.status === 'converted' ? 'تبدیل شده' : 'فعال'}
+                {r.status === 'converted' ? 'خرید کرده' : 'فعال'}
               </span>
               {r.status !== 'converted' && (
                 <button onClick={() => markConverted(r.id)} className="text-xs text-emerald-400 hover:text-emerald-300 underline">
-                  تأیید خرید
+                  ثبت خرید
                 </button>
               )}
             </div>

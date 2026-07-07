@@ -75,7 +75,7 @@ export function AboutSection() {
               {[
                 { label: 'بازارهای تحلیل‌شده', value: '۶', sub: 'بازار فعال' },
                 { label: 'نوع شخصیت مالی', value: '۴', sub: 'تیپ سرمایه‌گذار' },
-                { label: 'کمیسیون سفیران', value: '۴۵٪', sub: 'حداکثر' },
+                { label: 'برنامه سفیران', value: 'فعال', sub: 'لینک اختصاصی' },
                 { label: 'اشتراک پریمیوم', value: 'Plus', sub: 'ACAP' },
               ].map((stat, i) => (
                 <motion.div

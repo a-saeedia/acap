@@ -535,12 +535,12 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
                     <div className="glass border border-border rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <TrendingUp className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-bold text-foreground">برنامه سفیران A|CAP</span>
+                        <span className="text-xs font-bold text-foreground">کد معرف اختصاصی تو</span>
                       </div>
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                        لینک اختصاصی تو ساخته شد! هر کی با لینک تو بیاد و بخره، تا ۴۵٪ کمیسیون می‌گیری.
+                        لینک اختصاصی تو ساخته شد. هر کی با این لینک بیاد، توی لیست معرفی‌های تو ثبت می‌شه.
                       </p>
-                      <div className="flex items-center gap-2 bg-accent/50 rounded-xl p-2.5 border border-border/50 mb-3">
+                      <div className="flex items-center gap-2 bg-accent/50 rounded-xl p-2.5 border border-border/50">
                         <span className="text-xs font-mono font-bold text-foreground flex-1 truncate direction-ltr">
                           {`https://a-cap.xyz?ref=${referralCode}`}
                         </span>
