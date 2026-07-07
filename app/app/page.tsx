@@ -216,8 +216,6 @@ export default function MergedDashboard() {
             {[
               { label: 'ارزش کل', value: hasAssets ? formatToman(totalValue) : '—', color: '#10B981', icon: Wallet },
               { label: 'سود/زیان', value: hasAssets ? `${profit >= 0 ? '+' : ''}${formatToman(profit)}` : '—', color: profit >= 0 ? '#10B981' : '#EF4444', icon: TrendingUp },
-              { label: 'شخصیت مالی', value: typeInfo ? typeInfo.emoji : '—', color: typeInfo?.color ?? '#888' },
-              { label: 'امتیاز ریسک', value: latest ? `${toPersianDigits(latest.score)}/۱۰۰` : '—', color: typeInfo?.color ?? '#888' },
             ].map((stat, i) => (
               <div key={stat.label}
                 className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all"
@@ -226,6 +224,41 @@ export default function MergedDashboard() {
                   {'icon' in stat && stat.icon && <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />}
                   <span className="text-[10px] text-gray-400">{stat.label}</span>
                 </div>
+                <div className="text-lg font-black" style={{ color: stat.color }}>{stat.value}</div>
+              </div>
+            ))}
+            {typeInfo && latest ? (
+              <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 flex items-center gap-3 col-span-2 md:col-span-1 hover:border-white/[0.15] transition-all">
+                <span className="text-2xl">{typeInfo.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-gray-400">شخصیت مالی</div>
+                  <div className="font-black text-sm" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
+                  <div className="text-[10px] text-gray-400">ریسک‌پذیری {toPersianDigits(latest.score)}/۱۰۰</div>
+                </div>
+                <div className="w-12 shrink-0">
+                  <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${latest.score}%`, background: typeInfo.color }} />
+                  </div>
+                </div>
+                <button onClick={() => router.push('/#quiz')}
+                  className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold shrink-0 border border-blue-500/20 rounded-lg px-2 py-1"
+                >
+                  تست مجدد
+                </button>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all">
+                <span className="text-[10px] text-gray-400">شخصیت مالی</span>
+                <div className="text-lg font-black" style={{ color: '#888' }}>—</div>
+              </div>
+            )}
+            {[
+              { label: 'امتیاز ریسک', value: latest ? `${toPersianDigits(latest.score)}/۱۰۰` : '—', color: typeInfo?.color ?? '#888' },
+            ].map((stat, i) => (
+              <div key={stat.label}
+                className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all"
+              >
+                <div className="text-[10px] text-gray-400">{stat.label}</div>
                 <div className="text-lg font-black" style={{ color: stat.color }}>{stat.value}</div>
               </div>
             ))}
@@ -340,36 +373,6 @@ export default function MergedDashboard() {
                 )}
               </motion.div>
 
-              {typeInfo && latest && (
-                <motion.div variants={itemVariants}
-                  className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 flex items-center gap-4"
-                >
-                  <div className="text-3xl">{typeInfo.emoji}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] text-gray-400">شخصیت مالی شما</div>
-                    <div className="font-black text-base" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-gray-400">امتیاز ریسک‌پذیری:</span>
-                      <span className="text-xs font-bold text-white">{toPersianDigits(latest.score)}/۱۰۰</span>
-                    </div>
-                  </div>
-                  <div className="w-16 shrink-0">
-                    <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${latest.score}%` }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                        className="h-full rounded-full" style={{ background: typeInfo.color }}
-                      />
-                    </div>
-                  </div>
-                  <button onClick={() => router.push('/#quiz')}
-                    className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold shrink-0 border border-blue-500/20 rounded-lg px-2 py-1"
-                  >
-                    تست مجدد
-                  </button>
-                </motion.div>
-              )}
             </div>
 
             {/* Right column */}
