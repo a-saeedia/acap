@@ -7,7 +7,6 @@ import { useSession } from '@/lib/auth-client'
 import { AdminSettings } from '@/components/admin/admin-settings'
 import { AdminComments } from '@/components/admin/admin-comments'
 import { AdminTasks } from '@/components/admin/admin-tasks'
-import { getAllReferrals, getReferralLeaderboard, markReferralConverted } from '@/app/actions/referral'
 import { Loader2, Plus, Edit3, Trash2, X } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 
@@ -17,7 +16,7 @@ type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
 export default function AdminPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests' | 'settings' | 'comments' | 'tasks' | 'referrals'>('users')
+  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests' | 'settings' | 'comments' | 'tasks'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -320,10 +319,7 @@ export default function AdminPage() {
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'tasks' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             وظایف
           </button>
-          <button onClick={() => setTab('referrals')}
-            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'referrals' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
-            معرفی‌ها
-          </button>
+
           <a href="/api/export-csv" download
             className="px-4 py-2 rounded-lg text-sm whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-colors">
             خروجی CSV
@@ -740,7 +736,6 @@ export default function AdminPage() {
         {tab === 'settings' && <AdminSettings />}
         {tab === 'comments' && <AdminComments />}
         {tab === 'tasks' && <AdminTasks />}
-        {tab === 'referrals' && <AdminReferrals />}
       </div>
     </div>
   )
@@ -1635,154 +1630,3 @@ function AdminAnalytics() {
   )
 }
 
-function AdminReferrals() {
-  const [referrals, setReferrals] = useState<any[]>([])
-  const [leaderboard, setLeaderboard] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [converting, setConverting] = useState<string | null>(null)
-  const [usersMap, setUsersMap] = useState<Record<string, { name: string; email: string }>>({})
-
-  const load = useCallback(async () => {
-    const [refs, board, users] = await Promise.all([
-      getAllReferrals(),
-      getReferralLeaderboard(),
-      getUsers(),
-    ])
-    setReferrals(refs)
-    setLeaderboard(board)
-    setUsersMap(Object.fromEntries(users.map(u => [u.id, { name: u.name, email: u.email }])))
-  }, [])
-
-  useEffect(() => { load().catch(() => {}).finally(() => setLoading(false)) }, [load])
-
-  const totalReferrals = referrals.length
-  const converted = referrals.filter(r => r.status === 'converted').length
-  const pending = referrals.filter(r => r.status === 'active').length
-
-  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
-
-  const statusLabels: Record<string, string> = { active: 'فعال', converted: 'تبدیل شده', expired: 'منقضی شده' }
-  const statusColors: Record<string, string> = { active: 'text-amber-400 bg-amber-500/10', converted: 'text-emerald-400 bg-emerald-500/10', expired: 'text-red-400 bg-red-500/10' }
-
-  return (
-    <div dir="rtl" className="space-y-4">
-      {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
-          <div className="text-xl font-black text-amber-400">{totalReferrals}</div>
-          <div className="text-xs text-gray-500 mt-0.5">کل معرفی‌ها</div>
-        </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
-          <div className="text-xl font-black text-emerald-400">{converted}</div>
-          <div className="text-xs text-gray-500 mt-0.5">تبدیل شده</div>
-        </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
-          <div className="text-xl font-black text-blue-400">{totalReferrals > 0 ? Math.round((converted / totalReferrals) * 100) : 0}%</div>
-          <div className="text-xs text-gray-500 mt-0.5">نرخ تبدیل</div>
-        </div>
-      </div>
-
-      {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-800">
-            <h3 className="text-sm font-bold">برترین معرفی‌کنندگان</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
-                  <th className="text-right py-3 px-3">#</th>
-                  <th className="text-right py-3 px-3">کاربر</th>
-                  <th className="text-right py-3 px-3">کد</th>
-                  <th className="text-right py-3 px-3">تعداد</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.map((entry, i) => {
-                  const u = usersMap[entry.userId]
-                  return (
-                    <tr key={entry.userId} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="py-2.5 px-3">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-400' : i === 1 ? 'bg-gray-400/20 text-gray-300' : i === 2 ? 'bg-amber-700/20 text-amber-600' : 'text-gray-500'}`}>
-                          {i + 1}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 font-medium text-xs max-w-[200px] truncate">{u?.name ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-xs text-gray-400">{entry.code}</td>
-                      <td className="py-2.5 px-3 font-bold text-amber-400">{entry.count}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Referrals list */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-          <h3 className="text-sm font-bold">لیست معرفی‌ها</h3>
-          <span className="text-xs text-gray-500">{pending} مورد نیاز به بررسی</span>
-        </div>
-        {referrals.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">هیچ معرفی‌ای ثبت نشده است</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
-                  <th className="text-right py-3 px-3">معرفی‌کننده</th>
-                  <th className="text-right py-3 px-3">معرفی‌شده</th>
-                  <th className="text-right py-3 px-3">ایمیل</th>
-                  <th className="text-right py-3 px-3">وضعیت</th>
-                  <th className="text-right py-3 px-3">پاداش</th>
-                  <th className="text-right py-3 px-3">تاریخ</th>
-                  <th className="text-right py-3 px-3">عملیات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {referrals.map(ref => {
-                  const referrer = usersMap[ref.referrerId]
-                  const referred = usersMap[ref.referredId]
-                  return (
-                    <tr key={ref.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="py-2.5 px-3 font-medium text-xs max-w-[150px] truncate">{referrer?.name ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-xs max-w-[150px] truncate">{referred?.name ?? '—'}</td>
-                      <td className="py-2.5 px-3 text-xs text-gray-400 max-w-[180px] truncate">{ref.email || '—'}</td>
-                      <td className="py-2.5 px-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[ref.status] || 'text-gray-400 bg-gray-800'}`}>
-                          {statusLabels[ref.status] || ref.status}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-xs text-gray-400">{ref.rewardMilestone || '—'}</td>
-                      <td className="py-2.5 px-3 text-xs text-gray-500">{new Date(ref.createdAt).toLocaleDateString('fa-IR')}</td>
-                      <td className="py-2.5 px-3">
-                        {ref.status === 'active' ? (
-                          <button onClick={async () => {
-                            setConverting(ref.id)
-                            try {
-                              await markReferralConverted(ref.id)
-                              await load()
-                            } catch (e) { console.error(e) }
-                            setConverting(null)
-                          }} disabled={converting === ref.id}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-xs font-bold transition-colors">
-                            {converting === ref.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'تأیید خرید'}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-600">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}

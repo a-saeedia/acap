@@ -37,6 +37,36 @@
 
 ---
 
+### Session 2 — AI chat position fix + Plus gate removal + Referral revert
+
+**Problem 1: AI chat icon positioned on right instead of left**
+- `components/ai-support.tsx`: button had `fixed bottom-4 right-4`, chat window had `fixed bottom-20 right-4`
+- Fix: Changed both to `left-4` instead of `right-4`
+
+**Problem 2: Portfolio Dashboard gated behind A|CAP+ subscription**
+- `components/portfolio-dashboard.tsx` had `!isPlus` gate (lines 426-486) blocking all non-plus users
+- `app/app/assets/page.tsx` fetched subscription data to set `isPlus` prop
+- User was plus but still seeing the gate (possibly stale DB data, or returning user whose subscription record had issues)
+- Fix: Removed the `!isPlus` gate entirely from `PortfolioDashboard`, removed `isPlus` prop from the component and its parent page
+
+**Problem 3: Referral system + blank pages + DB schema mismatch from Session 1**
+- Session 1 added `referralCode`/`referredBy` columns to `user_profile`, new `referral` table, and migration `0002_wild_killer_shrike`
+- The migration was NEVER applied to production DB (ECONNREFUSED from dev machine), so DB schema still matched pre-referral state
+- This caused errors retrying endlessly in the background, making summary page blank and site slow
+- **Fix:** Reverted all referral additions:
+  - Deleted `app/actions/referral.ts`
+  - Removed `referralCode`/`referredBy` columns from `user_profile` schema, removed `referral` table
+  - Removed referall code import, state, useEffect, signup handling from `auth-modal.tsx`
+  - Deleted migration snapshot `0002_snapshot.json` and journal entry
+  - Removed admin referral tab from `app/admin/page.tsx`
+  - Restored Telegram/Bale bot links in `components/ambassador-section.tsx` and footer
+- Build verified: `npm run build` compiles successfully (16.3s)
+- Schema now matches production DB exactly
+
+**Commit:** `main` — "revert: remove referral system, restore bot links, fix schema mismatch"
+
+---
+
 ### Key Architecture Notes
 - Better Auth manages `user` table; `role` property not on session user — admin checks query DB user table
 - Payments handled manually via admin panel (toggle A|CAP+), no payment gateway yet

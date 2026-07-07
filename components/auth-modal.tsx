@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react'
 import { signIn, signUp } from '@/lib/auth-client'
 import { saveProfile } from '@/app/actions/profile'
-import { applyReferralCode } from '@/app/actions/referral'
 import { useRouter } from 'next/navigation'
 
 type Mode = 'sign-in' | 'sign-up' | 'forgot-password'
@@ -27,14 +26,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [referralCode, setReferralCode] = useState('')
   const router = useRouter()
-
-  useEffect(() => {
-    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-    const ref = params.get('ref')
-    if (ref) setReferralCode(ref.toUpperCase())
-  }, [])
 
   const reset = () => {
     setError(''); setLoading(false); setSent(false)
@@ -76,9 +68,6 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
       return
     }
     try { await saveProfile({ phone }) } catch (e) { console.error('saveProfile after signup:', e) }
-    if (referralCode.trim()) {
-      try { await applyReferralCode(referralCode.trim()) } catch (e) { console.error('applyReferralCode:', e) }
-    }
     reset(); onClose()
     router.push('/dashboard')
   }
@@ -180,7 +169,6 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                       <input value={name} onChange={e => setName(e.target.value)} placeholder="نام و نام خانوادگی *" autoComplete="name" className="input-field w-full" />
                       <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="شماره موبایل *" type="tel" autoComplete="tel" className="input-field w-full" />
                       {phone && !validatePhone(phone) && <p className="text-xs text-red-400">شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد</p>}
-                      <input value={referralCode} onChange={e => setReferralCode(e.target.value.toUpperCase())} placeholder="کد معرف (اختیاری)" className="input-field w-full text-left dir-ltr" />
                     </>
                   )}
                   <input value={email} onChange={e => setEmail(e.target.value)} placeholder="ایمیل *" type="email" autoComplete={mode === 'sign-in' ? 'email' : 'email'} className="input-field w-full" />
