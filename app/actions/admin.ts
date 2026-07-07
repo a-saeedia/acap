@@ -285,7 +285,8 @@ export async function getSignals() {
 export async function createSignal(data: {
   type: string; symbol: string; title: string; description?: string
   action: string; investorType?: string; expectedProfit?: number
-  priceAtPublish: number; expiresAt?: string
+  actualReturn?: number; priceAtPublish: number; priceNow?: number
+  expiresAt?: string; publishedAt?: string
 }) {
   await requireAdmin()
   await db.insert(signal).values({
@@ -297,16 +298,19 @@ export async function createSignal(data: {
     action: data.action,
     investorType: data.investorType || null,
     expectedProfit: data.expectedProfit || null,
+    actualReturn: data.actualReturn || null,
     priceAtPublish: data.priceAtPublish,
+    priceNow: data.priceNow || null,
     expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-    publishedAt: new Date(),
+    publishedAt: data.publishedAt ? new Date(data.publishedAt) : new Date(),
   })
 }
 
 export async function updateSignal(id: string, data: {
   type?: string; symbol?: string; title?: string; description?: string
   action?: string; investorType?: string; expectedProfit?: number
-  priceAtPublish?: number; expiresAt?: string | null
+  actualReturn?: number; priceAtPublish?: number; priceNow?: number
+  expiresAt?: string | null; publishedAt?: string | null
 }) {
   await requireAdmin()
   const updateData: any = {}
@@ -317,9 +321,39 @@ export async function updateSignal(id: string, data: {
   if (data.action !== undefined) updateData.action = data.action
   if (data.investorType !== undefined) updateData.investorType = data.investorType
   if (data.expectedProfit !== undefined) updateData.expectedProfit = data.expectedProfit
+  if (data.actualReturn !== undefined) updateData.actualReturn = data.actualReturn
   if (data.priceAtPublish !== undefined) updateData.priceAtPublish = data.priceAtPublish
+  if (data.priceNow !== undefined) updateData.priceNow = data.priceNow
   if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
+  if (data.publishedAt !== undefined) updateData.publishedAt = data.publishedAt ? new Date(data.publishedAt) : null
   await db.update(signal).set(updateData).where(eq(signal.id, id))
+}
+
+export async function recalculateSignalReturn(id: string) {
+  await requireAdmin()
+  const sigs = await db.select().from(signal).where(eq(signal.id, id)).limit(1)
+  const s = sigs[0]
+  if (!s || !s.priceAtPublish) throw new Error('Signal not found or no price')
+
+  let currentPrice = s.priceNow || s.priceAtPublish
+  try {
+    if (s.type === 'crypto') {
+      const coinMap: Record<string, string> = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'XRP': 'ripple', 'ADA': 'cardano', 'DOGE': 'dogecoin', 'TRX': 'tron', 'BNB': 'bnb', 'USDT': 'tether', 'USDC': 'usd-coin' }
+      const geckoId = coinMap[s.symbol.toUpperCase()]
+      if (geckoId) {
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`)
+        const json = await res.json()
+        if (json[geckoId]?.usd) currentPrice = json[geckoId].usd
+      }
+    }
+  } catch {}
+
+  const actualReturn = currentPrice > 0 && s.priceAtPublish > 0
+    ? Math.round(((currentPrice - s.priceAtPublish) / s.priceAtPublish) * 10000) / 100
+    : null
+
+  await db.update(signal).set({ actualReturn, priceNow: currentPrice }).where(eq(signal.id, id))
+  return { actualReturn, priceNow: currentPrice }
 }
 
 export async function deleteSignal(id: string) {

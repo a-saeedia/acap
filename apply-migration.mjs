@@ -1,27 +1,39 @@
-import { readFileSync } from 'fs';
-import { Pool } from 'pg';
+import pg from 'pg'
+import { readFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-const pool = new Pool({ connectionString: 'postgresql://neondb_owner:npg_7cDmedLMV9TH@ep-cool-rice-ad08tjh2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require' });
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const envPath = resolve(__dirname, '.env.local')
+const envContent = readFileSync(envPath, 'utf-8')
+for (const line of envContent.split('\n')) {
+  const trimmed = line.trim()
+  if (!trimmed || trimmed.startsWith('#')) continue
+  const eqIdx = trimmed.indexOf('=')
+  if (eqIdx === -1) continue
+  const key = trimmed.slice(0, eqIdx)
+  let value = trimmed.slice(eqIdx + 1)
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1)
+  }
+  process.env[key] = value
+}
+
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+const client = await pool.connect()
 
 try {
-  const sql = readFileSync('drizzle/0003_jittery_mother_askani.sql', 'utf-8');
-  const statements = sql.split('--> statement-breakpoint').map(s => s.trim()).filter(Boolean);
-
+  const sql = readFileSync(resolve(__dirname, 'drizzle/0004_optimal_christian_walker.sql'), 'utf-8')
+  const statements = sql.split('--> statement-breakpoint').map(s => s.trim()).filter(Boolean)
   for (const stmt of statements) {
-    console.log('Executing:', stmt.substring(0, 80) + '...');
-    try {
-      await pool.query(stmt);
-      console.log('  OK');
-    } catch(e) {
-      if (e.message.includes('already exists')) {
-        console.log('  Skipped (already exists)');
-      } else {
-        throw e;
-      }
-    }
+    console.log('Executing:', stmt.slice(0, 80))
+    await client.query(stmt)
   }
-  console.log('\nMigration 0003 applied!');
-} catch(e) {
-  console.error('Error:', e.message);
+  console.log('Migration 0004 applied successfully')
+} catch (e) {
+  console.error('Migration failed:', e.message)
+} finally {
+  client.release()
+  await pool.end()
 }
-await pool.end();

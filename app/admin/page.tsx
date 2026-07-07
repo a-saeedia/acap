@@ -1236,7 +1236,7 @@ function AdminSignals() {
   const [showSignalForm, setShowSignalForm] = useState(false)
   const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
   const [editSignalId, setEditSignalId] = useState<string | null>(null)
-  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', priceAtPublish: '', expiresAt: '' })
+  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', expiresAt: '', publishedAt: '' })
   const [signalSaving, setSignalSaving] = useState(false)
 
   // Revenue form
@@ -1258,10 +1258,10 @@ function AdminSignals() {
   function openSignalForm(s?: any) {
     if (s) {
       setSignalFormMode('edit'); setEditSignalId(s.id)
-      setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', expiresAt: s.expiresAt ? new Date(s.expiresAt).toISOString().slice(0, 16) : '' })
+      setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', expiresAt: s.expiresAt ? new Date(s.expiresAt).toISOString().slice(0, 16) : '', publishedAt: s.publishedAt ? new Date(s.publishedAt).toISOString().slice(0, 16) : '' })
     } else {
       setSignalFormMode('create'); setEditSignalId(null)
-      setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', priceAtPublish: '', expiresAt: '' })
+      setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', expiresAt: '', publishedAt: '' })
     }
     setShowSignalForm(true)
   }
@@ -1282,7 +1282,16 @@ function AdminSignals() {
     setSignalSaving(true)
     try {
       const m = await import('@/app/actions/admin')
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), expiresAt: sf.expiresAt || undefined }
+      const data = {
+        type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined,
+        action: sf.action, investorType: sf.investorType || undefined,
+        expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined,
+        actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined,
+        priceAtPublish: parseFloat(sf.priceAtPublish),
+        priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined,
+        expiresAt: sf.expiresAt || undefined,
+        publishedAt: sf.publishedAt || undefined,
+      }
       if (signalFormMode === 'create') await m.createSignal(data)
       else if (editSignalId) await m.updateSignal(editSignalId, data)
       setShowSignalForm(false)
@@ -1358,9 +1367,16 @@ function AdminSignals() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <input value={sf.expectedProfit} onChange={e => setSf(p => ({ ...p, expectedProfit: e.target.value }))} placeholder="درصد سود مورد انتظار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
-            <input value={sf.priceAtPublish} onChange={e => setSf(p => ({ ...p, priceAtPublish: e.target.value }))} placeholder="قیمت در زمان انتشار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <input value={sf.actualReturn} onChange={e => setSf(p => ({ ...p, actualReturn: e.target.value }))} placeholder="بازده واقعی (محاسبه خودکار)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
           </div>
-          <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} type="datetime-local" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={sf.priceAtPublish} onChange={e => setSf(p => ({ ...p, priceAtPublish: e.target.value }))} placeholder="قیمت در زمان انتشار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <input value={sf.priceNow} onChange={e => setSf(p => ({ ...p, priceNow: e.target.value }))} placeholder="قیمت فعلی" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))} type="datetime-local" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} type="datetime-local" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          </div>
           <button onClick={saveSignal} disabled={signalSaving}
             className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors disabled:opacity-50">
             {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}
@@ -1425,33 +1441,55 @@ function AdminSignals() {
               <thead>
                 <tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">
                   <th className="text-right py-3 px-3">عنوان</th>
-                  <th className="text-right py-3 px-3">نماد</th>
-                  <th className="text-right py-3 px-3">نوع</th>
-                  <th className="text-right py-3 px-3">اقدام</th>
-                  <th className="text-right py-3 px-3">سود مورد انتظار</th>
-                  <th className="text-right py-3 px-3">قیمت</th>
-                  <th className="text-right py-3 px-3">تاریخ</th>
+                  <th className="text-right py-3 px-3">سود هدف</th>
+                  <th className="text-right py-3 px-3">بازده واقعی</th>
+                  <th className="text-right py-3 px-3">قیمت انتشار</th>
+                  <th className="text-right py-3 px-3">تاریخ انتشار</th>
                   <th className="text-right py-3 px-3">عملیات</th>
                 </tr>
               </thead>
               <tbody>
-                {signals.map(s => (
-                  <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="py-2.5 px-3 font-medium text-sm max-w-[150px] truncate">{s.title}</td>
-                    <td className="py-2.5 px-3 text-gray-400 text-xs">{s.symbol}</td>
-                    <td className="py-2.5 px-3 text-xs">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</td>
-                    <td className="py-2.5 px-3"><span className={`text-xs px-2 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span></td>
-                    <td className="py-2.5 px-3 text-xs">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</td>
-                    <td className="py-2.5 px-3 text-xs">{Number(s.priceAtPublish).toLocaleString()}</td>
-                    <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}</td>
-                    <td className="py-2.5 px-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
-                        <button onClick={() => deleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {signals.map(s => {
+                  const actualOk = s.actualReturn !== null && s.actualReturn !== undefined
+                  return (
+                    <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                      <td className="py-2.5 px-3">
+                        <div className="font-medium text-sm">{s.title}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-gray-500">{s.symbol}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span>
+                          <span className="text-[10px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="text-sm font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {actualOk ? (
+                          <span className={`text-sm font-bold ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {s.actualReturn >= 0 ? '+' : ''}{s.actualReturn}%
+                          </span>
+                        ) : (
+                          <button onClick={async () => {
+                            const m = await import('@/app/actions/admin')
+                            await m.recalculateSignalReturn(s.id)
+                            await load()
+                          }} className="text-xs text-gray-500 hover:text-blue-400 underline">
+                            محاسبه
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-gray-400 font-mono">{Number(s.priceAtPublish).toLocaleString()}</td>
+                      <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}{s.expiresAt ? ` → ${new Date(s.expiresAt).toLocaleDateString('fa-IR')}` : ''}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex gap-1">
+                          <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                          <button onClick={() => deleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
