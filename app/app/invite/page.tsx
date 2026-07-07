@@ -12,10 +12,10 @@ export default function InvitePage() {
         className="space-y-4"
       >
         <div className="mb-2">
-          <h1 className="text-xl sm:text-2xl font-black text-white">
+          <h1 className="text-xl sm:text-2xl font-black text-foreground">
             دعوت از دوستان
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             دوستان خود را به A|CAP دعوت کنید و پاداش بگیرید
           </p>
         </div>

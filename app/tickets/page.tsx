@@ -64,24 +64,24 @@ export default function TicketsPage() {
 
   if (isPending) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   )
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto p-4 md:p-8">
         <h1 className="text-2xl md:text-3xl font-black mb-6">تیکت‌های پشتیبانی</h1>
 
         <div className="flex gap-2 mb-8">
           <input value={subject} onChange={e => setSubject(e.target.value)}
             placeholder="موضوع تیکت جدید..."
-            className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 text-sm"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 text-sm"
             onKeyDown={e => e.key === 'Enter' && handleCreate()}
           />
           <button onClick={handleCreate} disabled={sending || !subject.trim()}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-sm font-bold transition-colors"
+            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-sm font-bold transition-colors"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             ایجاد تیکت
@@ -96,25 +96,25 @@ export default function TicketsPage() {
                 {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-gray-800/50 animate-pulse" />)}
               </div>
             ) : tickets.length === 0 ? (
-              <div className="text-center py-12 bg-gray-900/50 border border-gray-800 rounded-2xl">
-                <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-                <p className="text-gray-400 text-sm">تیکتی وجود ندارد</p>
-                <p className="text-gray-600 text-xs mt-1">با نوشتن موضوع تیکت جدید، اولین تیکت را ایجاد کنید</p>
+              <div className="text-center py-12 bg-card border border-border rounded-2xl">
+                <MessageSquare className="w-10 h-10 mx-auto mb-3 text-muted-foreground/70" />
+                <p className="text-muted-foreground text-sm">تیکتی وجود ندارد</p>
+                <p className="text-muted-foreground/70 text-xs mt-1">با نوشتن موضوع تیکت جدید، اولین تیکت را ایجاد کنید</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {tickets.map(t => (
                   <div key={t.id} onClick={() => openTicket(t.id)}
                     className={`p-3.5 rounded-xl cursor-pointer border transition-all ${
-                      selected === t.id ? 'bg-blue-600/15 border-blue-500/30' : 'bg-gray-900/60 border-gray-800 hover:border-gray-700'
+                      selected === t.id ? 'bg-primary/15 border-primary/30' : 'bg-card border-border hover:border-border'
                     }`}
                   >
                     <p className="font-semibold text-sm">{t.subject}</p>
                     <p className="text-xs mt-1">
-                      <span className={`${t.status === 'open' ? 'text-emerald-400' : 'text-gray-500'}`}>
+                        <span className={`${t.status === 'open' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                         {t.status === 'open' ? 'باز' : 'بسته شده'}
                       </span>
-                      <span className="text-gray-600 mr-2">{new Date(t.createdAt).toLocaleDateString('fa-IR')}</span>
+                      <span className="text-muted-foreground/70 mr-2">{new Date(t.createdAt).toLocaleDateString('fa-IR')}</span>
                     </p>
                   </div>
                 ))}
@@ -128,14 +128,14 @@ export default function TicketsPage() {
                 <h2 className="text-lg font-bold mb-3">پیام‌ها</h2>
                 {loadingMsgs ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
                   <div className="space-y-3 mb-4">
                     {msgs.map(m => (
-                      <div key={m.id} className="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5">
+                      <div key={m.id} className="bg-card border border-border rounded-xl p-3.5">
                         <p className="text-sm leading-relaxed">{m.message}</p>
-                        <p className="text-xs text-gray-600 mt-2">{new Date(m.createdAt).toLocaleString('fa-IR')}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-2">{new Date(m.createdAt).toLocaleString('fa-IR')}</p>
                       </div>
                     ))}
                   </div>
@@ -143,11 +143,11 @@ export default function TicketsPage() {
                 <div className="flex gap-2">
                   <input value={newMsg} onChange={e => setNewMsg(e.target.value)}
                     placeholder="پیام شما..."
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 text-sm"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 text-sm"
                     onKeyDown={e => e.key === 'Enter' && handleReply()}
                   />
                   <button onClick={handleReply} disabled={sending || !newMsg.trim()}
-                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-sm font-bold transition-colors"
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-sm font-bold transition-colors"
                   >
                     {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     ارسال
@@ -156,7 +156,7 @@ export default function TicketsPage() {
               </>
             )}
             {!selected && !loading && tickets.length > 0 && (
-              <div className="text-center py-16 text-gray-500 text-sm">
+              <div className="text-center py-16 text-muted-foreground text-sm">
                 یک تیکت را برای مشاهده پیام‌ها انتخاب کنید
               </div>
             )}

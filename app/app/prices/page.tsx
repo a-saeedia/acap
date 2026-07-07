@@ -92,7 +92,7 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
     >
       <div className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))' }} />
-      <div className="relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all duration-300 hover:-translate-y-0.5">
+      <div className="relative bg-card backdrop-blur-xl border border-border rounded-2xl p-4 hover:border-primary/30 transition-all duration-300 hover:-translate-y-0.5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
             {renderIcon()}
@@ -169,15 +169,15 @@ export default function PricesPage() {
   }, [activeTab, prices, grouped])
 
   return (
-    <div className="min-h-screen">
+    <div dir="rtl" className="min-h-screen">
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 no-scrollbar" dir="rtl">
+      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 no-scrollbar">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`relative px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-200 ${
               activeTab === tab.id
                 ? 'bg-primary/20 text-primary border border-primary/30 shadow-lg shadow-primary/5'
-                : 'text-muted-foreground hover:text-foreground border border-transparent hover:bg-white/[0.05]'
+                : 'text-muted-foreground hover:text-foreground border border-transparent hover:bg-muted'
             }`}
           >
             {tab.label}
@@ -187,21 +187,21 @@ export default function PricesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : Object.keys(prices).length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-14 h-14 rounded-2xl bg-gray-800/50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-7 h-7 text-gray-500" />
+          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-muted-foreground" />
           </div>
-          <p className="text-gray-400">در حال حاضر داده قیمتی در دسترس نیست</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm font-semibold transition-colors">
+          <p className="text-muted-foreground">در حال حاضر داده قیمتی در دسترس نیست</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-5 py-2.5 rounded-xl bg-muted hover:bg-accent text-sm font-semibold transition-colors">
             تلاش مجدد
           </button>
         </div>
       ) : filteredItems.length === 0 && activeTab !== 'all' ? (
         <div className="text-center py-16">
-          <p className="text-gray-500">هیچ قیمتی در این دسته یافت نشد</p>
+          <p className="text-muted-foreground">هیچ قیمتی در این دسته یافت نشد</p>
         </div>
       ) : (
         <div className="space-y-6">
