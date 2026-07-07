@@ -356,7 +356,6 @@ export function DashboardClient() {
             {[
               { label: 'تست‌ها', value: quizResults.length, color: '#2979FF' },
               { label: 'تیپ سرمایه‌گذار', value: typeInfo?.emoji ? `${typeInfo.emoji} ${typeInfo.name}` : '—', color: typeInfo?.color ?? '#888' },
-              { label: 'امتیاز', value: latest ? `${latest.score}` : '—', color: '#10B981' },
               { label: 'موبایل', value: phone ? '✓' : '✗', color: phone ? '#10B981' : '#EF4444' },
             ].map((stat, i) => (
               <div key={stat.label}
