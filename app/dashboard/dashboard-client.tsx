@@ -413,7 +413,6 @@ export function DashboardClient() {
                   ))}
                   {referralStats && (
                     <button onClick={async () => {
-                      const code = referralStats.code
                       try { await navigator.clipboard.writeText(referralStats.inviteLink); alert(`لینک معرف کپی شد: ${referralStats.inviteLink}`) } catch {}
                     }}
                       className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground col-span-2"

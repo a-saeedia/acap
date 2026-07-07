@@ -249,7 +249,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     const timestamp = timestampMatch ? timestampMatch[1] : ''
 
     // COMPUTED FALLBACKS FIRST (before tolerance arrays, so math-based values take priority)
-    // GOLD24 = GOLD18 × 4/3 (verified ratio: 236,404,000 / 177,305,000 = 1.3333)
+    // GOLD24 = GOLD18 × 4/3 (24k vs 18k purity ratio)
     if (!prices['GOLD24'] && prices['GOLD18']) {
       prices['GOLD24'] = {
         price: Math.round(prices['GOLD18'].price * 4 / 3),
@@ -257,16 +257,16 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
         ...(prices['GOLD18'].change !== undefined ? { change: prices['GOLD18'].change } : {}),
       }
     }
-    // HALF_COIN ≈ 50% of COIN, QUARTER_COIN ≈ 29% of COIN (market-typical ratios)
+    // HALF_COIN ≈ 52% of COIN, QUARTER_COIN ≈ 30% of COIN (market-typical ratios)
     if (!prices['HALF_COIN'] && prices['COIN']) {
       prices['HALF_COIN'] = {
-        price: Math.round(prices['COIN'].price * 0.5),
+        price: Math.round(prices['COIN'].price * 0.52),
         currency: 'IRR',
       }
     }
     if (!prices['QUARTER_COIN'] && prices['COIN']) {
       prices['QUARTER_COIN'] = {
-        price: Math.round(prices['COIN'].price * 0.288),
+        price: Math.round(prices['COIN'].price * 0.30),
         currency: 'IRR',
       }
     }
@@ -406,13 +406,13 @@ export async function fetchTgjuData(): Promise<{
       }
       if (!prices['HALF_COIN'] && prices['COIN']) {
         prices['HALF_COIN'] = {
-          price: Math.round(prices['COIN'].price * 0.5),
+          price: Math.round(prices['COIN'].price * 0.52),
           currency: 'IRR',
         }
       }
       if (!prices['QUARTER_COIN'] && prices['COIN']) {
         prices['QUARTER_COIN'] = {
-          price: Math.round(prices['COIN'].price * 0.288),
+          price: Math.round(prices['COIN'].price * 0.30),
           currency: 'IRR',
         }
       }
