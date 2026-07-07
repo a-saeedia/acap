@@ -15,6 +15,20 @@
       "when": 1783044138391,
       "tag": "0001_worthless_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783444259763,
+      "tag": "0002_icy_squadron_supreme",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783444643262,
+      "tag": "0003_jittery_mother_askani",
+      "breakpoints": true
     }
   ]
 }

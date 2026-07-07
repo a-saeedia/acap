@@ -59,8 +59,20 @@ export const userProfile = pgTable('user_profile', {
   age: integer('age'),
   investmentCapital: bigint('investmentCapital', { mode: 'number' }),
   role: text('role').notNull().default('user'),
+  referralCode: text('referralCode').unique(),
+  referredBy: text('referredBy'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
+export const referral = pgTable('referral', {
+  id: text('id').primaryKey(),
+  referrerId: text('referrerId').notNull(),
+  referredId: text('referredId').notNull(),
+  email: text('email'),
+  status: text('status').notNull().default('active'),
+  rewardMilestone: text('rewardMilestone'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
 export const quizResult = pgTable('quiz_result', {

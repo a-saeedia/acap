@@ -16,7 +16,7 @@ type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
 export default function AdminPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests' | 'settings' | 'comments' | 'tasks'>('users')
+  const [tab, setTab] = useState<'users' | 'tickets' | 'analytics' | 'content' | 'signals' | 'plus-requests' | 'settings' | 'comments' | 'tasks' | 'referrals'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -318,6 +318,10 @@ export default function AdminPage() {
           <button onClick={() => setTab('tasks')}
             className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'tasks' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             وظایف
+          </button>
+          <button onClick={() => setTab('referrals')}
+            className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${tab === 'referrals' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+            معرفی‌ها
           </button>
 
           <a href="/api/export-csv" download
@@ -736,6 +740,53 @@ export default function AdminPage() {
         {tab === 'settings' && <AdminSettings />}
         {tab === 'comments' && <AdminComments />}
         {tab === 'tasks' && <AdminTasks />}
+        {tab === 'referrals' && <AdminReferrals />}
+      </div>
+    </div>
+  )
+}
+
+function AdminReferrals() {
+  const [referrals, setReferrals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    import('@/app/actions/referral').then(m => m.getAllReferrals()).then(d => { setReferrals(d); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  async function markConverted(id: string) {
+    const m = await import('@/app/actions/referral')
+    await m.markReferralConverted(id)
+    setReferrals(prev => prev.map(r => r.id === id ? { ...r, status: 'converted' } : r))
+  }
+
+  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold">مدیریت معرفی‌ها</h2>
+      <p className="text-sm text-gray-400">{referrals.length} معرفی</p>
+      <div className="space-y-2">
+        {referrals.map(r => (
+          <div key={r.id} className="bg-gray-900 p-3 rounded-xl border border-gray-800 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">معرف: {r.referrerId.substring(0, 8)}...</p>
+              <p className="text-xs text-gray-400">معرفی‌شده: {r.referredId.substring(0, 8)}... • {r.email || '—'}</p>
+              <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString('fa-IR')}</p>
+              {r.rewardMilestone && <p className="text-xs text-amber-400">پاداش: {r.rewardMilestone}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded ${r.status === 'converted' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                {r.status === 'converted' ? 'تبدیل شده' : 'فعال'}
+              </span>
+              {r.status !== 'converted' && (
+                <button onClick={() => markConverted(r.id)} className="text-xs text-emerald-400 hover:text-emerald-300 underline">
+                  تأیید خرید
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

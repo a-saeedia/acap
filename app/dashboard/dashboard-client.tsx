@@ -10,6 +10,7 @@ import {
   User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
+import { getMyReferralStats, ensureReferralCode } from '@/app/actions/referral'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { toPersianDigits } from '@/lib/utils'
 
@@ -39,6 +40,7 @@ export function DashboardClient() {
   const [tutorialStep, setTutorialStep] = useState<number | null>(null)
   const [priceData, setPriceData] = useState<Record<string, {price: number; currency: string; change: number}>>({})
   const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
+  const [referralStats, setReferralStats] = useState<any>(null)
 
   useEffect(() => {
     if (isPending) return
@@ -72,6 +74,11 @@ export function DashboardClient() {
       }
     }).catch(() => {})
     return () => { clearTimeout(tid); controller.abort() }
+  }, [dashData])
+
+  useEffect(() => {
+    if (!dashData) return
+    getMyReferralStats().then(setReferralStats).catch(() => {})
   }, [dashData])
 
   if (isPending || loading) return (
@@ -404,12 +411,17 @@ export function DashboardClient() {
                       {btn.label}
                     </button>
                   ))}
-                  <a href="https://t.me/acapitalsbot?start=ref_3bCj2pqq" target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground col-span-2"
-                  >
-                    <User className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    لینک سفیر
-                  </a>
+                  {referralStats && (
+                    <button onClick={async () => {
+                      const code = referralStats.code
+                      try { await navigator.clipboard.writeText(referralStats.inviteLink); alert(`لینک معرف کپی شد: ${referralStats.inviteLink}`) } catch {}
+                    }}
+                      className="flex items-center gap-1.5 px-3 py-3 rounded-lg glass border border-border hover:border-primary/30 transition-colors text-sm font-semibold text-foreground col-span-2"
+                    >
+                      <User className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      {referralStats.totalInvites > 0 ? `${referralStats.totalInvites} دعوت • ` : ''}{referralStats.tier.name} • {referralStats.code}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             </div>
