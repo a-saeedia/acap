@@ -178,6 +178,45 @@ export function DashboardClient() {
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
 
+          {/* Referral code card — always visible */}
+          {referralStats && (
+            <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl mb-4 p-4"
+              style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)' }}
+            >
+              <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 70% 20%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
+              <div className="relative flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-white/70 text-xs whitespace-nowrap">کد معرف شما:</span>
+                  <span className="font-mono font-black text-white bg-white/15 px-3 py-1 rounded-lg text-sm">{referralStats.code}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={async () => {
+                    try { await navigator.clipboard.writeText(referralStats.inviteLink); setReferralStats((p: any) => p ? { ...p, _justCopied: true } : p); setTimeout(() => setReferralStats((p: any) => p ? { ...p, _justCopied: false } : p), 2000) } catch {}
+                  }} className="flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold text-white transition-colors">
+                    {referralStats._justCopied ? '✓ کپی شد' : 'کپی لینک'}
+                  </button>
+                  <button onClick={() => setDashboardTab('invite')} className="flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold text-white transition-colors">
+                    جزئیات بیشتر
+                  </button>
+                </div>
+              </div>
+              <div className="relative flex items-center gap-3 mt-2 text-[10px] text-white/60">
+                <span>{referralStats.totalInvites} دعوت</span>
+                <span>•</span>
+                <span>{referralStats.quizCompleted} تست</span>
+                <span>•</span>
+                <span>{referralStats.converted} خرید</span>
+              </div>
+            </motion.div>
+          )}
+          {!referralStats && (
+            <motion.div variants={itemVariants} className="mb-4">
+              <button onClick={() => getMyReferralStats().then(setReferralStats)} className="w-full glass border border-border rounded-2xl p-4 text-center hover:border-primary/30 transition-all group">
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">نمایش لینک دعوت</p>
+              </button>
+            </motion.div>
+          )}
+
           {/* Tab bar */}
           <motion.div variants={itemVariants} className="flex items-center gap-1 mb-4 bg-accent/50 rounded-2xl p-1 w-fit">
             <button onClick={() => setDashboardTab('dashboard')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
