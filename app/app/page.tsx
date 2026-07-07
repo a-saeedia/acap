@@ -176,11 +176,6 @@ export default function MergedDashboard() {
     if (a.type === 'cash') return sum + a.quantity
     return sum + getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
   }, 0)
-  const totalCost = assets.reduce((sum, a) => {
-    if (a.type === 'cash') return sum + a.quantity
-    return sum + ((a.purchasePrice || 0) * a.quantity)
-  }, 0)
-  const profit = totalValue - totalCost
   const hasAssets = assets.length > 0
 
   return (
@@ -215,7 +210,6 @@ export default function MergedDashboard() {
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: 'ارزش کل', value: hasAssets ? formatToman(totalValue) : '—', color: '#10B981', icon: Wallet },
-              { label: 'سود/زیان', value: hasAssets ? `${profit >= 0 ? '+' : ''}${formatToman(profit)}` : '—', color: profit >= 0 ? '#10B981' : '#EF4444', icon: TrendingUp },
             ].map((stat, i) => (
               <div key={stat.label}
                 className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all"

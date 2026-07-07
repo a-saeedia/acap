@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { BookOpen, Clock, User, Calendar, Eye, Hash, ArrowLeft, Loader2, Share2, Star } from 'lucide-react'
+import { BookOpen, Clock, User, Calendar, Eye, Hash, ArrowLeft, Loader2, Share2, Star, Sparkles, Quote, BookMarked, Layers, Lightbulb, AlertTriangle, CheckCircle, Zap, TrendingUp, Brain, Shield, DollarSign, BarChart3 } from 'lucide-react'
 import { getArticleImage } from '@/lib/article-images'
 
 const crimson = '#A51C30'
@@ -104,16 +104,23 @@ export function ArticleClient({ article, category }: { article: any; category: a
     })),
   }
 
+  const catColor = category?.color || crimson
+
   return (
     <motion.div className="min-h-screen bg-gray-950 text-white" dir="rtl" variants={containerVariants} initial="hidden" animate="visible">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <motion.div variants={itemVariants} className="border-b border-gray-800 bg-gray-900/50">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
+
+      {/* Hero Banner */}
+      <motion.div variants={itemVariants} className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 border-b border-gray-800">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-crimson-900/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-3xl" style={{ backgroundColor: `${catColor}08` }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-3xl" style={{ backgroundColor: `${catColor}05` }} />
+        <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 py-6">
+          <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
             <Link href="/" className="hover:text-white transition-colors">خانه</Link>
             <span className="text-gray-600">/</span>
             <Link href="/blog" className="hover:text-white transition-colors">وبلاگ</Link>
-            {category && <><span className="text-gray-600">/</span><span style={{ color: category.color || crimson }}>{category.name}</span></>}
+            {category && <><span className="text-gray-600">/</span><span style={{ color: catColor }}>{category.name}</span></>}
             <span className="text-gray-600">/</span>
             <span className="text-white truncate max-w-[200px]">{article.title}</span>
           </div>
@@ -121,16 +128,23 @@ export function ArticleClient({ article, category }: { article: any; category: a
       </motion.div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-        <motion.div variants={itemVariants} className="mb-8">
+        {/* Article Header */}
+        <motion.div variants={itemVariants} className="relative mb-8">
+          <div className="absolute -top-4 -right-4 text-6xl opacity-5 select-none" style={{ color: catColor }}>{'"'}</div>
           {category && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium mb-4"
-              style={{ backgroundColor: `${category.color || crimson}15`, color: category.color || crimson, borderColor: `${category.color || crimson}30`, borderWidth: 1 }}
-            >{category.name}</span>
+              style={{ backgroundColor: `${catColor}15`, color: catColor, borderColor: `${catColor}30`, borderWidth: 1 }}
+            >
+              <BookMarked className="w-3.5 h-3.5" />
+              {category.name}
+            </span>
           )}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black leading-tight mb-6">{article.title}</h1>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black leading-tight mb-6 bg-gradient-to-l from-white via-white to-gray-300 bg-clip-text text-transparent">{article.title}</h1>
           <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-gray-400 mb-6">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-crimson-500 to-crimson-800 flex items-center justify-center text-sm font-bold text-white">{article.author.charAt(0)}</div>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-sm font-bold text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${catColor}, ${catColor}aa)` }}>
+                {article.author.charAt(0)}
+              </div>
               <div>
                 <div className="text-white font-medium text-sm">{article.author}</div>
                 {article.authorRole && <div className="text-xs text-gray-500">{article.authorRole}</div>}
@@ -142,38 +156,59 @@ export function ArticleClient({ article, category }: { article: any; category: a
           </div>
         </motion.div>
 
+        {/* Featured Image */}
         <motion.div variants={itemVariants}
-          className="rounded-3xl h-64 md:h-80 bg-cover bg-center relative overflow-hidden mb-10"
-          style={{ backgroundImage: `url(${getArticleImage(article.title, category?.color || crimson)})` }}
-        />
+          className="rounded-3xl h-64 md:h-80 bg-cover bg-center relative overflow-hidden mb-10 shadow-2xl"
+          style={{ backgroundImage: `url(${getArticleImage(article.title, catColor)})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
+          <div className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
+            <Sparkles className="w-3.5 h-3.5" style={{ color: catColor }} />
+            <span className="text-xs text-white/80">مقاله آموزشی</span>
+          </div>
+        </motion.div>
 
-        <motion.div variants={itemVariants} className="prose prose-invert max-w-none mb-12">
+        {/* Content */}
+        <motion.div variants={itemVariants} className="prose prose-invert max-w-none mb-12 relative">
+          <div className="absolute -top-8 -left-8 text-6xl opacity-5 select-none rotate-180" style={{ color: catColor }}>{'"'}</div>
           {renderContent(article.content)}
         </motion.div>
 
+        {/* Tags */}
         {tags.length > 0 && (
-          <motion.div variants={itemVariants} className="mb-10">
-            <div className="flex items-center gap-2 mb-3"><Hash className="w-4 h-4 text-gray-500" /><span className="text-sm text-gray-400 font-medium">برچسب‌ها:</span></div>
+          <motion.div variants={itemVariants} className="mb-10 p-6 rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50">
+            <div className="flex items-center gap-2 mb-4">
+              <Hash className="w-4 h-4" style={{ color: catColor }} />
+              <span className="text-sm font-medium text-gray-300">برچسب‌ها:</span>
+            </div>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag: string, i: number) => (
-                <span key={i} className="px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-sm text-gray-300">{tag}</span>
+                <span key={i} className="px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-sm text-gray-300 hover:border-crimson-500/30 transition-colors">
+                  {tag}
+                </span>
               ))}
             </div>
           </motion.div>
         )}
 
-        <motion.div variants={itemVariants} className="flex items-center gap-3 mb-12 p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50">
-          <Share2 className="w-5 h-5 text-gray-400" />
-          <span className="text-sm text-gray-400 font-medium ml-2">اشتراک‌گذاری:</span>
+        {/* Share */}
+        <motion.div variants={itemVariants} className="flex items-center gap-3 mb-12 p-5 rounded-2xl bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-gray-700/50">
+          <Share2 className="w-5 h-5" style={{ color: catColor }} />
+          <span className="text-sm font-medium ml-2" style={{ color: catColor }}>اشتراک‌گذاری:</span>
           <button onClick={handleCopyLink} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-white transition-all border border-gray-700">
             {copied ? 'کپی شد!' : 'کپی لینک'}
           </button>
-          <button onClick={handleShareTelegram} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-sm text-blue-400 hover:text-blue-300 transition-all border border-blue-500/20">تلگرام</button>
-          <button onClick={handleShareTwitter} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sm text-sky-400 hover:text-sky-300 transition-all border border-sky-500/20">توییتر</button>
+          <button onClick={handleShareTelegram} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-sm text-blue-400 hover:text-blue-300 transition-all border border-blue-500/20">
+            <Zap className="w-3.5 h-3.5" /> تلگرام
+          </button>
+          <button onClick={handleShareTwitter} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sm text-sky-400 hover:text-sky-300 transition-all border border-sky-500/20">
+            توییتر
+          </button>
         </motion.div>
 
+        {/* Back */}
         <motion.div variants={itemVariants} className="text-center">
-          <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-medium transition-all border border-gray-700">
+          <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-l from-crimson-600 to-crimson-700 hover:from-crimson-500 hover:to-crimson-600 text-white font-medium transition-all shadow-lg shadow-crimson-900/30">
             <ArrowLeft className="w-4 h-4" /> بازگشت به وبلاگ
           </Link>
         </motion.div>
