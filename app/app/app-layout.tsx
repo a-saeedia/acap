@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
-import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, LogOut, Menu, X, ChevronLeft, ArrowRight } from 'lucide-react'
+import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, Gift, LogOut, Menu, X, ChevronLeft, ArrowRight } from 'lucide-react'
 import { AISupport } from '@/components/ai-support'
 import { SiteCommentWidget } from '@/components/site-comment-widget'
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/app/signals', label: 'درآمد A|CAP', icon: Zap },
   { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },
   { href: '/app/academy', label: 'آکادمی', icon: GraduationCap },
+  { href: '/app/invite', label: 'دعوت از دوستان', icon: Gift },
   { href: '/blog', label: 'وبلاگ', icon: BookOpen },
 ]
 

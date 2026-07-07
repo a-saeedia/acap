@@ -8,7 +8,6 @@ import { getMyAssets } from '@/app/actions/assets'
 import { getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
-import { InvitationTab } from '@/components/invitation-tab'
 import {
   Wallet, TrendingUp, Crown, Brain, Shield,
   X, BarChart3, Loader2, HelpCircle, User
@@ -103,7 +102,6 @@ export default function MergedDashboard() {
   const [showAdvisor, setShowAdvisor] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [tutorialStep, setTutorialStep] = useState<number | null>(null)
-  const [dashboardTab, setDashboardTab] = useState<'dashboard' | 'invite'>('dashboard')
 
   useEffect(() => {
     if (isPending) return
@@ -256,21 +254,6 @@ export default function MergedDashboard() {
             )}
           </motion.div>
 
-          {/* Tab bar */}
-          <motion.div variants={itemVariants} className="flex gap-2 border-b border-white/[0.08] pb-3">
-            <button onClick={() => setDashboardTab('dashboard')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-            >
-              داشبورد
-            </button>
-            <button onClick={() => setDashboardTab('invite')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'invite' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-            >
-              🎁 دعوت از دوستان
-            </button>
-          </motion.div>
-
-          {dashboardTab === 'dashboard' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left: Portfolio + Distribution */}
             <div className="lg:col-span-2 space-y-4">
@@ -434,11 +417,6 @@ export default function MergedDashboard() {
               )}
             </div>
           </div>
-          ) : (
-            <motion.div variants={itemVariants}>
-              <InvitationTab />
-            </motion.div>
-          )}
 
           {/* Portfolio Advisor Modal */}
           <AnimatePresence>
