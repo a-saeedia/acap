@@ -247,8 +247,33 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     
     const timestampMatch = html.match(/data-last-update="([^"]+)"/)
     const timestamp = timestampMatch ? timestampMatch[1] : ''
-    
-    // Fill missing gold/coin items from the TGJU AJAX tolerance arrays (always accurate)
+
+    // COMPUTED FALLBACKS FIRST (before tolerance arrays, so math-based values take priority)
+    // GOLD24 = GOLD18 × 4/3 (verified ratio: 236,404,000 / 177,305,000 = 1.3333)
+    if (!prices['GOLD24'] && prices['GOLD18']) {
+      prices['GOLD24'] = {
+        price: Math.round(prices['GOLD18'].price * 4 / 3),
+        currency: 'IRR',
+        ...(prices['GOLD18'].change !== undefined ? { change: prices['GOLD18'].change } : {}),
+      }
+    }
+    // HALF_COIN ≈ 50% of COIN, QUARTER_COIN ≈ 29% of COIN (market-typical ratios)
+    if (!prices['HALF_COIN'] && prices['COIN']) {
+      prices['HALF_COIN'] = {
+        price: Math.round(prices['COIN'].price * 0.5),
+        currency: 'IRR',
+      }
+    }
+    if (!prices['QUARTER_COIN'] && prices['COIN']) {
+      prices['QUARTER_COIN'] = {
+        price: Math.round(prices['COIN'].price * 0.288),
+        currency: 'IRR',
+      }
+    }
+
+    console.log('[prices] After computed fallbacks - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
+
+    // TGJU AJAX tolerance arrays: only fill what's STILL MISSING (don't overwrite computed values)
     if (irrRate > 0) {
       let ajaxSucceeded = false
       try {
@@ -268,7 +293,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
           for (const arr of [ajaxData.tolerance_high ?? [], ajaxData.tolerance_low ?? []]) {
             for (const item of arr) {
               const sym = toleranceNameMap[item.name]
-              if (sym && item.p) {
+              if (sym && !prices[sym] && item.p) {
                 const p = parseTgjuPrice(item.p)
                 if (p > 0) prices[sym] = { price: p, currency: 'IRR', ...(item.dp ? { change: parseFloat(item.dp) } : {}) }
               }
@@ -300,29 +325,6 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
         }
       }
       console.log('[prices] After coin page fallback - HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
-    }
-
-    // Computed fallbacks when TGJU doesn't supply these values directly
-    // GOLD24 = GOLD18 × 4/3 (verified ratio from live TGJU data: 236,404,000 / 177,305,000 = 1.3333)
-    if (!prices['GOLD24'] && prices['GOLD18']) {
-      prices['GOLD24'] = {
-        price: Math.round(prices['GOLD18'].price * 4 / 3),
-        currency: 'IRR',
-        ...(prices['GOLD18'].change !== undefined ? { change: prices['GOLD18'].change } : {}),
-      }
-    }
-    // HALF_COIN ≈ 50% of COIN, QUARTER_COIN ≈ 29% of COIN (market-typical ratios)
-    if (!prices['HALF_COIN'] && prices['COIN']) {
-      prices['HALF_COIN'] = {
-        price: Math.round(prices['COIN'].price * 0.5),
-        currency: 'IRR',
-      }
-    }
-    if (!prices['QUARTER_COIN'] && prices['COIN']) {
-      prices['QUARTER_COIN'] = {
-        price: Math.round(prices['COIN'].price * 0.288),
-        currency: 'IRR',
-      }
     }
 
     console.log('[prices] Final - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
@@ -395,24 +397,7 @@ export async function fetchTgjuData(): Promise<{
         }
       }
 
-      // TGJU stores some gold/coin items in tolerance_high/tolerance_low arrays
-      const toleranceNameMap: Record<string, string> = {
-        geram18: 'GOLD18', geram24: 'GOLD24',
-        sekee: 'COIN', sekeb: 'COIN',
-        nim: 'HALF_COIN', rob: 'QUARTER_COIN',
-        mesghal: 'MESGHAL',
-      }
-      for (const arr of [data.tolerance_high ?? [], data.tolerance_low ?? []]) {
-        for (const item of arr) {
-          const sym = toleranceNameMap[item.name]
-          if (sym && item.p) {
-            const p = parseTgjuPrice(item.p)
-            if (p > 0) prices[sym] = { price: p, currency: 'IRR' }
-          }
-        }
-      }
-
-      // Computed fallbacks (same logic as fetchTgjuHTML)
+      // Computed fallbacks FIRST (before tolerance arrays)
       if (!prices['GOLD24'] && prices['GOLD18']) {
         prices['GOLD24'] = {
           price: Math.round(prices['GOLD18'].price * 4 / 3),
@@ -429,6 +414,24 @@ export async function fetchTgjuData(): Promise<{
         prices['QUARTER_COIN'] = {
           price: Math.round(prices['COIN'].price * 0.288),
           currency: 'IRR',
+        }
+      }
+
+      // TGJU stores some gold/coin items in tolerance_high/tolerance_low arrays
+      // Only fill what's STILL MISSING (don't overwrite computed values)
+      const toleranceNameMap: Record<string, string> = {
+        geram18: 'GOLD18', geram24: 'GOLD24',
+        sekee: 'COIN', sekeb: 'COIN',
+        nim: 'HALF_COIN', rob: 'QUARTER_COIN',
+        mesghal: 'MESGHAL',
+      }
+      for (const arr of [data.tolerance_high ?? [], data.tolerance_low ?? []]) {
+        for (const item of arr) {
+          const sym = toleranceNameMap[item.name]
+          if (sym && !prices[sym] && item.p) {
+            const p = parseTgjuPrice(item.p)
+            if (p > 0) prices[sym] = { price: p, currency: 'IRR' }
+          }
         }
       }
 
