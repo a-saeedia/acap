@@ -178,33 +178,42 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     const prices: PriceMap = {}
     let irrRate = 0
     
-    const extractPrice = (selector: string): number | null => {
+    const extractRowData = (selector: string): { price: number; change: number | null } | null => {
+      // New TGJU format: <tr data-market-row="X"> ... <td>PRICE</td> ... <td class="...">CHANGE</td>
+      const trRegex = new RegExp(`<tr[^>]*data-market-row="${selector}"[^>]*>[\\s\\S]*?<td[^>]*>([\\d,]+)</td>[\\s\\S]*?<td[^>]*class="([^"]*)"[^>]*>([\\s\\S]*?)</td>`)
+      const trMatch = html.match(trRegex)
+      if (trMatch) {
+        const price = parseTgjuPrice(trMatch[1])
+        const changeContent = trMatch[3]
+        const changeMatch = changeContent.match(/\(([\d.-]+)%\)/)
+        return { price, change: changeMatch ? parseFloat(changeMatch[1]) : null }
+      }
+      // Fallback: old format with data-price attribute
       const regex = new RegExp(`data-market-row="${selector}"[^>]*data-price="([\\d,]+)"`)
       const match = html.match(regex)
-      if (match) return parseTgjuPrice(match[1])
+      if (match) return { price: parseTgjuPrice(match[1]), change: null }
+      // Fallback: old format with td.nf
       const regex2 = new RegExp(`data-market-row="${selector}"[^>]*>.*?<td[^>]*class="[^"]*nf[^"]*"[^>]*>([\\d,]+)</td>`, 's')
       const match2 = html.match(regex2)
-      if (match2) return parseTgjuPrice(match2[1])
+      if (match2) return { price: parseTgjuPrice(match2[1]), change: null }
       return null
     }
-    const extractChange = (selector: string): number | null => {
-      const regex = new RegExp(`data-market-row="${selector}"[^>]*data-change-percent="([\\d.-]+)"`)
-      const match = html.match(regex)
-      if (match) return parseFloat(match[1])
-      return null
+    // Keep old extractPrice/setWithChange for non-row items (crypto, etc.)
+    const extractPrice = (selector: string): number | null => {
+      const row = extractRowData(selector)
+      return row ? row.price : null
     }
-    
     const setWithChange = (sym: string, price: number, currency: string, slug: string) => {
-      const change = extractChange(slug)
-      prices[sym] = { price, currency, ...(change !== null ? { change } : {}) }
+      const row = extractRowData(slug)
+      prices[sym] = { price, currency, ...(row?.change !== null && row?.change !== undefined ? { change: row.change } : {}) }
     }
     
-    const usdPrice = extractPrice('price_dollar_rl')
-    if (usdPrice) {
-      irrRate = usdPrice
+    const usdRow = extractRowData('price_dollar_rl')
+    if (usdRow) {
+      irrRate = usdRow.price
       prices['USD'] = { price: 1, currency: 'USD' }
-      setWithChange('USD-IRR', irrRate, 'IRR', 'price_dollar_rl')
-      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR', change: prices['USD-IRR']?.change }
+      prices['USD-IRR'] = { price: usdRow.price, currency: 'IRR', ...(usdRow.change !== null ? { change: usdRow.change } : {}) }
+      prices['USDT-IRR'] = { price: usdRow.price, currency: 'IRR', change: prices['USD-IRR']?.change }
     }
     
     const forexPairs: Record<string, string> = {
@@ -215,10 +224,10 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       price_myr: 'MYR', price_rub: 'RUB', price_azn: 'AZN',
     }
     for (const [slug, sym] of Object.entries(forexPairs)) {
-      const p = extractPrice(slug)
-      if (p) {
+      const row = extractRowData(slug)
+      if (row) {
         prices[sym] = { price: 1, currency: 'USD' }
-        setWithChange(`${sym}-IRR`, p, 'IRR', slug)
+        prices[`${sym}-IRR`] = { price: row.price, currency: 'IRR', ...(row.change !== null ? { change: row.change } : {}) }
       }
     }
     
@@ -228,8 +237,8 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       mesghal: 'MESGHAL',
     }
     for (const [slug, sym] of Object.entries(goldSlugs)) {
-      const p = extractPrice(slug)
-      if (p) setWithChange(sym, p, 'IRR', slug)
+      const row = extractRowData(slug)
+      if (row) prices[sym] = { price: row.price, currency: 'IRR', ...(row.change !== null ? { change: row.change } : {}) }
     }
     
     const cryptoIrSlugs: Record<string, string> = {
