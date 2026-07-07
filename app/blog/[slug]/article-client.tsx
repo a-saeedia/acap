@@ -18,19 +18,24 @@ function formatDate(dateStr: string | Date) {
 function renderContent(text: string) {
   const hasHtml = /<[a-z][a-z0-9]*[>\s]/i.test(text)
   if (hasHtml) {
-    return <div dangerouslySetInnerHTML={{ __html: text }} />
+    return <div className="text-gray-200 leading-relaxed space-y-4 [&_h2]:text-2xl [&_h2]:font-black [&_h2]:text-white [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:border-r-4 [&_h2]:border-crimson-500 [&_h2]:pr-4 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:text-gray-200 [&_p]:leading-relaxed [&_p]:mb-4 [&_p]:text-justify [&_li]:text-gray-200 [&_li]:mr-4 [&_ul]:space-y-2 [&_ul]:my-4 [&_img]:rounded-2xl [&_img]:my-6 [&_img]:shadow-lg [&_blockquote]:border-r-4 [&_blockquote]:border-crimson-500 [&_blockquote]:pr-4 [&_blockquote]:py-2 [&_blockquote]:my-4 [&_blockquote]:text-gray-300 [&_blockquote]:italic [&_blockquote]:bg-crimson-500/5 [&_blockquote]:rounded-l-xl [&_a]:text-blue-400 [&_a]:underline [&_a:hover]:text-blue-300 [&_code]:bg-gray-800 [&_code]:px-2 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-gray-800 [&_pre]:my-4 [&_pre]:text-sm [&_hr]:border-gray-800 [&_hr]:my-8" dangerouslySetInnerHTML={{ __html: text }} />
   }
   const lines = text.split('\n')
   const elements: React.ReactElement[] = []
   let listItems: string[] = []
   let listKey = 0
   let key = 0
+  let inSection = false
+  let sectionKey = 0
   function flushList() {
     if (listItems.length > 0) {
       elements.push(
         <ul key={`ul-${listKey++}`} className="space-y-2 my-4 pr-5">
           {listItems.map((item, i) => (
-            <li key={i} className="text-gray-300 leading-relaxed list-disc marker:text-crimson-400">{item}</li>
+            <li key={i} className="text-gray-200 leading-relaxed list-disc marker:text-crimson-400 flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-crimson-500 mt-2 shrink-0" />
+              <span>{item}</span>
+            </li>
           ))}
         </ul>
       )
@@ -42,19 +47,39 @@ function renderContent(text: string) {
     if (!trimmed) { flushList(); continue }
     if (trimmed.startsWith('## ')) {
       flushList()
-      elements.push(<h2 key={`h2-${key++}`} className="text-2xl font-bold text-white mt-8 mb-4">{trimmed.slice(3)}</h2>)
+      if (elements.length > 0 && !inSection) {
+        elements.push(<div key={`divider-${sectionKey++}`} className="h-px bg-gradient-to-l from-crimson-500/30 via-transparent to-transparent my-8" />)
+      }
+      elements.push(
+        <h2 key={`h2-${key++}`} className="text-2xl font-black text-white mt-8 mb-4 border-r-4 border-crimson-500 pr-4">
+          {trimmed.slice(3)}
+        </h2>
+      )
+      inSection = true
     } else if (trimmed.startsWith('- ')) {
       listItems.push(trimmed.slice(2))
     } else if (trimmed.startsWith('### ')) {
       flushList()
-      elements.push(<h3 key={`h3-${key++}`} className="text-xl font-bold text-white mt-6 mb-3">{trimmed.slice(4)}</h3>)
+      elements.push(
+        <h3 key={`h3-${key++}`} className="text-xl font-bold text-white mt-6 mb-3 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-sm bg-crimson-500 shrink-0" />
+          {trimmed.slice(4)}
+        </h3>
+      )
     } else {
       flushList()
-      elements.push(<p key={`p-${key++}`} className="text-gray-300 leading-relaxed mb-4 text-justify">{trimmed}</p>)
+      elements.push(
+        <p key={`p-${key++}`} className="text-gray-200 leading-relaxed mb-4 text-justify">
+          {trimmed}
+        </p>
+      )
     }
   }
   flushList()
-  return elements
+  if (elements.length === 0 && text.trim()) {
+    return <p className="text-gray-200 leading-relaxed mb-4">{text}</p>
+  }
+  return elements.length > 0 ? elements : <p className="text-gray-400 text-center py-8">بدون محتوا</p>
 }
 
 const containerVariants = {
