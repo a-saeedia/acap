@@ -7,12 +7,13 @@ import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import { getMyAssets } from '@/app/actions/assets'
 import {
-  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft, Gift
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { getMyReferralStats } from '@/app/actions/referral'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { ReferralCard } from '@/components/referral-card'
+import { InvitationTab } from '@/components/invitation-tab'
 import { toPersianDigits } from '@/lib/utils'
 
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
@@ -42,6 +43,7 @@ export function DashboardClient() {
   const [priceData, setPriceData] = useState<Record<string, {price: number; currency: string; change: number}>>({})
   const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
   const [referralStats, setReferralStats] = useState<any>(null)
+  const [dashboardTab, setDashboardTab] = useState<'dashboard' | 'invite'>('dashboard')
 
   useEffect(() => {
     if (isPending) return
@@ -176,6 +178,20 @@ export function DashboardClient() {
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
 
+          {/* Tab bar */}
+          <motion.div variants={itemVariants} className="flex items-center gap-1 mb-4 bg-accent/50 rounded-2xl p-1 w-fit">
+            <button onClick={() => setDashboardTab('dashboard')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              داشبورد
+            </button>
+            <button onClick={() => setDashboardTab('invite')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'invite' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              🎁 دعوت از دوستان
+            </button>
+          </motion.div>
+
+          {dashboardTab === 'invite' ? (
+            <InvitationTab />
+          ) : (
+          <>
           {/* Mosaic — Portfolio (big) + Prices / A|CAP Revenue (mini squares) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
             {/* Portfolio — takes 2/3 */}
@@ -388,21 +404,18 @@ export function DashboardClient() {
                     </button>
                   ))}
                   <div className="col-span-2">
-                    {referralStats ? (
-                      <ReferralCard stats={referralStats} />
-                    ) : (
-                      <div className="glass border border-border rounded-2xl p-5 text-center">
-                        <p className="text-sm text-muted-foreground mb-3">لینک معرف شما آماده نمایش نیست</p>
-                        <button onClick={() => getMyReferralStats().then(setReferralStats)} className="px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded-xl text-sm font-bold transition-colors">
-                          بارگذاری مجدد
-                        </button>
-                      </div>
-                    )}
+                    <button onClick={() => setDashboardTab('invite')} className="w-full glass border border-border rounded-2xl p-4 text-center hover:border-primary/30 transition-all group">
+                      <Gift className="w-6 h-6 text-primary mx-auto mb-1" />
+                      <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">دعوت از دوستان</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">دریافت لینک اختصاصی و پاداش</p>
+                    </button>
                   </div>
                 </div>
               </motion.div>
             </div>
           </motion.div>
+        </>
+        )}
         </motion.div>
 
         {/* Onboarding Tutorial */}

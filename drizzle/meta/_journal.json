@@ -36,6 +36,13 @@
       "when": 1783458610619,
       "tag": "0004_optimal_christian_walker",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783459258675,
+      "tag": "0005_thankful_luckman",
+      "breakpoints": true
     }
   ]
 }

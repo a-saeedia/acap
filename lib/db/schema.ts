@@ -61,6 +61,8 @@ export const userProfile = pgTable('user_profile', {
   role: text('role').notNull().default('user'),
   referralCode: text('referralCode').unique(),
   referredBy: text('referredBy'),
+  totalRewards: real('totalRewards').default(0),
+  referralLevel: integer('referralLevel').default(1),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
@@ -70,8 +72,12 @@ export const referral = pgTable('referral', {
   referrerId: text('referrerId').notNull(),
   referredId: text('referredId').notNull(),
   email: text('email'),
+  name: text('name'),
+  phone: text('phone'),
   status: text('status').notNull().default('active'),
   rewardMilestone: text('rewardMilestone'),
+  rewardAmount: real('rewardAmount'),
+  convertedAt: timestamp('convertedAt'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 

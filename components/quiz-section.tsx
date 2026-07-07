@@ -276,7 +276,7 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
           answers: Object.fromEntries(Object.entries(next).map(([k, v]) => [k, v.risk])),
         }).catch(() => {}).finally(() => setSaving(false))
         if (session?.user) {
-          ensureReferralCode().then(setReferralCode).catch(() => {})
+          ensureReferralCode().then(code => { if (code) setReferralCode(code) }).catch(() => {})
         }
       }
     }, 380)
