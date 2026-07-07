@@ -36,18 +36,20 @@ export async function getMyProfile() {
 }
 
 export async function getDashboardData() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) return null
-  const userId = session.user.id
-  const [profiles, results, subs] = await Promise.all([
-    db.select().from(userProfile).where(eq(userProfile.userId, userId)),
-    db.select().from(quizResult).where(eq(quizResult.userId, userId)),
-    db.select().from(subscription).where(eq(subscription.userId, userId)),
-  ])
-  return {
-    user: session.user,
-    profile: profiles[0] ?? null,
-    quizResults: results,
-    subscription: subs[0] ?? null,
-  }
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return null
+    const userId = session.user.id
+    const [profiles, results, subs] = await Promise.all([
+      db.select().from(userProfile).where(eq(userProfile.userId, userId)),
+      db.select().from(quizResult).where(eq(quizResult.userId, userId)),
+      db.select().from(subscription).where(eq(subscription.userId, userId)),
+    ])
+    return {
+      user: session.user,
+      profile: profiles[0] ?? null,
+      quizResults: results,
+      subscription: subs[0] ?? null,
+    }
+  } catch (e) { console.error('getDashboardData error:', e); return null }
 }

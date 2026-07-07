@@ -79,8 +79,10 @@ export async function deleteAsset(id: string) {
 }
 
 export async function getMyAssets() {
-  const userId = await getUserId()
-  return db.select().from(asset).where(eq(asset.userId, userId)).orderBy(desc(asset.createdAt))
+  try {
+    const userId = await getUserId()
+    return await db.select().from(asset).where(eq(asset.userId, userId)).orderBy(desc(asset.createdAt))
+  } catch (e) { console.error('getMyAssets error:', e); return [] }
 }
 
 export async function deduplicateAssets() {

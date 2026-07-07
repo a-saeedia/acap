@@ -50,7 +50,9 @@ export async function saveQuizResult(data: {
 }
 
 export async function getMyQuizResults() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) return []
-  return db.select().from(quizResult).where(eq(quizResult.userId, session.user.id))
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return []
+    return await db.select().from(quizResult).where(eq(quizResult.userId, session.user.id))
+  } catch (e) { console.error('getMyQuizResults error:', e); return [] }
 }
