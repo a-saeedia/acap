@@ -41,13 +41,13 @@ export function AISupport() {
 
   return (
     <>
-      <button onClick={() => setIsOpen(true)} aria-label="چت با پشتیبان هوشمند" className="fixed bottom-4 right-4 z-50 p-3 bg-primary text-white rounded-full shadow-lg hover:scale-105 transition-all" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <button onClick={() => setIsOpen(true)} aria-label="چت با پشتیبان هوشمند" className="fixed bottom-4 left-4 z-50 p-3 bg-primary text-white rounded-full shadow-lg hover:scale-105 transition-all" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <MessageCircle className="w-5 h-5" />
       </button>
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{opacity:0, scale:0.95, y:10}} animate={{opacity:1, scale:1, y:0}} exit={{opacity:0, scale:0.95, y:10}}
-            className="fixed bottom-20 right-4 z-50 w-80 h-96 rounded-2xl flex flex-col shadow-2xl border border-border/50"
+            className="fixed bottom-20 left-4 z-50 w-80 h-96 rounded-2xl flex flex-col shadow-2xl border border-border/50"
             style={{ background: '#0A1420', backdropFilter: 'blur(20px)' }}
           >
             <div className="p-3 border-b border-border/50 flex justify-between items-center shrink-0 bg-[#0D1B2A] rounded-t-2xl">

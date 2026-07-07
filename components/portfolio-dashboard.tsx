@@ -232,7 +232,7 @@ const AssetCard = memo(function AssetCard({ asset, value, cost, pnl, diff, cfg, 
   )
 })
 
-export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: { isPlus?: boolean; investorType?: string | null; quizTaken?: boolean }) {
+export function PortfolioDashboard({ investorType, quizTaken }: { investorType?: string | null; quizTaken?: boolean }) {
   const { data: session, isPending } = useSession()
   const [assets, setAssets] = useState<Asset[]>([])
   const [prices, setPrices] = useState<PriceMap>({})
@@ -419,68 +419,6 @@ export function PortfolioDashboard({ isPlus = false, investorType, quizTaken }: 
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  if (!isPlus) {
-    return (
-      <div dir="rtl" className="flex items-center justify-center py-8 sm:py-16 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 30, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="relative w-full max-w-lg overflow-hidden rounded-3xl"
-          style={{
-            background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(217,119,6,0.15) 50%, rgba(180,83,9,0.08) 100%)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            boxShadow: '0 0 60px rgba(245,158,11,0.08), inset 0 1px 0 rgba(245,158,11,0.1)',
-          }}
-        >
-          <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)' }} />
-          <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full" style={{ background: 'radial-gradient(circle, rgba(217,119,6,0.1) 0%, transparent 70%)' }} />
-          <div className="relative p-8 sm:p-10 text-center">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3))',
-                border: '2px solid rgba(245,158,11,0.3)',
-              }}
-            >
-              <Crown className="w-10 h-10" style={{ color: '#F59E0B' }} />
-            </motion.div>
-            <h2
-              className="text-2xl sm:text-3xl font-black mb-3"
-              style={{
-                background: 'linear-gradient(135deg, #F59E0B, #D97706, #F59E0B)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              پرتفوی اختصاصی
-            </h2>
-            <p className="text-muted-foreground text-sm sm:text-base mb-8 leading-relaxed max-w-sm mx-auto">
-              این قابلیت فقط برای کاربران A|CAP+ در دسترس است
-            </p>
-            <a
-              href="/acap-plus"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-bold text-white transition-all"
-              style={{
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                boxShadow: '0 0 30px rgba(245,158,11,0.3)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 50px rgba(245,158,11,0.5)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 0 30px rgba(245,158,11,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
-            >
-              <Crown className="w-4 h-4" />
-              خرید اشتراک A|CAP+
-            </a>
-          </div>
-        </motion.div>
       </div>
     )
   }

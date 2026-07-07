@@ -11,7 +11,6 @@ export default function AssetsPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const [loading, setLoading] = useState(true)
-  const [isPlus, setIsPlus] = useState(false)
   const [investorType, setInvestorType] = useState<string | null>(null)
   const [quizTaken, setQuizTaken] = useState(false)
 
@@ -20,7 +19,6 @@ export default function AssetsPage() {
     if (!session) { setLoading(false); router.push('/'); return }
     getDashboardData().then(data => {
       if (!data) { setLoading(false); return }
-      setIsPlus(data.subscription?.acapPlus ?? false)
       const latest = data.quizResults?.[data.quizResults.length - 1]
       setInvestorType(latest?.investorType ?? null)
       setQuizTaken(data.quizResults.length > 0)
@@ -55,7 +53,7 @@ export default function AssetsPage() {
 
       {/* Full Portfolio Dashboard */}
       <main className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
-        <PortfolioDashboard isPlus={isPlus} investorType={investorType} quizTaken={quizTaken} />
+        <PortfolioDashboard investorType={investorType} quizTaken={quizTaken} />
       </main>
     </div>
   )
