@@ -9,7 +9,7 @@ import {
   LineChart, Shield, DollarSign, Brain, Trophy, Sparkles,
   BookMarked, ArrowLeft, FileText, MessageCircle, AlertCircle,
 } from 'lucide-react'
-import { getMyEnrollments, getLearningPaths, getPathRecommendations } from '@/app/actions/academy'
+import { getMyEnrollments } from '@/app/actions/academy'
 import { useSession } from '@/lib/auth-client'
 
 const crimson = '#A51C30'
@@ -27,14 +27,6 @@ const levelLabel: Record<string, string> = {
   advanced: 'پیشرفته',
 }
 
-const iconMap: Record<string, React.ElementType> = {
-  Compass, TrendingUp, BarChart3, Brain: Brain, LineChart, Shield, DollarSign, Target, Award, Sparkles, BookMarked,
-}
-
-function getIcon(name: string) {
-  return iconMap[name] || Compass
-}
-
 interface Course {
   id: string; title: string; slug: string; description: string; category: string;
   instructor: string; instructorName: string; price: number; originalPrice?: number | null;
@@ -49,30 +41,18 @@ interface Enrollment {
   course: Course;
 }
 
-interface Path {
-  id: string; title: string; slug: string; description: string; icon: string;
-  color: string; difficulty: string; incomePotential?: string | null;
-  timeToFirstIncome?: string | null; requiredCapital?: string | null;
-  courses?: Course[];
-}
-
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session } = useSession()
 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
-  const [paths, setPaths] = useState<Path[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       try {
-        const [enr, p] = await Promise.all([
-          getMyEnrollments().catch(() => []),
-          getLearningPaths().catch(() => []),
-        ])
+        const enr = await getMyEnrollments().catch(() => [])
         setEnrollments(enr as Enrollment[])
-        setPaths(p as Path[])
       } catch {
         // ignore
       } finally {
@@ -88,7 +68,7 @@ export default function DashboardPage() {
   const totalProgress = enrollments.length > 0
     ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length)
     : 0
-  const totalHours = enrollments.reduce((sum, e) => sum + (e.course.videoHours || 0), 0)
+  const totalHours = enrollments.reduce((sum, e) => sum + (e.course?.videoHours || 0), 0)
   const watchedHours = Math.round(totalHours * (totalProgress / 100))
 
   const containerVariants = {
@@ -201,23 +181,23 @@ export default function DashboardPage() {
                     key={enr.id}
                     variants={itemVariants}
                     whileHover={{ y: -2 }}
-                    onClick={() => router.push(`/app/academy/courses/${enr.course.slug}`)}
+                    onClick={() => router.push(`/app/academy/courses/${enr.course?.slug}`)}
                     className="group cursor-pointer rounded-2xl bg-gray-800/40 border border-gray-700/50 hover:border-crimson-500/30 p-5 transition-all"
                   >
                     <div className="flex items-start gap-4">
                       <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${enr.course.color}20` }}
+                        style={{ background: `${enr.course?.color}20` }}
                       >
                         <BookOpen className="w-6 h-6" style={{ color: enr.course.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-sm group-hover:text-crimson-400 transition-colors truncate">
-                          {enr.course.title}
+                          {enr.course?.title}
                         </h3>
                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                          <span className="flex items-center gap-1"><Users className="w-3 h-3" />{enr.course.instructorName}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{enr.course.duration || '-'}</span>
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3" />{enr.course?.instructorName}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{enr.course?.duration || '-'}</span>
                         </div>
 
                         {/* Progress Bar */}
@@ -262,7 +242,7 @@ export default function DashboardPage() {
                     key={enr.id}
                     variants={itemVariants}
                     whileHover={{ y: -2 }}
-                    onClick={() => router.push(`/app/academy/courses/${enr.course.slug}`)}
+                    onClick={() => router.push(`/app/academy/courses/${enr.course?.slug}`)}
                     className="group cursor-pointer rounded-2xl bg-gray-800/30 border border-emerald-500/20 hover:border-emerald-500/40 p-4 transition-all"
                   >
                     <div className="flex items-center gap-3">
@@ -271,9 +251,9 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold truncate group-hover:text-emerald-400 transition-colors">
-                          {enr.course.title}
+                          {enr.course?.title}
                         </div>
-                        <div className="text-xs text-gray-500">{enr.course.instructorName}</div>
+                        <div className="text-xs text-gray-500">{enr.course?.instructorName}</div>
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
@@ -298,20 +278,20 @@ export default function DashboardPage() {
                 <motion.div
                   key={enr.id}
                   variants={itemVariants}
-                  onClick={() => router.push(`/app/academy/courses/${enr.course.slug}`)}
+                  onClick={() => router.push(`/app/academy/courses/${enr.course?.slug}`)}
                   className="group cursor-pointer rounded-2xl bg-gray-800/30 border border-gray-700/50 hover:border-crimson-500/30 p-4 transition-all"
                 >
                   <div className="flex items-center gap-4">
                     <div
                       className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${enr.course.color}20` }}
+                      style={{ background: `${enr.course?.color}20` }}
                     >
                       <BookOpen className="w-5 h-5" style={{ color: enr.course.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-bold text-sm group-hover:text-crimson-400 transition-colors truncate">
-                          {enr.course.title}
+                          {enr.course?.title}
                         </h3>
                         {enr.completedAt && (
                           <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
@@ -320,9 +300,9 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                        <span>{enr.course.instructorName}</span>
-                        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400 fill-amber-400" />{enr.course.rating?.toFixed(1) || '-'}</span>
-                        <span>{enr.course.duration || '-'}</span>
+                        <span>{enr.course?.instructorName}</span>
+                        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400 fill-amber-400" />{enr.course?.rating?.toFixed(1) || '-'}</span>
+                        <span>{enr.course?.duration || '-'}</span>
                       </div>
                     </div>
                     <div className="flex-shrink-0 w-24 text-left">
@@ -343,62 +323,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* Learning Path Recommendations */}
-      {paths.length > 0 && (
-        <motion.section variants={itemVariants}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Compass className="w-5 h-5 text-crimson-400" />
-                مسیرهای یادگیری پیشنهادی
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">بر اساس علاقه‌مندی‌های شما</p>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            {paths.slice(0, 3).map((path, i) => {
-              const PathIcon = getIcon(path.icon)
-              return (
-                <motion.div
-                  key={path.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -3 }}
-                  onClick={() => router.push(`/app/academy/catalog?path=${path.slug}`)}
-                  className="group cursor-pointer rounded-2xl bg-gray-800/40 border border-gray-700/50 hover:border-crimson-500/30 p-5 transition-all"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: `${path.color}20` }}
-                    >
-                      <PathIcon className="w-5 h-5" style={{ color: path.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold group-hover:text-crimson-400 transition-colors truncate">{path.title}</div>
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium border ${levelStyle[path.difficulty] || levelStyle.intermediate}`}>
-                        {levelLabel[path.difficulty] || path.difficulty}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-400 line-clamp-2">{path.description}</p>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 flex-wrap">
-                    {path.incomePotential && (
-                      <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-emerald-400" />{path.incomePotential}</span>
-                    )}
-                    {path.timeToFirstIncome && (
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-amber-400" />{path.timeToFirstIncome}</span>
-                    )}
-                    {path.requiredCapital && (
-                      <span className="flex items-center gap-1"><Target className="w-3 h-3 text-blue-400" />{path.requiredCapital}</span>
-                    )}
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
-        </motion.section>
-      )}
 
       {/* CTA */}
       {enrollments.length > 0 && (

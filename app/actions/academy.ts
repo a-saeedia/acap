@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { course, enrollment, learningPath, article, articleCategory, user as userTable } from '@/lib/db/schema'
+import { course, enrollment, article, articleCategory, user as userTable } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc, asc, and } from 'drizzle-orm'
@@ -75,41 +75,6 @@ export async function enrollInCourse(courseId: string) {
   return id
 }
 
-export async function getLearningPaths() {
-  return db.select().from(learningPath).orderBy(asc(learningPath.difficulty))
-}
-
-export async function getLearningPathBySlug(slug: string) {
-  const [p] = await db.select().from(learningPath).where(eq(learningPath.slug, slug)).limit(1)
-  if (!p) return null
-  const courseIds: string[] = (p.courseIds as string[]) || []
-  const pathCourses = courseIds.length > 0 ? await db.select().from(course).where(eq(course.id, courseIds[0])) : []
-  return { ...p, courses: pathCourses }
-}
-
-export async function getPathRecommendations(investorType?: string, score?: number) {
-  let paths = await db.select().from(learningPath)
-  if (investorType) {
-    const matched = paths.filter(p => p.investorType === investorType)
-    if (matched.length > 0) paths = matched
-  }
-  if (score !== undefined) {
-    const scored = paths.filter(p => {
-      const min = p.minScore ?? 0
-      const max = p.maxScore ?? 100
-      return score >= min && score <= max
-    })
-    if (scored.length > 0) paths = scored
-  }
-  const result = []
-  for (const p of paths.slice(0, 3)) {
-    const courseIds: string[] = (p.courseIds as string[]) || []
-    const pathCourses = courseIds.length > 0 ? await db.select().from(course).where(eq(course.id, courseIds[0])) : []
-    result.push({ ...p, courses: pathCourses })
-  }
-  return result
-}
-
 export async function getArticles(categoryId?: string, page = 1, limit = 12) {
   const offset = (page - 1) * limit
   let q: any = db.select().from(article).orderBy(desc(article.publishedAt)) as any
@@ -181,7 +146,7 @@ export async function updateArticle(id: string, data: {
     ...(data.title && { title: sanitize(data.title, 200) }),
     ...(data.slug && { slug: data.slug }),
     ...(data.excerpt && { excerpt: sanitize(data.excerpt, 500) }),
-    ...(data.content && { content: data.content }),
+    ...(data.content !== undefined && { content: data.content }),
     ...(data.categoryId !== undefined && { categoryId: data.categoryId || null }),
     ...(data.author && { author: data.author }),
     ...(data.authorRole !== undefined && { authorRole: data.authorRole || null }),

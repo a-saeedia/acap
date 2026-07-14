@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory, signal, acapRevenue } from '@/lib/db/schema'
+import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory, signal, acapRevenue, referral, userEvent, siteComment, account, session } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { eq, desc, sql } from 'drizzle-orm'
@@ -273,6 +273,39 @@ export async function getAdminEnrollments() {
     user: userMap[e.userId] ?? null,
     course: courseMap[e.courseId] ?? null,
   }))
+}
+
+// -------- Delete Ticket --------
+
+export async function deleteTicket(ticketId: string) {
+  await requireAdmin()
+  await db.delete(ticketMessage).where(eq(ticketMessage.ticketId, ticketId))
+  await db.delete(ticket).where(eq(ticket.id, ticketId))
+}
+
+// -------- Delete User (cascade all related data) --------
+
+export async function deleteUser(userId: string) {
+  await requireAdmin()
+  await db.delete(session).where(eq(session.userId, userId))
+  await db.delete(account).where(eq(account.userId, userId))
+
+  const userTickets = await db.select({ id: ticket.id }).from(ticket).where(eq(ticket.userId, userId))
+  for (const t of userTickets) {
+    await db.delete(ticketMessage).where(eq(ticketMessage.ticketId, t.id))
+  }
+  await db.delete(ticket).where(eq(ticket.userId, userId))
+  await db.delete(suggestion).where(eq(suggestion.userId, userId))
+  await db.delete(asset).where(eq(asset.userId, userId))
+  await db.delete(enrollment).where(eq(enrollment.userId, userId))
+  await db.delete(userEvent).where(eq(userEvent.userId, userId))
+  await db.delete(siteComment).where(eq(siteComment.userId, userId))
+  await db.delete(quizResult).where(eq(quizResult.userId, userId))
+  await db.delete(subscription).where(eq(subscription.userId, userId))
+  await db.delete(userProfile).where(eq(userProfile.userId, userId))
+  await db.delete(referral).where(eq(referral.referrerId, userId))
+  await db.delete(referral).where(eq(referral.referredId, userId))
+  await db.delete(user).where(eq(user.id, userId))
 }
 
 // -------- Signals CRUD --------

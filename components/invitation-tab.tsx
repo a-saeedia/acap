@@ -98,19 +98,21 @@ export function InvitationTab() {
           </div>
           <p className="text-sm text-white/70 mb-4">لینک اختصاصی خود را با دوستانتان به اشتراک بگذارید</p>
 
-          <div className="flex items-stretch gap-2 bg-white/10 backdrop-blur-sm rounded-2xl p-1 border border-white/15">
-            <div className="flex-1 min-w-0 flex items-center px-3">
+          <div className="flex flex-col sm:flex-row items-stretch gap-2 bg-white/10 backdrop-blur-sm rounded-2xl p-1 border border-white/15">
+            <div className="flex-1 min-w-0 flex items-center px-3 py-2 sm:py-0">
               <span className="text-xs text-white/50 ml-2 shrink-0"><Link2 className="w-3.5 h-3.5 inline" /></span>
-              {data && <span className="text-sm font-mono font-bold text-white truncate direction-ltr">{data.inviteLink}</span>}
+              {data && <span className="text-xs sm:text-sm font-mono font-bold text-white truncate direction-ltr">{data.inviteLink}</span>}
             </div>
-            <button onClick={copyLink} className="flex items-center gap-1.5 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-bold transition-colors shrink-0">
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'کپی شد' : 'کپی'}
-            </button>
-            <button onClick={shareLink} className="flex items-center gap-1.5 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-bold transition-colors shrink-0">
-              <Share2 className="w-4 h-4" />
-              اشتراک
-            </button>
+            <div className="flex gap-1 px-1 pb-1 sm:pb-0">
+              <button onClick={copyLink} className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-bold transition-colors shrink-0">
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'کپی شد' : 'کپی'}
+              </button>
+              <button onClick={shareLink} className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-bold transition-colors shrink-0">
+                <Share2 className="w-4 h-4" />
+                اشتراک
+              </button>
+            </div>
           </div>
 
           {data && (

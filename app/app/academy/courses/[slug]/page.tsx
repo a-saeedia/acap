@@ -124,7 +124,7 @@ export default function CourseDetailPage() {
       : [])
     : []
   const syllabus: SyllabusItem[] = course.syllabus ? (Array.isArray(course.syllabus) ? course.syllabus : []) : []
-  const prerequisites: string[] = course.prerequisites
+  const prerequisites: string[] = typeof course.prerequisites === 'string'
     ? course.prerequisites.split('\n').filter(Boolean)
     : []
 
@@ -422,7 +422,7 @@ export default function CourseDetailPage() {
             {[
               { icon: Users, label: 'تعداد دانشجویان', value: (course.studentsCount || 0).toLocaleString('fa-IR') },
               { icon: Clock, label: 'مدت زمان', value: course.duration || 'متغیر' },
-              { icon: FileText, label: 'تعداد دروس', value: course.lessons.toLocaleString('fa-IR') },
+              { icon: FileText, label: 'تعداد دروس', value: (course.lessons ?? 0).toLocaleString('fa-IR') },
               { icon: Play, label: 'ساعت ویدیو', value: course.videoHours ? `${course.videoHours} ساعت` : '-' },
               { icon: BarChart3, label: 'سطح دوره', value: lvlInfo.label },
               { icon: Target, label: 'دسته‌بندی', value: catInfo.label },

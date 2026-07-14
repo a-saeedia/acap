@@ -391,7 +391,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
             >
               <span className="inline-flex items-center gap-2 border border-primary/30 rounded-full px-5 py-1.5 text-sm text-primary font-semibold tracking-wide backdrop-blur-sm bg-primary/5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                اولین دستیار مدیریت سرمایه مبتنی بر شخصیت مالی
+                دستیار مدیریت سرمایه مبتنی بر شخصیت مالی
               </span>
             </motion.div>
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Crown, Clock, X, ArrowLeft } from 'lucide-react'
 import { getUserSuggestions } from '@/app/actions/admin'
 import { formatPersianDate, formatPersianMonth, persianMonthKey, PERSIAN_MONTHS } from '@/lib/persian-date'
+import { ContentRenderer } from '@/components/content-renderer'
 
 function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
   const isExpired = item.expiresAt ? new Date(item.expiresAt) < new Date() : false
@@ -29,7 +30,7 @@ function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
               <span className="text-[10px] text-muted-foreground font-medium">توضیحات</span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <p className="text-sm text-foreground/90 leading-relaxed">{item.content}</p>
+            <ContentRenderer text={item.content} />
           </div>
           {item.profitPercent && (
             <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-2xl p-3.5 text-center">
@@ -145,7 +146,7 @@ export default function PersonalPage() {
                     <div className="text-[11px] font-bold text-foreground leading-tight mb-2 line-clamp-2" style={{ minHeight: '2em' }}>
                       {item.title}
                     </div>
-                    <div className="text-[9px] text-muted-foreground line-clamp-2">{item.content}</div>
+                    <div className="text-[9px] text-muted-foreground line-clamp-2 whitespace-pre-wrap">{item.content}</div>
                     {item.expiresAt && (
                       <div className={`text-[8px] mt-1.5 ${new Date(item.expiresAt) < new Date() ? 'text-red-400/60' : 'text-muted-foreground/50'}`}>
                         {new Date(item.expiresAt) < new Date() ? 'منقضی شده' : formatPersianDate(item.expiresAt)}

@@ -45,11 +45,6 @@ export function PriceTicker() {
   const [prices, setPrices] = useState<PriceMap>({})
 
   useEffect(() => {
-    // Load server prices first (fast), then upgrade with TGJU (fresh)
-    fetch('/api/prices').then(r => r.json()).then(d => {
-      if (d?.prices) setPrices(d.prices)
-    }).catch(() => {})
-    // TGJU client data takes priority — fire and forget
     fetchTgjuPrices().then(tgjuP => {
       if (Object.keys(tgjuP).length > 0) setPrices(tgjuP)
     })

@@ -4,12 +4,12 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { ErrorBoundary } from '@/components/error-boundary'
 
 const SITE_NAME = 'A | CAP'
-const SITE_DESCRIPTION = 'اولین پلتفرم هوشمند مدیریت سرمایه بر اساس شخصیت مالی در ایران. تحلیل بازار طلا، ارز، رمز ارز و بورس با هوش مصنوعی.'
+const SITE_DESCRIPTION = 'پلتفرم هوشمند مدیریت سرمایه بر اساس شخصیت مالی در ایران. تحلیل بازار طلا، ارز، رمز ارز و بورس با هوش مصنوعی.'
 const BASE_URL = 'https://a-cap.xyz'
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_NAME} — اولین دستیار هوشمند مدیریت سرمایه`,
+    default: `${SITE_NAME} — دستیار هوشمند مدیریت سرمایه`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -54,10 +54,8 @@ export default function RootLayout({
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
-        />
+        <link rel="preload" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" as="style" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

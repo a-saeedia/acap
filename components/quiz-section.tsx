@@ -557,7 +557,7 @@ export function QuizSection({ onOpenAuth }: { onOpenAuth?: () => void }) {
 
                   {/* CTAs */}
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <motion.a href="https://t.me/acapitalsbot" target="_blank" rel="noopener noreferrer"
+                    <motion.a href="https://t.me/a_cap_support" target="_blank" rel="noopener noreferrer"
                       whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                       className="flex-1 py-3.5 rounded-xl font-black text-center text-sm text-white"
                       style={{ background: `linear-gradient(135deg, ${result.color}, ${result.color}bb)` }}

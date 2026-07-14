@@ -95,9 +95,9 @@ export default function CatalogPage() {
     if (search) {
       const q = search.toLowerCase()
       result = result.filter(c =>
-        c.title.toLowerCase().includes(q) ||
-        c.instructorName.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q)
+        (c.title ?? '').toLowerCase().includes(q) ||
+        (c.instructorName ?? '').toLowerCase().includes(q) ||
+        (c.description ?? '').toLowerCase().includes(q)
       )
     }
 

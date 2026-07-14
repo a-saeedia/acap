@@ -261,24 +261,6 @@ export const enrollment = pgTable('enrollment', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
-export const learningPath = pgTable('learning_path', {
-  id: text('id').primaryKey(),
-  title: text('title').notNull(),
-  slug: text('slug').notNull().unique(),
-  description: text('description').notNull(),
-  icon: text('icon').notNull().default('Compass'),
-  color: text('color').notNull().default('#3B82F6'),
-  image: text('image'),
-  minScore: integer('minScore'), // for quiz-based matching
-  maxScore: integer('maxScore'),
-  investorType: text('investorType'), // matches quiz investorType
-  incomePotential: text('incomePotential'),
-  timeToFirstIncome: text('timeToFirstIncome'),
-  requiredCapital: text('requiredCapital'),
-  difficulty: text('difficulty').notNull().default('intermediate'),
-  courseIds: jsonb('courseIds'), // Array of course IDs in order
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-})
 
 // Admin / Site Settings
 export const siteSetting = pgTable('site_setting', {

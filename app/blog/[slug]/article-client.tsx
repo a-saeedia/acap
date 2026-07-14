@@ -15,10 +15,11 @@ function formatDate(dateStr: string | Date) {
   } catch { return String(dateStr) }
 }
 
-function renderContent(text: string) {
-  const hasHtml = /<[a-z][a-z0-9]*[>\s]/i.test(text)
+function renderContent(text: string | null | undefined) {
+  if (!text) return <p className="text-gray-400 text-center py-8">بدون محتوا</p>
+  const hasHtml = /<\/?[a-z][a-z0-9]*[^>]*>/i.test(text)
   if (hasHtml) {
-    return <div className="text-gray-200 leading-relaxed space-y-4 [&_h2]:text-2xl [&_h2]:font-black [&_h2]:text-white [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:border-r-4 [&_h2]:border-crimson-500 [&_h2]:pr-4 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:text-gray-200 [&_p]:leading-relaxed [&_p]:mb-4 [&_p]:text-justify [&_li]:text-gray-200 [&_li]:mr-4 [&_ul]:space-y-2 [&_ul]:my-4 [&_img]:rounded-2xl [&_img]:my-6 [&_img]:shadow-lg [&_blockquote]:border-r-4 [&_blockquote]:border-crimson-500 [&_blockquote]:pr-4 [&_blockquote]:py-2 [&_blockquote]:my-4 [&_blockquote]:text-gray-300 [&_blockquote]:italic [&_blockquote]:bg-crimson-500/5 [&_blockquote]:rounded-l-xl [&_a]:text-blue-400 [&_a]:underline [&_a:hover]:text-blue-300 [&_code]:bg-gray-800 [&_code]:px-2 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-gray-800 [&_pre]:my-4 [&_pre]:text-sm [&_hr]:border-gray-800 [&_hr]:my-8" dangerouslySetInnerHTML={{ __html: text }} />
+    return <div className="text-gray-200 leading-relaxed space-y-4 [&_h2]:text-2xl [&_h2]:font-black [&_h2]:text-white [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:border-r-4 [&_h2]:border-[#A51C30] [&_h2]:pr-4 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:text-gray-200 [&_p]:leading-relaxed [&_p]:mb-4 [&_p]:text-justify [&_li]:text-gray-200 [&_li]:mr-4 [&_ul]:space-y-2 [&_ul]:my-4 [&_img]:rounded-2xl [&_img]:my-6 [&_img]:shadow-lg [&_blockquote]:border-r-4 [&_blockquote]:border-[#A51C30] [&_blockquote]:pr-4 [&_blockquote]:py-2 [&_blockquote]:my-4 [&_blockquote]:text-gray-300 [&_blockquote]:italic [&_blockquote]:bg-[#A51C30]/5 [&_blockquote]:rounded-l-xl [&_a]:text-blue-400 [&_a]:underline [&_a:hover]:text-blue-300 [&_code]:bg-gray-800 [&_code]:px-2 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-gray-800 [&_pre]:my-4 [&_pre]:text-sm [&_hr]:border-gray-800 [&_hr]:my-8" dangerouslySetInnerHTML={{ __html: text }} />
   }
   const lines = text.split('\n')
   const elements: React.ReactElement[] = []
@@ -32,8 +33,8 @@ function renderContent(text: string) {
       elements.push(
         <ul key={`ul-${listKey++}`} className="space-y-2 my-4 pr-5">
           {listItems.map((item, i) => (
-            <li key={i} className="text-gray-200 leading-relaxed list-disc marker:text-crimson-400 flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-crimson-500 mt-2 shrink-0" />
+            <li key={i} className="text-gray-200 leading-relaxed list-disc marker:text-[#A51C30] flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#A51C30] mt-2 shrink-0" />
               <span>{item}</span>
             </li>
           ))}
@@ -48,10 +49,10 @@ function renderContent(text: string) {
     if (trimmed.startsWith('## ')) {
       flushList()
       if (elements.length > 0 && !inSection) {
-        elements.push(<div key={`divider-${sectionKey++}`} className="h-px bg-gradient-to-l from-crimson-500/30 via-transparent to-transparent my-8" />)
+        elements.push(<div key={`divider-${sectionKey++}`} className="h-px bg-gradient-to-l from-[#A51C30]/30 via-transparent to-transparent my-8" />)
       }
       elements.push(
-        <h2 key={`h2-${key++}`} className="text-2xl font-black text-white mt-8 mb-4 border-r-4 border-crimson-500 pr-4">
+        <h2 key={`h2-${key++}`} className="text-2xl font-black text-white mt-8 mb-4 border-r-4 border-[#A51C30] pr-4">
           {trimmed.slice(3)}
         </h2>
       )
@@ -62,7 +63,7 @@ function renderContent(text: string) {
       flushList()
       elements.push(
         <h3 key={`h3-${key++}`} className="text-xl font-bold text-white mt-6 mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-sm bg-crimson-500 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-sm bg-[#A51C30] shrink-0" />
           {trimmed.slice(4)}
         </h3>
       )
@@ -95,7 +96,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
   const router = useRouter()
   const [copied, setCopied] = useState(false)
 
-  const tags: string[] = (Array.isArray(article.tags) ? article.tags : typeof article.tags === 'string' ? JSON.parse(article.tags) : [])
+  const tags: string[] = (() => { try { return Array.isArray(article.tags) ? article.tags : typeof article.tags === 'string' ? JSON.parse(article.tags) : [] } catch { return [] } })()
 
   function handleCopyLink() {
     navigator.clipboard.writeText(window.location.href)
@@ -137,7 +138,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
 
       {/* Hero Banner */}
       <motion.div variants={itemVariants} className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 border-b border-gray-800">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-crimson-900/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#A51C30]/20 via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-3xl" style={{ backgroundColor: `${catColor}08` }} />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-3xl" style={{ backgroundColor: `${catColor}05` }} />
         <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 py-6">
@@ -168,7 +169,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
           <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-gray-400 mb-6">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-sm font-bold text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${catColor}, ${catColor}aa)` }}>
-                {article.author.charAt(0)}
+                {article.author?.charAt(0) ?? '?'}
               </div>
               <div>
                 <div className="text-white font-medium text-sm">{article.author}</div>
@@ -177,7 +178,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
             </div>
             <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {formatDate(article.publishedAt)}</span>
             <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> زمان مطالعه: {article.readingTime} دقیقه</span>
-            <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {article.views.toLocaleString('fa-IR')} بازدید</span>
+            <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {(article.views ?? 0).toLocaleString('fa-IR')} بازدید</span>
           </div>
         </motion.div>
 
@@ -208,7 +209,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
             </div>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag: string, i: number) => (
-                <span key={i} className="px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-sm text-gray-300 hover:border-crimson-500/30 transition-colors">
+                <span key={i} className="px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-sm text-gray-300 hover:border-[#A51C30]/30 transition-colors">
                   {tag}
                 </span>
               ))}
@@ -233,7 +234,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
 
         {/* Back */}
         <motion.div variants={itemVariants} className="text-center">
-          <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-l from-crimson-600 to-crimson-700 hover:from-crimson-500 hover:to-crimson-600 text-white font-medium transition-all shadow-lg shadow-crimson-900/30">
+          <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-l from-[#8B1A2A] to-[#6B1420] hover:from-[#A51C30] hover:to-[#8B1A2A] text-white font-medium transition-all shadow-lg shadow-[#4A0D16]/30">
             <ArrowLeft className="w-4 h-4" /> بازگشت به وبلاگ
           </Link>
         </motion.div>

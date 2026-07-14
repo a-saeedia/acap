@@ -74,7 +74,7 @@ export function AmbassadorSection() {
           transition={{ duration: 0.6 }}
           className="glass border border-border rounded-3xl p-6 sm:p-8 mb-8"
         >
-          <h3 className="text-foreground font-black text-lg mb-6 text-center">داشبورد اختصاصی سفیران</h3>
+          <h3 className="text-foreground font-black text-lg mb-6 text-center">محاسبه درآمد سفیران</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
             {[
               { icon: Users, label: 'وارد سایت شدند', value: '—', color: '#3B82F6' },

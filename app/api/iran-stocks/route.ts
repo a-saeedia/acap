@@ -2,37 +2,27 @@ import { db } from '@/lib/db'
 import { iranStock } from '@/lib/db/schema'
 import { DEFAULT_STOCKS } from '@/lib/prices'
 import { ilike, or } from 'drizzle-orm'
-import { randomUUID } from 'node:crypto'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const search = searchParams.get('search')
+  const search = searchParams.get('search')?.trim()
 
+  // Fast path: search local DB
   try {
-    const existing = await db.select().from(iranStock).limit(1)
-    if (existing.length === 0) {
-      await db.insert(iranStock).values(
-        DEFAULT_STOCKS.map(s => ({ id: randomUUID(), ...s }))
-      ).onConflictDoNothing()
-    }
+    const stocks = search
+      ? await db.select({ symbol: iranStock.symbol, name: iranStock.name, sector: iranStock.sector })
+          .from(iranStock)
+          .where(or(ilike(iranStock.symbol, `%${search}%`), ilike(iranStock.name, `%${search}%`)))
+          .limit(50)
+      : await db.select({ symbol: iranStock.symbol, name: iranStock.name, sector: iranStock.sector })
+          .from(iranStock).limit(50)
+    if (stocks.length) return Response.json(stocks)
   } catch {}
 
-  try {
-    let stocks
-    if (search) {
-      stocks = await db.select()
-        .from(iranStock)
-        .where(or(ilike(iranStock.symbol, `%${search}%`), ilike(iranStock.name, `%${search}%`)))
-    } else {
-      stocks = await db.select().from(iranStock)
-    }
-    return Response.json(stocks.length ? stocks : DEFAULT_STOCKS)
-  } catch (e) {
-    console.error('search iran_stocks error:', e)
-    if (search) {
-      const q = search
-      return Response.json(DEFAULT_STOCKS.filter(s => s.symbol.includes(q) || s.name.includes(q)))
-    }
-    return Response.json(DEFAULT_STOCKS)
+  // Fallback: filter hardcoded list (always fast, always works)
+  if (search) {
+    const q = search
+    return Response.json(DEFAULT_STOCKS.filter(s => s.symbol.includes(q) || s.name.includes(q)))
   }
+  return Response.json(DEFAULT_STOCKS.map(s => ({ symbol: s.symbol, name: s.name, sector: s.sector })))
 }

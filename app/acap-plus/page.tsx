@@ -6,6 +6,7 @@ import { useSession } from '@/lib/auth-client'
 import { motion } from 'framer-motion'
 import { Crown, MessageCircle, ArrowLeft, Check, Star, TrendingUp, Shield, X, Loader2, Send, Clock } from 'lucide-react'
 import { getUserSuggestions, markSuggestionRead } from '@/app/actions/admin'
+import { ContentRenderer } from '@/components/content-renderer'
 
 type Suggestion = Awaited<ReturnType<typeof getUserSuggestions>>[number]
 
@@ -110,7 +111,7 @@ export default function AcapPlusPage() {
                   {requesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                   درخواست A|CAP+
                 </button>
-                <a href="https://t.me/acapitalsbot" target="_blank" rel="noopener noreferrer"
+                <a href="https://t.me/a_cap_support" target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-6 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-amber-500/20 mb-4"
                 >
                   <MessageCircle className="w-5 h-5" />
@@ -275,7 +276,7 @@ export default function AcapPlusPage() {
                   <span className="text-xs text-muted-foreground font-medium">جزئیات پیشنهاد</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
-                <p className="text-foreground/90 leading-relaxed text-sm whitespace-pre-wrap">{selectedSug.content}</p>
+                <ContentRenderer text={selectedSug.content} />
               </div>
 
               {selectedSug.profitPercent && (

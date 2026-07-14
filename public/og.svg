@@ -41,7 +41,7 @@
   <rect x="450" y="300" width="300" height="2" rx="1" fill="#3B82F6" opacity="0.4"/>
   <!-- Tagline -->
   <text x="600" y="355" font-family="Tahoma,'Noto Sans Arabic',sans-serif" font-size="26" fill="#8DB8FF" text-anchor="middle" letter-spacing="1">
-    اولین پلتفرم هوشمند مدیریت سرمایه در ایران
+    پلتفرم هوشمند مدیریت سرمایه در ایران
   </text>
   <!-- Features row -->
   <g transform="translate(0, 420)">

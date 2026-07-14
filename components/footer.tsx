@@ -23,22 +23,6 @@ export function Footer() {
 
   const channels = [
     {
-      name: 'تلگرام بات',
-      handle: '@acapitalsbot',
-      url: 'https://t.me/acapitalsbot',
-      logo: '/telegram-logo.svg',
-      color: '#2AABEE',
-      label: 'Telegram',
-    },
-    {
-      name: 'بله (Bale) بات',
-      handle: '@acapitals_bot',
-      url: 'https://bale.ai/acapitals_bot',
-      logo: '/bale-logo.png',
-      color: '#00C896',
-      label: 'Bale',
-    },
-    {
       name: 'پشتیبانی تلگرام',
       handle: '@a_cap_support',
       url: 'https://t.me/a_cap_support',
@@ -105,7 +89,7 @@ export function Footer() {
             transition={{ delay: 0.2 }}
             className="text-muted-foreground text-sm leading-relaxed max-w-md"
           >
-            اولین دستیار مدیریت سرمایه مبتنی بر شخصیت مالی — نقشه ثروت اختصاصی شما
+            دستیار مدیریت سرمایه مبتنی بر شخصیت مالی — نقشه ثروت اختصاصی شما
           </motion.p>
 
           {/* Brand wordmark */}
@@ -196,7 +180,7 @@ export function Footer() {
                 تست شخصیت مالی رایگان
               </motion.button>
               <motion.a
-                href="https://t.me/acapitalsbot"
+                href="/acap-plus"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.03 }}
@@ -226,11 +210,8 @@ export function Footer() {
           {/* Platform logos inline */}
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground text-xs">در دسترس روی:</span>
-            <a href="https://t.me/acapitalsbot" target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-opacity">
+            <a href="https://t.me/a_cap_support" target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-opacity">
               <Image src="/telegram-logo.svg" alt="Telegram" width={22} height={22} className="rounded-md" />
-            </a>
-            <a href="https://bale.ai/acapitals_bot" target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-opacity">
-              <Image src="/bale-logo.png" alt="Bale" width={22} height={22} className="rounded-md" />
             </a>
           </div>
 

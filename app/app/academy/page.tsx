@@ -8,7 +8,7 @@ import {
   TrendingUp, BarChart3, Award, Target, Compass, ArrowLeft, Play,
   Shield, DollarSign, Brain, LineChart, Sparkles, BookMarked
 } from 'lucide-react'
-import { getFeaturedCourses, getLearningPaths } from '@/app/actions/academy'
+import { getFeaturedCourses } from '@/app/actions/academy'
 import { useSession } from '@/lib/auth-client'
 
 const crimson = '#A51C30'
@@ -39,8 +39,8 @@ const instructors = [
   {
     id: 'arman-saeedi',
     name: 'آرمان سعیدی',
-    title: 'هم‌بنیان‌گذار A|CAP | مدرس ارز دیجیتال و هوش مصنوعی',
-    bio: 'هم‌بنیان‌گذار و مدیر فناوری A|CAP، مدرس ارزهای دیجیتال، تحلیل تکنیکال پیشرفته و هوش مصنوعی در معاملات. بیش از ۵ سال سابقه در توسعه محصولات مالی و آموزش تریدینگ.',
+    title: 'بنیان‌گذار A|CAP | مدرس ارز دیجیتال و هوش مصنوعی',
+    bio: 'بنیان‌گذار و مدیر فناوری A|CAP، کارآفرین، مدرس ارزهای دیجیتال، تحلیل تکنیکال پیشرفته و هوش مصنوعی در معاملات. بیش از ۵ سال سابقه در توسعه محصولات مالی و آموزش تریدینگ.',
     image: 'AS',
     gradient: 'from-purple-600 to-pink-900',
     stats: { courses: 6, students: 100, rating: 4.8 },
@@ -97,30 +97,18 @@ interface Course {
   isNew: boolean; isBestseller: boolean;
 }
 
-interface Path {
-  id: string; title: string; slug: string; description: string; icon: string;
-  color: string; difficulty: string; incomePotential?: string | null;
-  timeToFirstIncome?: string | null; requiredCapital?: string | null;
-  courses?: Course[];
-}
-
 export default function AcademyPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const [featured, setFeatured] = useState<Course[]>([])
-  const [paths, setPaths] = useState<Path[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     async function load() {
       try {
-        const [feat, p] = await Promise.all([
-          getFeaturedCourses().catch(() => []),
-          getLearningPaths().catch(() => []),
-        ])
+        const feat = await getFeaturedCourses().catch(() => [])
         setFeatured(feat as Course[])
-        setPaths(p as Path[])
       } catch {
         // silently fail
       } finally {
@@ -426,7 +414,7 @@ export default function AcademyPage() {
                   <p className="text-sm text-muted-foreground leading-relaxed">{inst.bio}</p>
                   <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
                     <span>{inst.stats.courses} دوره</span>
-                    <span>{inst.stats.students.toLocaleString('fa-IR')} دانشجو</span>
+                    <span>{(inst.stats.students ?? 0).toLocaleString('fa-IR')} دانشجو</span>
                     <span className="flex items-center gap-1">
                       <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                       {inst.stats.rating}
@@ -437,97 +425,6 @@ export default function AcademyPage() {
             </motion.div>
           ))}
         </div>
-      </motion.section>
-
-      {/* Learning Paths */}
-      <motion.section variants={itemVariants}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">مسیرهای یادگیری</h2>
-            <p className="text-muted-foreground text-sm mt-1">دوره‌های هدفمند برای رسیدن به درآمد</p>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="grid md:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />
-            ))}
-          </div>
-        ) : paths.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Compass className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p>هنوز مسیر یادگیری تعریف نشده است</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {paths.map((path, i) => {
-              const PathIcon = getIcon(path.icon)
-              const diffConfig: Record<string, { label: string; color: string }> = {
-                beginner: { label: 'مبتدی', color: 'bg-primary/20 text-primary border-primary/20' },
-                intermediate: { label: 'متوسط', color: 'bg-primary/20 text-primary border-primary/20' },
-                advanced: { label: 'پیشرفته', color: 'bg-primary/20 text-primary border-primary/20' },
-              }
-              const dc = diffConfig[path.difficulty] || diffConfig.intermediate
-
-              return (
-                <motion.div
-                  key={path.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -4 }}
-                  onClick={() => router.push(`/app/academy/catalog?path=${path.slug}`)}
-                  className="group cursor-pointer rounded-2xl bg-muted border border-border p-6 hover:border-primary/30 transition-all duration-300"
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${path.color}20` }}
-                    >
-                      <PathIcon className="w-6 h-6" style={{ color: path.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{path.title}</h3>
-                        <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${dc.color}`}>
-                          {dc.label}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{path.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                    {path.incomePotential && (
-                      <div className="p-2 rounded-lg bg-muted">
-                        <DollarSign className="w-4 h-4 mx-auto mb-1 text-primary" />
-                        <span className="text-muted-foreground">{path.incomePotential}</span>
-                      </div>
-                    )}
-                    {path.timeToFirstIncome && (
-                      <div className="p-2 rounded-lg bg-muted">
-                        <Clock className="w-4 h-4 mx-auto mb-1 text-primary" />
-                        <span className="text-muted-foreground">{path.timeToFirstIncome}</span>
-                      </div>
-                    )}
-                    {path.requiredCapital && (
-                      <div className="p-2 rounded-lg bg-muted">
-                        <Target className="w-4 h-4 mx-auto mb-1 text-primary" />
-                        <span className="text-muted-foreground">{path.requiredCapital}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{path.courses?.length || 0} دوره</span>
-                    <span className="text-primary group-hover:gap-2 transition-all flex items-center gap-1">
-                      مشاهده دوره‌ها <ChevronLeft className="w-3 h-3" />
-                    </span>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
-        )}
       </motion.section>
 
       {/* Stats Section */}

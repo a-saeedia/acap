@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { PriceTicker } from './price-ticker'
 
 const navItems: { label: string; href: string; highlight?: boolean }[] = [
+  { label: 'وبلاگ', href: '/blog' },
   { label: 'آکادمی', href: '/education' },
   { label: 'درباره ما', href: '#about' },
   { label: 'تست مالی', href: '#quiz' },

@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const result = await Promise.race([
       fetchPrices(),
-      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
     ])
     return result
   } catch (e) {

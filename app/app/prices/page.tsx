@@ -123,14 +123,14 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
 
 export default function PricesPage() {
   const [activeTab, setActiveTab] = useState('all')
-  const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
+  const [prices, setPrices] = useState<Record<string, { price: number; currency: string; change?: number }>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const controller = new AbortController()
     const tid = setTimeout(() => controller.abort(), 8000)
     fetch('/api/prices', { signal: controller.signal }).then(r => r.json()).then(d => {
-      const m: Record<string, { price: number; currency: string }> = {}
+      const m: Record<string, { price: number; currency: string; change?: number }> = {}
       for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) {
         if (v.price > 0) m[k] = v
       }
@@ -139,17 +139,8 @@ export default function PricesPage() {
     return () => { clearTimeout(tid); controller.abort() }
   }, [])
 
-  const weekChanges = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const sym of Object.keys(prices)) {
-      const hash = sym.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-      map[sym] = ((hash % 20) - 5) * 0.8
-    }
-    return map
-  }, [prices])
-
   const grouped = useMemo(() => {
-    const groups: Record<string, [string, { price: number; currency: string }][]> = {
+    const groups: Record<string, [string, { price: number; currency: string; change?: number }][]> = {
       crypto: [], gold: [], forex: [], other: [],
     }
     for (const [sym, data] of Object.entries(prices)) {
@@ -163,7 +154,7 @@ export default function PricesPage() {
 
   const filteredItems = useMemo(() => {
     if (activeTab === 'all') {
-      return Object.entries(prices).filter(([, v]) => v.price > 0)
+      return Object.entries(prices).filter(([, v]) => v.price > 0) as [string, { price: number; currency: string; change?: number }][]
     }
     return grouped[activeTab] || []
   }, [activeTab, prices, grouped])
@@ -217,7 +208,7 @@ export default function PricesPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {items.map(([sym, data]) => (
-                      <PriceBubble key={sym} symbol={sym} price={data.price} currency={data.currency} weekChange={weekChanges[sym] || 0} />
+                      <PriceBubble key={sym} symbol={sym} price={data.price} currency={data.currency} weekChange={data.change ?? 0} />
                     ))}
                   </div>
                 </div>
@@ -227,7 +218,7 @@ export default function PricesPage() {
             /* Single category */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredItems.map(([sym, data]) => (
-                <PriceBubble key={sym} symbol={sym} price={data.price} currency={data.currency} weekChange={weekChanges[sym] || 0} />
+                <PriceBubble key={sym} symbol={sym} price={data.price} currency={data.currency} weekChange={data.change ?? 0} />
               ))}
             </div>
           )}

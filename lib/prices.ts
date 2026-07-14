@@ -479,19 +479,16 @@ export async function fetchTsetmcSearch(symbol: string): Promise<string | null> 
     }
     const data = await res.json()
     if (data?.instrumentSearch?.length > 0) {
-      // Exact match on lVal18AFC (short symbol) first
       const exactMatch = data.instrumentSearch.find(
         (i: any) => i.lVal18AFC === symbol
       )
       if (exactMatch) return exactMatch.insCode
       
-      // Then try exact match on lVal30 (full name)
       const nameMatch = data.instrumentSearch.find(
         (i: any) => i.lVal30 === symbol
       )
       if (nameMatch) return nameMatch.insCode
       
-      // Fallback: first result only if it's a main board stock (flow=1, cgrValCot starts with N)
       const mainBoard = data.instrumentSearch.find(
         (i: any) => i.flow === 1 && i.cgrValCot?.startsWith('N')
       )
@@ -501,6 +498,46 @@ export async function fetchTsetmcSearch(symbol: string): Promise<string | null> 
     }
     return null
   } catch { return null }
+}
+
+export async function fetchTsetmcSearchAll(query: string): Promise<Array<{ symbol: string; name: string; sector: string; insCode: string }>> {
+  try {
+    const encoded = encodeURIComponent(query)
+    const res = await fetch(`${TSETMC_API}/Instrument/GetInstrumentSearch/${encoded}`, { ...FETCH_OPTS })
+    if (!res.ok) return []
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) return []
+    const data = await res.json()
+    if (!data?.instrumentSearch?.length) return []
+    return data.instrumentSearch
+      .filter((i: any) => String(i.flow) === '1' || !i.flow)
+      .map((i: any) => ({
+        symbol: i.lVal18AFC || '',
+        name: i.lVal30 || '',
+        sector: i.cgrValCot?.replace(/^[NAB]/, '').trim() || i.market || '',
+        insCode: i.insCode || '',
+      }))
+      .filter((i: any) => i.symbol && i.name && i.insCode)
+  } catch { return [] }
+}
+
+export async function fetchTsetmcFullList(): Promise<Array<{ symbol: string; name: string; sector: string }>> {
+  try {
+    const res = await fetch(`${TSETMC_API}/Instrument/GetInstrumentList/0/0/0`, { ...FETCH_OPTS })
+    if (!res.ok) return []
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) return []
+    const data = await res.json()
+    if (!data?.instrument?.length) return []
+    return data.instrument
+      .filter((i: any) => String(i.flow) === '1')
+      .map((i: any) => ({
+        symbol: i.lVal18AFC || '',
+        name: i.lVal30 || '',
+        sector: i.cgrValCot?.replace(/^[NAB]/, '').trim() || '',
+      }))
+      .filter((i: any) => i.symbol && i.name)
+  } catch { return [] }
 }
 
 export async function fetchTsetmcPriceInfo(insCode: string): Promise<{

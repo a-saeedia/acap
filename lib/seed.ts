@@ -1,5 +1,5 @@
 import { db } from './db'
-import { course, article, articleCategory, learningPath } from './db/schema'
+import { course, article, articleCategory } from './db/schema'
 import { randomUUID } from 'node:crypto'
 
 const uuid = () => randomUUID()
@@ -28,11 +28,7 @@ export async function seedDatabase() {
   const courses = generateCourses()
   for (const c of courses) { try { await db.insert(course).values(c).onConflictDoNothing() } catch { console.error('seed: course insert failed', c.title) } }
 
-  // === LEARNING PATHS ===
-  const paths = generateLearningPaths(courses)
-  for (const p of paths) { try { await db.insert(learningPath).values(p).onConflictDoNothing() } catch { console.error('seed: path insert failed', p.title) } }
-
-  return { articles: articles.length, courses: courses.length, paths: paths.length }
+  return { articles: articles.length, courses: courses.length }
 }
 
 function generateArticles(cats: any[]) {
@@ -1033,7 +1029,7 @@ EUR/USD بهترین گزینه برای همه معامله‌گران است: 
   return articles
 }
 
-function generateCourses() {
+export function generateCourses() {
   const courses: any[] = []
   const uuid = randomUUID
 
@@ -1311,59 +1307,224 @@ function generateCourses() {
     publishedAt: daysAgo(8),
   })
 
-  return courses
-}
+  // === ARMAN SAEEDI - Additional AI Courses (5) ===
+  courses.push({
+    id: uuid(), title: 'هوش مصنوعی در بازاریابی دیجیتال: اتوماسیون فروش با AI',
+    slug: 'ai-digital-marketing', description: 'آموزش استفاده از هوش مصنوعی برای بازاریابی دیجیتال، اتوماسیون فروش، شخصی‌سازی کمپین‌ها و بهینه‌سازی نرخ تبدیل با ابزارهای پیشرفته AI.',
+    longDescription: 'در این دوره یاد می‌گیرید چگونه با استفاده از ChatGPT، Claude و ابزارهای تخصصی بازاریابی AI، کمپین‌های بازاریابی هوشمند ایجاد کنید. از تولید محتوای هدفمند تا تحلیل رفتار مشتری و بهینه‌سازی خودکار کمپین‌ها.',
+    category: 'ai', instructor: 'arman-saeedi', instructorName: 'آرمان سعیدی',
+    price: 7000000, originalPrice: 11000000, duration: '۶ هفته', level: 'intermediate',
+    lessons: 40, videoHours: 26, color: '#F97316', icon: 'Megaphone',
+    isPopular: true, isNew: true, rating: 4.7, studentsCount: 1850,
+    whatYouLearn: ['بازاریابی محتوا با AI', 'شخصی‌سازی کمپین', 'اتوماسیون فروش', 'تحلیل مشتری با AI', 'بهینه‌سازی نرخ تبدیل', 'ابزارهای بازاریابی AI'],
+    syllabus: [
+      { title: 'مقدمه بازاریابی دیجیتال با AI', lessons: [{ title: 'تحول بازاریابی با هوش مصنوعی', duration: '۳۵ دقیقه' }, { title: 'معرفی ابزارهای بازاریابی AI', duration: '۴۰ دقیقه' }] },
+      { title: 'تولید محتوای بازاریابی', lessons: [{ title: 'نوشتن متن‌های فروش با ChatGPT', duration: '۴۵ دقیقه' }, { title: 'تولید تصویر با Midjourney', duration: '۵۰ دقیقه' }] },
+      { title: 'اتوماسیون و شخصی‌سازی', lessons: [{ title: 'ایمیل مارکتینگ هوشمند', duration: '۴۰ دقیقه' }, { title: 'ربات‌های فروش خودکار', duration: '۵۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(6),
+  })
 
-function generateLearningPaths(courses: any[]) {
-  const c = (slug: string) => courses.find(c => c.slug === slug)?.id || ''
-  return [
-    {
-      id: uuid(), title: 'مسیر سرمایه‌گذار تازه‌کار', slug: 'beginner-investor',
-      description: 'اگر تازه وارد دنیای سرمایه‌گذاری شده‌اید و نمی‌دانید از کجا شروع کنید، این مسیر برای شما طراحی شده است. با اصول پایه شروع کرده و به تدریج به یک سرمایه‌گذار حرفه‌ای تبدیل می‌شوید.',
-      icon: 'Seedling', color: '#10B981', minScore: 0, maxScore: 33,
-      investorType: 'conservative', incomePotential: '۵-۱۵ میلیون تومان ماهانه',
-      timeToFirstIncome: '۳ تا ۶ ماه', requiredCapital: '۵-۲۰ میلیون تومان',
-      difficulty: 'مبتدی', courseIds: [c('smart-investing-20-million'), c('numbers-game-strategies'), c('gold-stock-combo')],
-    },
-    {
-      id: uuid(), title: 'مسیر معامله‌گر روزانه', slug: 'day-trader',
-      description: 'برای افرادی که زمان کافی برای معاملات روزانه دارند و می‌خواهند از نوسانات بازار سود ببرند. ترکیبی از تحلیل تکنیکال و روانشناسی معامله‌گری.',
-      icon: 'Zap', color: '#F59E0B', minScore: 34, maxScore: 66,
-      investorType: 'balanced', incomePotential: '۱۵-۵۰ میلیون تومان ماهانه',
-      timeToFirstIncome: '۱ تا ۳ ماه', requiredCapital: '۲۰-۵۰ میلیون تومان',
-      difficulty: 'متوسط', courseIds: [c('professional-technical-analysis'), c('order-flow-reading'), c('trading-psychology-mindset'), c('advanced-technical-trading')],
-    },
-    {
-      id: uuid(), title: 'مسیر سرمایه‌گذار حرفه‌ای', slug: 'professional-investor',
-      description: 'مسیر کامل برای تبدیل شدن به یک سرمایه‌گذار حرفه‌ای. از تحلیل بنیادی تا مدیریت پرتفوی پیشرفته و استراتژی‌های کم‌ریسک.',
-      icon: 'Trophy', color: '#8B5CF6', minScore: 67, maxScore: 100,
-      investorType: 'growth', incomePotential: '۵۰-۲۰۰+ میلیون تومان ماهانه',
-      timeToFirstIncome: '۶ تا ۱۲ ماه', requiredCapital: '۵۰-۲۰۰ میلیون تومان',
-      difficulty: 'پیشرفته', courseIds: [c('ict-wealth-bourse-iran'), c('hidden-market-cycles'), c('fundamental-analysis-pro'), c('find-best-stocks-first')],
-    },
-    {
-      id: uuid(), title: 'مسیر کسب درآمد با هوش مصنوعی', slug: 'ai-income-path',
-      description: 'یادگیری هوش مصنوعی و تبدیل آن به جریان درآمدی. مناسب برای همه سطوح بدون نیاز به پیش‌نیاز فنی.',
-      icon: 'Brain', color: '#EC4899', minScore: 0, maxScore: 100,
-      incomePotential: '۱۰-۱۰۰+ میلیون تومان ماهانه', timeToFirstIncome: '۱ تا ۴ ماه',
-      requiredCapital: '۵-۱۰ میلیون تومان', difficulty: 'مبتدی تا پیشرفته',
-      courseIds: [c('ai-revolution-chatgpt'), c('ai-income-automation'), c('ai-agents-langchain')],
-    },
-    {
-      id: uuid(), title: 'مسیر معامله‌گر بین‌المللی', slug: 'international-trader',
-      description: 'ورود به بازارهای جهانی فارکس و ارزهای دیجیتال. مناسب برای افرادی که به دنبال فرصت‌های بین‌المللی هستند.',
-      icon: 'Globe', color: '#06B6D4',
-      incomePotential: '۲۰-۲۰۰+ میلیون تومان ماهانه', timeToFirstIncome: '۳ تا ۸ ماه',
-      requiredCapital: '۱۰-۵۰ میلیون تومان', difficulty: 'متوسط تا پیشرفته',
-      courseIds: [c('forex-king'), c('crypto-empire'), c('blockchain-revolution'), c('dex-mastery')],
-    },
-    {
-      id: uuid(), title: 'مسیر سرمایه‌گذار تمام‌عیار بورس', slug: 'iran-stock-master',
-      description: 'مسیر جامع برای تسلط بر بورس ایران. از خرید اولین سهم تا تحلیل حرفه‌ای و معاملات پیشرفته.',
-      icon: 'Building2', color: '#3B82F6',
-      incomePotential: '۱۰-۱۰۰ میلیون تومان ماهانه', timeToFirstIncome: '۱ تا ۶ ماه',
-      requiredCapital: '۵-۵۰ میلیون تومان', difficulty: 'مبتدی تا پیشرفته',
-      courseIds: [c('iran-stock-empire'), c('smart-investing-20-million'), c('ict-wealth-bourse-iran')],
-    },
-  ]
+  courses.push({
+    id: uuid(), title: 'تولید محتوا با هوش مصنوعی: متن، تصویر و ویدئو',
+    slug: 'ai-content-creation', description: 'دوره جامع تولید محتوای متنی، تصویری و ویدئویی با استفاده از پیشرفته‌ترین ابزارهای هوش مصنوعی. مناسب برای تولیدکنندگان محتوا، بازاریابان و کارآفرینان.',
+    category: 'ai', instructor: 'arman-saeedi', instructorName: 'آرمان سعیدی',
+    price: 5500000, originalPrice: 9000000, duration: '۵ هفته', level: 'beginner',
+    lessons: 32, videoHours: 20, color: '#EC4899', icon: 'PenBox',
+    isPopular: true, isNew: true, isBestseller: true, rating: 4.8, studentsCount: 2240,
+    whatYouLearn: ['نویسندگی با AI', 'تولید تصویر حرفه‌ای', 'تدوین ویدئو با AI', 'صداگذاری هوشمند', 'استراتژی محتوا', 'انتشار خودکار'],
+    syllabus: [
+      { title: 'تولید محتوای متنی', lessons: [{ title: 'نوشتن مقاله با ChatGPT', duration: '۳۵ دقیقه' }, { title: 'کپشن‌نویسی شبکه‌های اجتماعی', duration: '۳۰ دقیقه' }] },
+      { title: 'تولید تصویر', lessons: [{ title: 'Midjourney پیشرفته', duration: '۵۰ دقیقه' }, { title: 'DALL-E و Stable Diffusion', duration: '۴۵ دقیقه' }] },
+      { title: 'تولید ویدئو', lessons: [{ title: 'تدوین هوشمند با AI', duration: '۴۰ دقیقه' }, { title: 'گوینده مجازی و صداگذاری', duration: '۳۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(3),
+  })
+
+  courses.push({
+    id: uuid(), title: 'دستیارهای هوشمند و ربات‌های چت حرفه‌ای با AI',
+    slug: 'ai-chatbots-assistants', description: 'آموزش ساخت دستیارهای هوشمند و ربات‌های چت حرفه‌ای با استفاده از APIهای GPT، Claude و پلتفرم‌های no-code. بدون نیاز به دانش برنامه‌نویسی.',
+    category: 'ai', instructor: 'arman-saeedi', instructorName: 'آرمان سعیدی',
+    price: 8500000, originalPrice: 13000000, duration: '۷ هفته', level: 'intermediate',
+    lessons: 44, videoHours: 28, color: '#06B6D4', icon: 'Bot',
+    isPopular: true, rating: 4.6, studentsCount: 1420,
+    whatYouLearn: ['طراحی دستیار هوشمند', 'ربات چت تلگرام', 'ChatGPT API', 'پلتفرم‌های no-code', 'شخصی‌سازی', 'استقرار و انتشار'],
+    syllabus: [
+      { title: 'مفاهیم دستیارهای هوشمند', lessons: [{ title: 'انواع دستیارهای هوشمند', duration: '۳۰ دقیقه' }, { title: 'معماری ربات‌های چت', duration: '۴۵ دقیقه' }] },
+      { title: 'ساخت ربات با API', lessons: [{ title: 'ChatGPT API', duration: '۵۵ دقیقه' }, { title: 'حافظه و context', duration: '۴۰ دقیقه' }] },
+      { title: 'پلتفرم‌های no-code', lessons: [{ title: 'Chatbase و CustomGPT', duration: '۳۵ دقیقه' }, { title: 'Voiceflow و ManyChat', duration: '۴۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(9),
+  })
+
+  courses.push({
+    id: uuid(), title: 'تحلیل داده‌های کسب‌وکار با هوش مصنوعی',
+    slug: 'ai-business-analytics', description: 'دوره تخصصی تحلیل داده‌های کسب‌وکار با استفاده از هوش مصنوعی. از جمع‌آوری داده تا بینش‌های عملی و پیش‌بینی روندها بدون نیاز به دانش برنامه‌نویسی.',
+    category: 'ai', instructor: 'arman-saeedi', instructorName: 'آرمان سعیدی',
+    price: 9500000, originalPrice: 15000000, duration: '۸ هفته', level: 'advanced',
+    lessons: 48, videoHours: 32, color: '#6366F1', icon: 'BarChartBig',
+    isPopular: false, isNew: true, rating: 4.7, studentsCount: 980,
+    whatYouLearn: ['تحلیل داده با AI', 'داشبورد هوشمند', 'پیش‌بینی روندها', 'بینش کسب‌وکار', 'تصویرسازی داده', 'گزارش‌گیری خودکار'],
+    syllabus: [
+      { title: 'مبانی تحلیل داده', lessons: [{ title: 'داده‌های کسب‌وکار', duration: '۳۵ دقیقه' }, { title: 'ابزارهای تحلیل AI', duration: '۴۰ دقیقه' }] },
+      { title: 'تحلیل پیش‌بینی‌کننده', lessons: [{ title: 'مدل‌های پیش‌بینی', duration: '۵۰ دقیقه' }, { title: 'تشخیص الگو', duration: '۴۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(11),
+  })
+
+  courses.push({
+    id: uuid(), title: 'یادگیری ماشین برای مبتدیان: از صفر تا ساخت مدل اول',
+    slug: 'machine-learning-beginners', description: 'آموزش گام به گام یادگیری ماشین برای مبتدیان. بدون نیاز به پیش‌نیاز برنامه‌نویسی، از مفاهیم پایه تا ساخت و استقرار اولین مدل هوش مصنوعی.',
+    category: 'ai', instructor: 'arman-saeedi', instructorName: 'آرمان سعیدی',
+    price: 6500000, originalPrice: 10000000, duration: '۶ هفته', level: 'beginner',
+    lessons: 36, videoHours: 24, color: '#8B5CF6', icon: 'Cpu',
+    isPopular: true, isBestseller: true, rating: 4.8, studentsCount: 3120,
+    whatYouLearn: ['مفاهیم یادگیری ماشین', 'رگرسیون و طبقه‌بندی', 'شبکه عصبی', 'TensorFlow', 'Python مقدماتی', 'استقرار مدل'],
+    syllabus: [
+      { title: 'مفاهیم پایه', lessons: [{ title: 'یادگیری ماشین چیست؟', duration: '۴۰ دقیقه' }, { title: 'انواع یادگیری', duration: '۳۵ دقیقه' }] },
+      { title: 'اولین مدل', lessons: [{ title: 'آماده‌سازی داده', duration: '۴۵ دقیقه' }, { title: 'ساخت مدل رگرسیون', duration: '۵۰ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(16),
+  })
+
+  // === ALI BORHAN - Advanced Trading & Risk (4 courses) ===
+  courses.push({
+    id: uuid(), title: 'استراتژی‌های برتر معاملاتی در بازارهای نزولی و صعودی',
+    slug: 'bull-bear-strategies', description: 'آموزش استراتژی‌های معاملاتی حرفه‌ای برای بازارهای نزولی، صعودی و خنثی. یاد بگیرید چگونه در هر شرایط بازار سود کنید.',
+    longDescription: 'بازارهای مالی همیشه صعودی نیستند. در این دوره یاد می‌گیرید چگونه استراتژی‌های معاملاتی خود را متناسب با شرایط بازار تنظیم کنید. از فروش استقراضی و آپشن‌های پوت تا استراتژی‌های خنثی و آربیتراژ.',
+    category: 'trading', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 10500000, originalPrice: 17000000, duration: '۸ هفته', level: 'advanced',
+    lessons: 48, videoHours: 32, color: '#EF4444', icon: 'TrendingDown',
+    isPopular: true, isNew: true, rating: 4.8, studentsCount: 1780,
+    whatYouLearn: ['استراتژی بازار نزولی', 'فروش استقراضی', 'آپشن و مشتقات', 'استراتژی خنثی', 'آربیتراژ', 'مدیریت ریسک پیشرفته'],
+    syllabus: [
+      { title: 'شناخت بازارها', lessons: [{ title: 'فازهای بازار', duration: '۳۵ دقیقه' }, { title: 'تشخیص روندها', duration: '۴۰ دقیقه' }] },
+      { title: 'استراتژی بازار نزولی', lessons: [{ title: 'فروش استقراضی', duration: '۵۰ دقیقه' }, { title: 'آپشن‌های پوت', duration: '۴۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(7),
+  })
+
+  courses.push({
+    id: uuid(), title: 'تحلیل و معامله در بازارهای موازی: طلا، دلار، سکه و مسکن',
+    slug: 'parallel-markets-iran', description: 'آموزش جامع تحلیل و سرمایه‌گذاری در بازارهای موازی ایران شامل طلا، دلار، سکه، مسکن و خودرو. استراتژی‌های آربیتراژ بین بازارها.',
+    category: 'stock', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 7500000, originalPrice: 12000000, duration: '۵ هفته', level: 'intermediate',
+    lessons: 28, videoHours: 18, color: '#F59E0B', icon: 'Gem',
+    isPopular: true, rating: 4.6, studentsCount: 2340,
+    whatYouLearn: ['تحلیل بازار طلا', 'پیش‌بینی نرخ دلار', 'آربیتراژ بین‌بازاری', 'سرمایه‌گذاری در مسکن', 'تحلیل سکه', 'سبد ترکیبی'],
+    syllabus: [
+      { title: 'بازار طلا و سکه', lessons: [{ title: 'تحلیل بنیادی طلا', duration: '۴۰ دقیقه' }, { title: 'همبستگی طلا و ارز', duration: '۳۵ دقیقه' }] },
+      { title: 'بازار دلار و مسکن', lessons: [{ title: 'پیش‌بینی نرخ ارز', duration: '۴۵ دقیقه' }, { title: 'تحلیل بازار مسکن', duration: '۴۰ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(20),
+  })
+
+  courses.push({
+    id: uuid(), title: 'مدیریت سرمایه و پوزیشن‌سایزینگ حرفه‌ای: رمز ماندگاری در بازار',
+    slug: 'capital-management-pro', description: 'دوره تخصصی مدیریت سرمایه و تعیین حجم موقعیت‌های معاملاتی. یاد بگیرید چگونه ریسک را مدیریت کرده و سود خود را پایدار کنید.',
+    category: 'trading', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 8800000, originalPrice: 14000000, duration: '۴ هفته', level: 'intermediate',
+    lessons: 24, videoHours: 16, color: '#10B981', icon: 'ShieldCheck',
+    isPopular: true, isBestseller: true, rating: 4.9, studentsCount: 2670,
+    whatYouLearn: ['مدیریت سرمایه', 'پوزیشن‌سایزینگ', 'نسبت ریسک به بازده', 'حد ضرر هوشمند', 'مدیریت پرتفوی', 'بازده مرکب'],
+    syllabus: [
+      { title: 'اصول مدیریت سرمایه', lessons: [{ title: 'قانون ۱٪', duration: '۳۰ دقیقه' }, { title: 'نسبت ریسک به بازده', duration: '۴۰ دقیقه' }] },
+      { title: 'پوزیشن‌سایزینگ', lessons: [{ title: 'روش‌های تعیین حجم', duration: '۴۵ دقیقه' }, { title: 'مدیریت چند موقعیت', duration: '۳۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(13),
+  })
+
+  courses.push({
+    id: uuid(), title: 'تحلیل تکنیکال با اندیکاتورهای ترکیبی: استراتژی‌های هم‌جهت',
+    slug: 'technical-indicators-combo', description: 'آموزش ترکیب هوشمندانه اندیکاتورهای تکنیکال برای ساخت استراتژی‌های معاملاتی با دقت پیش‌بینی بالا.',
+    category: 'trading', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 9200000, originalPrice: 15000000, duration: '۶ هفته', level: 'advanced',
+    lessons: 36, videoHours: 24, color: '#A855F7', icon: 'ChartCandlestick',
+    isPopular: false, rating: 4.7, studentsCount: 1560,
+    whatYouLearn: ['اندیکاتورهای مکمل', 'سیستم‌های ترکیبی', 'بهینه‌سازی پارامترها', 'بک‌تست استراتژی', 'فیلتر نویز', 'سیگنال‌های هم‌جهت'],
+    syllabus: [
+      { title: 'اندیکاتورهای پیشرفته', lessons: [{ title: 'میانگین متحرک ترکیبی', duration: '۴۰ دقیقه' }, { title: 'MACD و RSI حرفه‌ای', duration: '۴۵ دقیقه' }] },
+      { title: 'سیستم‌های ترکیبی', lessons: [{ title: 'ترکیب اندیکاتورها', duration: '۵۰ دقیقه' }, { title: 'بک‌تست و بهینه‌سازی', duration: '۵۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(17),
+  })
+
+  // === ALI BORHAN - Crypto & Blockchain (2 courses) ===
+  courses.push({
+    id: uuid(), title: 'تحلیل فاندامنتال رمزارزها: ارزیابی پروژه‌های بلاکچین',
+    slug: 'crypto-fundamental-analysis', description: 'دوره تخصصی تحلیل بنیادی ارزهای دیجیتال. یاد بگیرید چگونه پروژه‌های بلاکچین را ارزیابی کنید و سکه‌های پربازده را شناسایی کنید.',
+    category: 'crypto', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 9800000, originalPrice: 16000000, duration: '۷ هفته', level: 'intermediate',
+    lessons: 40, videoHours: 28, color: '#F59E0B', icon: 'SearchCheck',
+    isPopular: true, isNew: true, rating: 4.7, studentsCount: 1890,
+    whatYouLearn: ['وایت‌پیپر خوانی', 'ارزیابی تیم پروژه', 'توکنومیکس', 'تحلیل رقبا', 'ارزش‌گذاری کریپتو', 'شناسایی پروژه‌های کلاهبرداری'],
+    syllabus: [
+      { title: 'مبانی تحلیل فاندامنتال', lessons: [{ title: 'وایت‌پیپر و تیم پروژه', duration: '۴۰ دقیقه' }, { title: 'توکنومیکس', duration: '۴۵ دقیقه' }] },
+      { title: 'ارزیابی پیشرفته', lessons: [{ title: 'تحلیل رقبا و بازار', duration: '۵۰ دقیقه' }, { title: 'روش‌های ارزش‌گذاری', duration: '۵۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(4),
+  })
+
+  courses.push({
+    id: uuid(), title: 'امنیت در بازار ارزهای دیجیتال: از کیف پول تا معامله امن',
+    slug: 'crypto-security-essentials', description: 'آموزش جامع امنیت در دنیای رمزارزها. از نگهداری امن دارایی تا شناسایی کلاهبرداری‌ها و هک‌های رایج.',
+    category: 'crypto', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 5800000, originalPrice: 9000000, duration: '۴ هفته', level: 'beginner',
+    lessons: 20, videoHours: 14, color: '#22C55E', icon: 'Lock',
+    isPopular: true, isNew: true, rating: 4.8, studentsCount: 3120,
+    whatYouLearn: ['کیف پول سخت‌افزاری', 'کیف پول نرم‌افزاری', 'امنیت صرافی', 'شناسایی کلاهبرداری', 'بک‌آپ و بازیابی', 'حفظ حریم خصوصی'],
+    syllabus: [
+      { title: 'کیف‌پول‌ها', lessons: [{ title: 'کیف پول سخت‌افزاری', duration: '۳۵ دقیقه' }, { title: 'کیف پول نرم‌افزاری', duration: '۳۰ دقیقه' }] },
+      { title: 'امنیت معاملات', lessons: [{ title: 'امنیت در صرافی‌ها', duration: '۴۰ دقیقه' }, { title: 'شناسایی کلاهبرداری', duration: '۴۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(2),
+  })
+
+  // === ALI BORHAN - Investment & Psychology (3 courses) ===
+  courses.push({
+    id: uuid(), title: 'آموزش جامع صندوق‌های سرمایه‌گذاری: از درآمد ثابت تا سهامی',
+    slug: 'investment-funds-complete', description: 'دوره کامل آشنایی با انواع صندوق‌های سرمایه‌گذاری شامل درآمد ثابت، سهامی، مختلط، طلا و جسورانه. بهترین گزینه برای سرمایه‌گذاران کم‌ریسک.',
+    category: 'stock', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 6500000, originalPrice: 10000000, duration: '۴ هفته', level: 'beginner',
+    lessons: 24, videoHours: 16, color: '#3B82F6', icon: 'PiggyBank',
+    isPopular: true, rating: 4.5, studentsCount: 3450,
+    whatYouLearn: ['صندوق درآمد ثابت', 'صندوق سهامی', 'صندوق طلا', 'صندوق مختلط', 'صندوق جسورانه', 'انتخاب صندوق مناسب'],
+    syllabus: [
+      { title: 'آشنایی با صندوق‌ها', lessons: [{ title: 'صندوق سرمایه‌گذاری چیست؟', duration: '۳۰ دقیقه' }, { title: 'مزایای سرمایه‌گذاری در صندوق', duration: '۳۵ دقیقه' }] },
+      { title: 'انواع صندوق', lessons: [{ title: 'درآمد ثابت و سهامی', duration: '۴۰ دقیقه' }, { title: 'صندوق طلا و مختلط', duration: '۴۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(25),
+  })
+
+  courses.push({
+    id: uuid(), title: 'معاملات آپشن و قراردادهای آتی: استراتژی‌های پیشرفته',
+    slug: 'options-futures-strategies', description: 'دوره تخصصی معاملات آپشن و قراردادهای آتی در بازارهای مالی. از مفاهیم پایه تا استراتژی‌های پیچیده پوشش ریسک و سودآوری.',
+    category: 'trading', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 12000000, originalPrice: 19000000, duration: '۸ هفته', level: 'advanced',
+    lessons: 48, videoHours: 32, color: '#DC2626', icon: 'ArrowLeftRight',
+    isPopular: false, isNew: true, rating: 4.6, studentsCount: 890,
+    whatYouLearn: ['آپشن‌های کال و پوت', 'قرارداد آتی', 'استراتژی‌های پوشش ریسک', 'اسپرد و استرادل', 'مدل قیمت‌گذاری بلک-شولز', 'مدیریت ریسک مشتقات'],
+    syllabus: [
+      { title: 'مفاهیم پایه', lessons: [{ title: 'آپشن کال و پوت', duration: '۴۵ دقیقه' }, { title: 'قراردادهای آتی', duration: '۴۰ دقیقه' }] },
+      { title: 'استراتژی‌ها', lessons: [{ title: 'اسپرد و استرادل', duration: '۵۰ دقیقه' }, { title: 'پوشش ریسک با مشتقات', duration: '۴۵ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(10),
+  })
+
+  courses.push({
+    id: uuid(), title: 'روانشناسی پول و ثروت‌آفرینی ذهنی: از محدودیت تا وفور مالی',
+    slug: 'money-psychology-abundance', description: 'دوره تحول‌آفرین روانشناسی پول و ثروت. شناسایی باورهای محدودکننده مالی و ایجاد ذهنیت وفور برای جذب ثروت و موفقیت مالی پایدار.',
+    category: 'psychology', instructor: 'ali-borhan', instructorName: 'علی برهان',
+    price: 5500000, originalPrice: 8500000, duration: '۴ هفته', level: 'all',
+    lessons: 20, videoHours: 12, color: '#F43F5E', icon: 'Sparkles',
+    isPopular: true, isNew: true, isBestseller: true, rating: 4.9, studentsCount: 2780,
+    whatYouLearn: ['باورهای مالی', 'ذهنیت وفور', 'ترس از پول', 'عادات میلیونرها', 'هدف‌گذاری مالی', 'تداعی ثروت'],
+    syllabus: [
+      { title: 'شناخت باورهای مالی', lessons: [{ title: 'باورهای محدودکننده', duration: '۴۰ دقیقه' }, { title: 'منشأ باورهای مالی', duration: '۳۵ دقیقه' }] },
+      { title: 'ذهنیت وفور', lessons: [{ title: 'قانون جذب در مالی', duration: '۴۵ دقیقه' }, { title: 'عادات میلیونرها', duration: '۴۰ دقیقه' }] },
+    ],
+    publishedAt: daysAgo(1),
+  })
+
+  return courses
 }

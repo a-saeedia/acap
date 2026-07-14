@@ -8,7 +8,6 @@ import {
   Plus, X, RefreshCw, Loader2, Crown, Target, Wallet,
 } from 'lucide-react'
 
-import { AISupport } from '@/components/ai-support'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
 import { formatToman } from '@/lib/utils'
 
@@ -424,13 +423,15 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   }
 
   return (
-    <div dir="rtl" className="relative">
+    <div dir="rtl" className="relative overflow-x-hidden">
       {toast && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border flex items-center gap-2.5 ${
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl border flex items-center gap-2.5 max-w-[90vw] ${
+
+
             toast.type === 'success'
               ? 'bg-emerald-900/90 border-emerald-500/30 text-emerald-300'
               : 'bg-red-900/90 border-red-500/30 text-red-300'
@@ -682,23 +683,30 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                   className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none mb-2"
                 />
                 {stockSearching && <div className="text-xs text-muted-foreground text-center py-2">در حال جستجو...</div>}
-                {stockResults.length > 0 && (
+                {!stockSearching && stockResults.length > 0 && (
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {stockResults.map(s => (
-                      <button key={s.id} onClick={() => selectStock(s)}
+                      <button key={s.symbol} onClick={() => selectStock(s)}
                         className="w-full text-right px-3 py-2 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
                       >
                         <div className="text-xs font-semibold text-foreground">{s.name}</div>
-                        <div className="text-[10px] text-muted-foreground">{s.symbol} · {s.sector}</div>
+                        <div className="text-[10px] text-muted-foreground">{s.symbol} · {s.sector || '—'}</div>
                       </button>
                     ))}
                   </div>
+                )}
+                {!stockSearching && stockSearch.trim() && stockResults.length === 0 && (
+                  <button onClick={() => { setForm(prev => ({ ...prev, symbol: stockSearch.trim(), label: stockSearch.trim() })); setStockResults([]); setStockSearch('') }}
+                    className="w-full text-right px-3 py-2 rounded-lg bg-accent hover:bg-accent/80 transition-colors text-xs text-muted-foreground"
+                  >
+                    ➕ افزودن دستی: <span className="font-bold text-foreground">{stockSearch.trim()}</span>
+                  </button>
                 )}
               </div>
             )}
 
             {/* Symbol + Label */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input value={form.symbol} onChange={e => setForm({ ...form, symbol: e.target.value })} placeholder="نماد (مثال: BTC)"
                 className="px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
               <input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} placeholder="نام دارایی *"
@@ -706,7 +714,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
             </div>
 
             {/* Quantity + Price */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] text-muted-foreground mb-1 block">تعداد *</label>
                 <input value={form.quantity || ''} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} type="number"
@@ -794,7 +802,6 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
           </div>
         </div>
       )}
-      <AISupport />
     </div>
   )
 }

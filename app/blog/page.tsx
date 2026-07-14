@@ -383,7 +383,7 @@ export default function BlogPage() {
                         </div>
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Eye className="w-3 h-3" />
-                          <span>{article.views.toLocaleString('fa-IR')} بازدید</span>
+                          <span>{(article.views ?? 0).toLocaleString('fa-IR')} بازدید</span>
                         </div>
                       </div>
                     </motion.div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Zap, Clock, X, ArrowLeft, DollarSign, Filter, TrendingUp, Target, Droplets, Building2, Activity, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatPersianDate, formatPersianMonth, persianMonthKey, PERSIAN_MONTHS } from '@/lib/persian-date'
+import { ContentRenderer } from '@/components/content-renderer'
 
 const SUB_TABS = [
   { key: 'signals', label: 'سیگنال‌ها' },
@@ -80,7 +81,7 @@ function DetailModal({ item, onClose }: { item: any; onClose: () => void }) {
               <span className="text-[10px] text-muted-foreground font-medium">توضیحات</span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <p className="text-sm text-foreground/90 leading-relaxed">{item.description}</p>
+            <ContentRenderer text={item.description} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-blue-500/8 border border-blue-500/20 rounded-2xl p-3.5 text-center">
@@ -161,7 +162,7 @@ function SignalCard({ item, onClick }: { item: any; onClick: () => void }) {
       </div>
       <div className="text-[9px] text-muted-foreground mt-1">{daysAgo} روز</div>
       {item.description && (
-        <div className="text-[9px] text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-colors mt-1 leading-tight line-clamp-2">
+        <div className="text-[9px] text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-colors mt-1 leading-tight line-clamp-2 whitespace-pre-wrap">
           {item.description}
         </div>
       )}

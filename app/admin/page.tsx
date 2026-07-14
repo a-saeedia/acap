@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, toggleScanner, getUserQuizResults } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminSettings } from '@/components/admin/admin-settings'
 import { AdminComments } from '@/components/admin/admin-comments'
@@ -168,6 +168,19 @@ export default function AdminPage() {
     await closeTicket(ticketId); setSelectedTicket(null); loadTickets()
   }
 
+  async function handleDeleteTicket(ticketId: string) {
+    if (!confirm('آیا از حذف این تیکت و تمام پیام‌های آن اطمینان دارید؟')) return
+    await deleteTicket(ticketId); setSelectedTicket(null); loadTickets()
+  }
+
+  async function handleDeleteUser(userId: string) {
+    if (!confirm('آیا از حذف این کاربر و تمام اطلاعات مرتبط (تیکت‌ها، دارایی‌ها، ثبت‌نام‌ها و ...) اطمینان دارید؟')) return
+    if (!confirm('این عملیات قابل بازگشت نیست. برای تایید نهایی، دوباره تایید کنید.')) return
+    await deleteUser(userId)
+    setUsers(users.filter(u => u.id !== userId))
+    if (selectedUser?.id === userId) setSelectedUser(null)
+  }
+
   const TYPE_LABELS: Record<string, string> = { conservative: 'محافظه‌کار', balanced: 'متعادل', growth: 'رشدگرا', aggressive: 'تهاجمی' }
   const IDEAL_ALLOCATIONS: Record<string, Record<string, number>> = {
     conservative: { gold: 40, currency: 30, stock: 20, crypto: 10, other: 0 },
@@ -331,7 +344,10 @@ export default function AdminPage() {
                     <div className="bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-800">
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg sm:text-xl font-bold truncate">{selectedUser.name}</h2>
-                        <button onClick={() => setShowMobileList(true)} className="lg:hidden text-xs text-gray-500 hover:text-gray-300">بستن</button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => handleDeleteUser(selectedUser.id)} className="text-xs text-red-400 hover:text-red-300 underline underline-offset-2">حذف کاربر</button>
+                          <button onClick={() => setShowMobileList(true)} className="lg:hidden text-xs text-gray-500 hover:text-gray-300">بستن</button>
+                        </div>
                       </div>
                       <div className="space-y-2 mb-6">
                         <div className="flex justify-between py-2 border-b border-gray-800 text-sm">
@@ -513,6 +529,7 @@ export default function AdminPage() {
                       <div className="flex gap-2">
                         <button onClick={() => handleReply(selectedTicket)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold transition-colors whitespace-nowrap">ارسال</button>
                         <button onClick={() => handleClose(selectedTicket)} className="px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-xl text-sm font-bold transition-colors whitespace-nowrap">بستن تیکت</button>
+                        <button onClick={() => handleDeleteTicket(selectedTicket)} className="px-4 py-2.5 bg-red-800 hover:bg-red-900 rounded-xl text-sm font-bold transition-colors whitespace-nowrap">حذف تیکت</button>
                       </div>
                     </div>
                   </>
