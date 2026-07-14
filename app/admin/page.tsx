@@ -1000,26 +1000,32 @@ function AdminSignals() {
       {signalTab === 'revenue' && (
         <div className="space-y-4">
           <div className="bg-gray-900 rounded-xl p-4 border border-gray-800"><div className="flex items-center justify-between"><span className="text-xs text-gray-400">مجموع درآمد A|CAP</span><span className="text-xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</span></div></div>
-          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
-              <span className="text-xs text-gray-500">ثبت درآمد ماهانه</span>
-              <button onClick={() => openRevenueForm()} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold transition-colors"><Plus className="w-3.5 h-3.5" /> ثبت درآمد</button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['ماه', 'سال', 'مبلغ', 'توضیحات', 'عملیات'].map(h => <th key={h} className="text-right py-3 px-3">{h}</th>)}</tr></thead>
-                <tbody>{revenues.map(r => (
-                  <tr key={r.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="py-2.5 px-3 font-medium text-sm">{persianMonths[r.month - 1] || r.month}</td>
-                    <td className="py-2.5 px-3 text-gray-400 text-xs">{r.year}</td>
-                    <td className="py-2.5 px-3 text-emerald-400 font-bold">{Number(r.amount).toLocaleString()} تومان</td>
-                    <td className="py-2.5 px-3 text-xs text-gray-400 max-w-[200px] truncate">{r.description || '—'}</td>
-                    <td className="py-2.5 px-3"><div className="flex gap-1"><button onClick={() => openRevenueForm(r)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button><button onClick={() => deleteRevenue(r.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button></div></td>
-                  </tr>))}</tbody>
-              </table>
-            </div>
-            {revenues.length === 0 && <p className="text-center py-8 text-gray-500">درآمدی ثبت نشده است</p>}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">ثبت درآمد ماهانه</span>
+            <button onClick={() => openRevenueForm()} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold transition-colors"><Plus className="w-3.5 h-3.5" /> ثبت درآمد</button>
           </div>
+          {revenues.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {[...revenues].sort((a, b) => (b.year - a.year) || (b.month - a.month)).map(r => (
+                <div key={r.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-300">{persianMonths[r.month - 1] || r.month}</span>
+                      <span className="text-[10px] text-gray-500">{r.year}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => openRevenueForm(r)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                      <button onClick={() => deleteRevenue(r.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                    </div>
+                  </div>
+                  <div className="text-lg font-black text-emerald-400">{Number(r.amount).toLocaleString()} تومان</div>
+                  {r.description && <div className="text-[11px] text-gray-500 mt-1.5 line-clamp-2">{r.description}</div>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-8 text-gray-500">درآمدی ثبت نشده است</p>
+          )}
         </div>
       )}
     </div>
