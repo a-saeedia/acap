@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Zap, Clock, X, ArrowLeft, DollarSign, Filter, TrendingUp, Target, Droplets, Building2, Activity, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { formatPersianDate, formatPersianMonth, persianMonthKey, PERSIAN_MONTHS } from '@/lib/persian-date'
+import { formatPersianDate, formatPersianMonth, persianMonthKey } from '@/lib/persian-date'
 import { ContentRenderer } from '@/components/content-renderer'
 
 const SUB_TABS = [
@@ -365,7 +365,9 @@ export default function SignalsPage() {
   const [range, setRange] = useState(6)
   const [investorFilter, setInvestorFilter] = useState('all')
   const [selected, setSelected] = useState<any | null>(null)
-  const [subTab, setSubTab] = useState<'signals' | 'revenue'>('signals')
+  const [subTab, setSubTab] = useState<'signals' | 'revenue'>(
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'revenue' ? 'revenue' : 'signals'
+  )
 
   function loadData(months: number) {
     setLoading(true)
@@ -541,28 +543,7 @@ export default function SignalsPage() {
             </div>
           )}
 
-          {!loading && filteredSignals.length === 0 && revenue.length > 0 && null}
 
-          {!loading && revenue.length > 0 && (
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs font-bold text-muted-foreground px-2">درآمد ماهانه A|CAP</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-              <div className="space-y-2">
-                {[...revenue].sort((a, b) => (b.year - a.year) || (b.month - a.month)).map((r: any) => (
-                  <div key={r.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                    <span className="text-xs text-muted-foreground">{PERSIAN_MONTHS[r.month - 1] || r.month} {r.year}</span>
-                    <div className="text-left">
-                      <span className="text-sm font-bold text-emerald-400">{Number(r.amount).toLocaleString()} تومان</span>
-                      {r.description && <p className="text-[10px] text-muted-foreground mt-0.5">{r.description}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {selected && (
             <DetailModal item={selected} onClose={() => setSelected(null)} />

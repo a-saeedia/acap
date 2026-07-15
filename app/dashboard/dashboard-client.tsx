@@ -302,7 +302,7 @@ export function DashboardClient() {
 
               {/* A|CAP Revenue mini square */}
               <motion.div variants={itemVariants} className="flex-1">
-                <button onClick={() => router.push('/app/signals')}
+                <button onClick={() => router.push('/app/signals?tab=revenue')}
                   className="w-full relative overflow-hidden rounded-2xl p-4 text-right group cursor-pointer border-0 h-full"
                   style={{
                     background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
@@ -430,7 +430,7 @@ export function DashboardClient() {
                 <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/signals' : '/acap-plus'), color: 'text-amber-400' },
+                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/signals?tab=revenue' : '/acap-plus'), color: 'text-amber-400' },
                     { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
                   ].map(btn => (
