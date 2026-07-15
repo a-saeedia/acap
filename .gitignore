@@ -1,27 +1,30 @@
-# v0 sandbox internal files
-__v0_runtime_loader.js
-__v0_devtools.tsx
-__v0_jsx-dev-runtime.ts
-.snowflake/
-.v0-trash/
-.vercel/
+# Dependencies
+node_modules/
 
-# Environment variables
-.env
-.env*.local
-
-# Common ignores
-node_modules
+# Build output
 .next/
-.DS_Store
 *.tsbuildinfo
 
-# Remove pnpm lock since we use npm
-pnpm-lock.yaml
+# Environment
+.env
+.env.local
+.env.*.local
 
-.vercel
-
+# Vercel
+.vercel/
 .env.vercel
 .env.vercel.*
-# temp scripts
-*.mjs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp & logs
+*.log
+tmp/

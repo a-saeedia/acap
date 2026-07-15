@@ -1,7 +1,27 @@
 {
-  "name": "my-project",
-  "version": "0.1.0",
+  "name": "acap-platform",
+  "version": "1.0.0",
   "private": true,
+  "description": "A|CAP — AI-powered Persian capital management platform with portfolio advisory, real-time market prices, financial personality profiling, and investment signals",
+  "author": "A|CAP Team",
+  "license": "UNLICENSED",
+  "homepage": "https://a-cap.xyz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a-saeedia/acap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/a-saeedia/acap/issues"
+  },
+  "keywords": [
+    "finance",
+    "investment",
+    "portfolio",
+    "iran-stocks",
+    "crypto",
+    "ai-advisor",
+    "persian"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

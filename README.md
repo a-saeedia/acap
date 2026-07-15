@@ -424,7 +424,7 @@ npm run lint     # ESLint validation
 
 ### Environment
 
-Branch `acap-2` deploys to production, aliased to `a-cap.xyz`.
+Branch `main` deploys to production, aliased to `a-cap.xyz`.
 
 ### Database Migrations
 
@@ -484,8 +484,10 @@ Or use in-app ALTER TABLE for dynamic column additions (signals, suggestions).
 │   ├── portfolio-dashboard.tsx  # Portfolio management
 │   ├── portfolio-advisor.tsx    # AI portfolio scoring
 │   ├── price-ticker.tsx   # Live price ticker
-│   ├── ai-support.tsx     # Floating AI chat
-│   └── ...                # Other sections
+│   ├── chat-bubble.tsx     # Floating AI chat button
+│   ├── revenue-widget.tsx  # A|CAP revenue dashboard widget
+│   ├── blog-section.tsx    # Blog content sections
+│   └── ...                 # Other sections
 ├── lib/
 │   ├── db/
 │   │   ├── index.ts       # DB connection (Pool + Drizzle)
