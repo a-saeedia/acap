@@ -66,42 +66,6 @@ export function AmbassadorSection() {
           </div>
         </motion.div>
 
-        {/* Stats preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.1 }}
-          transition={{ duration: 0.6 }}
-          className="glass border border-border rounded-3xl p-6 sm:p-8 mb-8"
-        >
-          <h3 className="text-foreground font-black text-lg mb-6 text-center">محاسبه درآمد سفیران</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {[
-              { icon: Users, label: 'وارد سایت شدند', value: '—', color: '#3B82F6' },
-              { icon: FileText, label: 'تست دادند', value: '—', color: '#8B5CF6' },
-              { icon: ShoppingCart, label: 'خرید کردند', value: '—', color: '#10B981' },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="glass border border-border rounded-2xl p-5 text-center hover:border-primary/30 transition-all duration-300"
-              >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
-                  <span className="text-sm text-muted-foreground">{stat.label}</span>
-                </div>
-                <div className="text-2xl font-black text-foreground">{stat.value}</div>
-              </motion.div>
-            ))}
-          </div>
-          <p className="text-center text-muted-foreground text-xs mt-4">
-            بعد از دریافت لینک اختصاصی، آمار واقعی تو رو اینجا می‌بینی
-          </p>
-        </motion.div>
-
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
