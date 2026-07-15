@@ -13,7 +13,6 @@ import { FaqSection } from '@/components/faq-section'
 import { BlogSection } from '@/components/blog-section'
 import { Footer } from '@/components/footer'
 import { AuthModal } from '@/components/auth-modal'
-import { RevenueWidget } from '@/components/revenue-widget'
 
 export default function Page() {
   const [authOpen, setAuthOpen] = useState(false)
@@ -23,7 +22,6 @@ export default function Page() {
       <Navbar onOpenAuth={() => setAuthOpen(true)} />
       <Hero onOpenAuth={() => setAuthOpen(true)} />
       <AboutSection />
-      <RevenueWidget />
       <QuizSection onOpenAuth={() => setAuthOpen(true)} />
       <ServicesSection />
       <AmbassadorSection />

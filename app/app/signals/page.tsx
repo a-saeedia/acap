@@ -171,20 +171,44 @@ function SignalCard({ item, onClick }: { item: any; onClick: () => void }) {
 }
 
 function RevenueView({ signals, revenue, range, onRangeChange }: { signals: any[]; revenue: any[]; range: number; onRangeChange: (r: number) => void }) {
-  const stats = useMemo(() => {
-    const total = signals.length
-    const wins = signals.filter(s => (s.actualProfit ?? 0) >= 0).length
-    const netProfit = signals.reduce((s, sig) => s + (sig.actualProfit ?? 0), 0) / Math.max(1, total)
-    const avgWin = wins > 0 ? signals.filter(s => (s.actualProfit ?? 0) >= 0).reduce((s, sig) => s + (sig.actualProfit ?? 0), 0) / wins : 0
-    const avgLoss = total - wins > 0 ? signals.filter(s => (s.actualProfit ?? 0) < 0).reduce((s, sig) => s + (sig.actualProfit ?? 0), 0) / (total - wins) : 0
-    return { total, wins, losses: total - wins, winRate: total > 0 ? (wins / total * 100).toFixed(0) : '0', avgWin, avgLoss, netProfit }
-  }, [signals])
-
-  const maxAbsProfit = Math.max(...signals.map(s => Math.abs(s.actualProfit ?? 0)), 1)
+  const [activeMonth, setActiveMonth] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
-  const totalRevenueAmount = useMemo(() => revenue.reduce((s, r) => s + Number(r.amount), 0), [revenue])
-  const sortedRevenue = useMemo(() => [...revenue].sort((a, b) => (b.year - a.year) || (b.month - a.month)), [revenue])
+  const months = useMemo(() => {
+    const m = new Map<string, { year: number; month: number; mon: string }>()
+    for (const sig of signals) {
+      const pd = formatPersianDate(sig.publishedAt)
+      const parts = pd.split(' ')
+      if (parts.length >= 3) {
+        const key = `${parts[2]}__${parts[1]}`
+        if (!m.has(key)) {
+          m.set(key, { year: +parts[2], month: +parts[1], mon: parts[1] })
+        }
+      }
+    }
+    return [...m.values()].sort((a, b) => (a.year * 12 + a.month) - (b.year * 12 + b.month))
+  }, [signals])
+
+  const monthKey = (sig: any) => {
+    const pd = formatPersianDate(sig.publishedAt)
+    const parts = pd.split(' ')
+    return parts.length >= 3 ? `${parts[2]}__${parts[1]}` : ''
+  }
+
+  const filtered = useMemo(() => {
+    if (!activeMonth) return signals
+    return signals.filter(sig => monthKey(sig) === activeMonth)
+  }, [signals, activeMonth])
+
+  const stats = useMemo(() => {
+    const total = filtered.length
+    const wins = filtered.filter(s => (s.actualProfit ?? 0) >= 0).length
+    const avgWin = wins > 0 ? filtered.filter(s => (s.actualProfit ?? 0) >= 0).reduce((s, sig) => s + (sig.actualProfit ?? 0), 0) / wins : 0
+    const avgLoss = total - wins > 0 ? filtered.filter(s => (s.actualProfit ?? 0) < 0).reduce((s, sig) => s + (sig.actualProfit ?? 0), 0) / (total - wins) : 0
+    return { total, wins, losses: total - wins, winRate: total > 0 ? (wins / total * 100).toFixed(0) : '0', avgWin, avgLoss }
+  }, [filtered])
+
+  const maxAbsProfit = Math.max(...filtered.map(s => Math.abs(s.actualProfit ?? 0)), 1)
 
   return (
     <div className="relative">
@@ -204,175 +228,140 @@ function RevenueView({ signals, revenue, range, onRangeChange }: { signals: any[
           <p className="text-xs text-muted-foreground mt-1">پیشنهادات معاملاتی ثبت‌شده — شفافیت کامل در عملکرد</p>
         </motion.div>
 
-        {/* Filter */}
-        <div className="flex gap-1.5 justify-center">
-          {TIME_RANGES.map(tr => (
-            <button key={tr.months} onClick={() => onRangeChange(tr.months)}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                range === tr.months
-                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
-                  : 'glass border-border text-muted-foreground hover:border-white/20 hover:text-foreground'
-              }`}
-            >{tr.label}</button>
-          ))}
-        </div>
-
-        {/* Big stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Stats pills row */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="flex flex-wrap gap-2 justify-center"
+        >
           {[
-            { icon: Activity, label: 'کل سیگنال‌ها', value: stats.total, color: '#fff' },
-            { icon: TrendingUp, label: 'سود خالص', value: `%${stats.netProfit >= 0 ? '+' : ''}${stats.netProfit.toFixed(1)}`, color: stats.netProfit >= 0 ? '#10B981' : '#EF4444' },
-            { icon: Target, label: 'نرخ برد', value: `${stats.winRate}%`, color: '#3B82F6' },
-            { icon: DollarSign, label: 'کل درآمد', value: `${totalRevenueAmount.toLocaleString()} تومان`, color: '#F59E0B' },
-          ].map(s => {
-            const Icon = s.icon
-            return (
-              <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="glass border border-border rounded-2xl p-4 text-center hover:border-white/10 transition-all duration-300"
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: `${s.color}15` }}>
-                  <Icon className="w-4.5 h-4.5" style={{ color: s.color }} />
-                </div>
-                <div className="text-lg sm:text-xl font-black tabular-nums" style={{ color: s.color }}>{s.value}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{s.label}</div>
-              </motion.div>
-            )
-          })}
-        </div>
-
-        {/* Detail stats pills */}
-        <div className="flex flex-wrap gap-1.5 justify-center">
-          {[
+            { label: 'کل', value: stats.total, color: '#fff' },
             { label: 'برد', value: stats.wins, color: '#10B981' },
             { label: 'باخت', value: stats.losses, color: '#EF4444' },
+            { label: 'نرخ برد', value: `${stats.winRate}%`, color: '#10B981' },
             { label: 'سود متوسط', value: `%${stats.avgWin.toFixed(1)}`, color: '#10B981' },
             { label: 'ضرر متوسط', value: `%${Math.abs(stats.avgLoss).toFixed(1)}`, color: '#EF4444' },
           ].map(s => (
-            <div key={s.label} className="glass border border-border rounded-xl px-2.5 py-1 text-center">
-              <div className="text-[11px] font-bold" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[8px] text-muted-foreground">{s.label}</div>
+            <div key={s.label} className="glass border border-border rounded-xl px-4 py-2 text-center min-w-[70px]">
+              <div className="text-[9px] text-muted-foreground">{s.label}</div>
+              <div className="text-sm font-black" style={{ color: s.color }}>{s.value}</div>
             </div>
           ))}
-        </div>
+        </motion.div>
+
+        {/* Month filter */}
+        {months.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="flex gap-2 justify-center flex-wrap"
+          >
+            <button onClick={() => setActiveMonth(null)}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                !activeMonth
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                  : 'glass border-border text-muted-foreground hover:border-white/20 hover:text-foreground'
+              }`}
+            >همه</button>
+            {[...months].reverse().map(m => (
+              <button key={`${m.year}__${m.month}`} onClick={() => setActiveMonth(`${m.year}__${m.mon}`)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  activeMonth === `${m.year}__${m.mon}`
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                    : 'glass border-border text-muted-foreground hover:border-white/20 hover:text-foreground'
+                }`}
+              >{m.mon} {m.year}</button>
+            ))}
+          </motion.div>
+        )}
 
         {/* Offer cards */}
-        {signals.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-bold text-muted-foreground px-2">پیشنهادات</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <AnimatePresence>
-                {signals.map((sig, i) => {
-                  const cfg = TYPE_CFG[sig.type] || { color: '#666', icon: Activity, label: 'سایر' }
-                  const Icon = cfg.icon
-                  const isWin = (sig.actualProfit ?? 0) >= 0
-                  const pct = Math.abs(sig.actualProfit ?? 0) / maxAbsProfit * 100
-                  const isExpanded = expandedId === sig.id
-                  const daysAgo = Math.floor((Date.now() - new Date(sig.publishedAt).getTime()) / (1000 * 60 * 60 * 24))
-                  const invStyle = sig.investorType ? INVESTOR_STYLES[sig.investorType] : null
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+            <AnimatePresence>
+              {filtered.map((sig, i) => {
+                const cfg = TYPE_CFG[sig.type] || { color: '#666', icon: Activity, label: 'سایر' }
+                const Icon = cfg.icon
+                const isWin = (sig.actualProfit ?? 0) >= 0
+                const pct = Math.abs(sig.actualProfit ?? 0) / maxAbsProfit * 100
+                const isExpanded = expandedId === sig.id
+                const invStyle = sig.investorType ? INVESTOR_STYLES[sig.investorType] : null
+                const pd = formatPersianDate(sig.publishedAt)
+                const parts = pd.split(' ')
+                const yearLabel = parts.length >= 3 ? parts[2] : ''
+                const monLabel = parts.length >= 3 ? parts[1] : ''
 
-                  return (
-                    <motion.div key={sig.id} layout
-                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }}
-                      className="glass border border-border hover:border-emerald-500/20 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer group"
-                      onClick={() => setExpandedId(isExpanded ? null : sig.id)}
-                    >
-                      <div className="p-4 pb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${cfg.color}20` }}>
-                              <Icon className="w-4.5 h-4.5" style={{ color: cfg.color }} />
+                return (
+                  <motion.div key={sig.id} layout
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }}
+                    className="glass border border-border hover:border-emerald-500/20 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer group"
+                    onClick={() => setExpandedId(isExpanded ? null : sig.id)}
+                  >
+                    <div className="p-4 pb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${cfg.color}20` }}>
+                            <Icon className="w-4.5 h-4.5" style={{ color: cfg.color }} />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-foreground leading-tight">{sig.symbol || cfg.label}</div>
+                            <div className="text-[9px] text-muted-foreground">{yearLabel} | {monLabel}</div>
+                          </div>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-accent/50 rounded-lg px-2.5 py-1.5">
+                        <span className="font-semibold text-foreground">{formatPersianDate(sig.publishedAt)}</span>
+                        {sig.expiresAt && (
+                          <><span>→</span><span className="font-semibold text-foreground">{formatPersianDate(sig.expiresAt)}</span></>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="px-4">
+                      <div className="h-1.5 rounded-full bg-accent/50 overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: isWin ? '#10B981' : '#EF4444' }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 pt-3 flex items-center justify-between">
+                      <div className={`text-lg font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {isWin ? '+' : ''}{(sig.actualProfit ?? 0).toFixed(1)}%
+                      </div>
+                      <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                        {isWin ? 'سود' : 'ضرر'}
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-border mx-4 overflow-hidden"
+                        >
+                          <div className="py-3 space-y-2">
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-muted-foreground">نوع دارایی</span>
+                              <span className="text-foreground font-semibold">{cfg.label}</span>
                             </div>
-                            <div>
-                              <div className="text-sm font-bold text-foreground leading-tight">{sig.symbol || cfg.label}</div>
-                              <div className="text-[9px] text-muted-foreground flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: invStyle?.color || '#666' }} />
-                                {invStyle?.label || ''}
-                                <span>·</span>
-                                <span>{daysAgo} روز پیش</span>
-                              </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-muted-foreground">مدت معامله</span>
+                              <span className="text-foreground font-semibold">{sig.expiresAt ? Math.ceil((new Date(sig.expiresAt).getTime() - new Date(sig.publishedAt).getTime()) / 86400000) : '—'} روز</span>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-muted-foreground">سود مورد انتظار</span>
+                              <span className="text-blue-400 font-semibold">+{(sig.expectedProfit ?? 0).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-muted-foreground">مناسب برای</span>
+                              <span className="text-foreground font-semibold">{invStyle?.label || '—'}</span>
                             </div>
                           </div>
-                          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground bg-accent/50 rounded-lg px-2.5 py-1">
-                          <span className="font-semibold text-foreground/70 text-[10px]">{formatPersianDate(sig.publishedAt)}</span>
-                          {sig.expiresAt && (
-                            <><span>—</span><span className="font-semibold text-foreground/70 text-[10px]">{formatPersianDate(sig.expiresAt)}</span></>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="px-4">
-                        <div className="h-1.5 rounded-full bg-accent/50 overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: isWin ? '#10B981' : '#EF4444' }} />
-                        </div>
-                      </div>
-
-                      <div className="p-4 pt-3 flex items-center justify-between">
-                        <div className={`text-lg font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {isWin ? '+' : ''}{(sig.actualProfit ?? 0).toFixed(1)}%
-                        </div>
-                        <div className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                          {isWin ? 'سود' : 'ضرر'}
-                        </div>
-                      </div>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-border mx-4 overflow-hidden"
-                          >
-                            <div className="py-3 space-y-1.5">
-                              <div className="flex justify-between text-[10px]">
-                                <span className="text-muted-foreground">نوع دارایی</span>
-                                <span className="text-foreground font-semibold">{cfg.label}</span>
-                              </div>
-                              <div className="flex justify-between text-[10px]">
-                                <span className="text-muted-foreground">سود مورد انتظار</span>
-                                <span className="text-blue-400 font-semibold">+{(sig.expectedProfit ?? 0).toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between text-[10px]">
-                                <span className="text-muted-foreground">مناسب برای</span>
-                                <span className="text-foreground font-semibold">{invStyle?.label || '—'}</span>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-            </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
           </div>
-        )}
-
-        {/* Revenue summary as stat cards */}
-        {sortedRevenue.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-bold text-muted-foreground px-2">درآمد ماهانه A|CAP</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {sortedRevenue.map((r: any) => (
-                <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="glass border border-border rounded-xl p-3 text-center hover:border-emerald-500/20 transition-all duration-300"
-                >
-                  <div className="text-[10px] text-muted-foreground mb-1">{PERSIAN_MONTHS[r.month - 1] || r.month} {r.year}</div>
-                  <div className="text-sm font-black text-emerald-400">{Number(r.amount).toLocaleString()}</div>
-                  <div className="text-[8px] text-muted-foreground">تومان</div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
+        </motion.div>
       </div>
     </div>
   )
