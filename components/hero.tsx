@@ -376,7 +376,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
                 alt="A Capital"
                 width={420}
                 height={126}
-                className="object-contain w-64 sm:w-80 md:w-[420px]"
+                className="object-contain w-56 sm:w-64 md:w-80 lg:w-[420px]"
                 style={{ height: 'auto' }}
                 priority
                 loading="eager"
@@ -459,9 +459,9 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
                 { v: '۴', l: 'تیپ شخصیت مالی' },
                 { v: '۸۷٪', l: 'رضایت کاربران' },
               ].map(s => (
-                <div key={s.l} className="glass border border-border/50 rounded-xl px-5 py-3 text-center min-w-[96px]">
-                  <div className="text-primary font-black text-xl">{s.v}</div>
-                  <div className="text-muted-foreground text-[11px] mt-0.5 whitespace-nowrap">{s.l}</div>
+                <div key={s.l} className="glass border border-border/50 rounded-xl px-3 sm:px-5 py-3 text-center">
+                  <div className="text-primary font-black text-lg sm:text-xl">{s.v}</div>
+                  <div className="text-muted-foreground text-[10px] sm:text-[11px] mt-0.5">{s.l}</div>
                 </div>
               ))}
             </motion.div>

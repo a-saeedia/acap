@@ -114,7 +114,7 @@ export function AmbassadorSection() {
             href="/#quiz"
             whileHover={{ scale: 1.04, boxShadow: '0 0 40px rgba(37,99,235,0.5)' }}
             whileTap={{ scale: 0.96 }}
-            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-10 py-4 rounded-2xl font-black text-lg transition-all duration-300 mb-4"
+            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 sm:px-10 py-4 rounded-2xl font-black text-base sm:text-lg transition-all duration-300 mb-4"
           >
             همین حالا سفیر شو — رایگان
           </motion.a>

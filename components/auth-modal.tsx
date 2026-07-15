@@ -117,10 +117,10 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.92, opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="relative z-10 w-full max-w-md glass border border-border rounded-2xl p-6 shadow-2xl"
+            className="relative z-10 w-full max-w-md glass border border-border rounded-2xl p-5 sm:p-6 shadow-2xl max-h-[85dvh] overflow-y-auto"
             dir="rtl"
           >
-            <button onClick={onClose} aria-label="بستن" className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-all">
+            <button onClick={onClose} aria-label="بستن" className="absolute top-3 left-3 sm:top-4 sm:left-4 w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-all">
               <X className="w-4 h-4" />
             </button>
 
@@ -167,7 +167,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                 <div className="flex gap-1 bg-muted/40 rounded-xl p-1 mb-5">
                   {(['sign-up', 'sign-in'] as const).map(m => (
                     <button key={m} onClick={() => switchMode(m)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${mode === m ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${mode === m ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                       {m === 'sign-up' ? 'ثبت‌نام' : 'ورود'}
                     </button>

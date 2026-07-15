@@ -720,7 +720,7 @@ function AdminContent() {
               <input value={cf.price} onChange={e => setCf(p => ({ ...p, price: Number(e.target.value) }))} type="number" placeholder="قیمت (تومان)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
               <input value={cf.originalPrice} onChange={e => setCf(p => ({ ...p, originalPrice: Number(e.target.value) }))} type="number" placeholder="قیمت اصلی" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input value={cf.duration} onChange={e => setCf(p => ({ ...p, duration: e.target.value }))} placeholder="مدت (مثلاً 12 ساعت)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
               <input value={cf.lessons} onChange={e => setCf(p => ({ ...p, lessons: Number(e.target.value) }))} type="number" placeholder="جلسات" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
               <input value={cf.videoHours} onChange={e => setCf(p => ({ ...p, videoHours: Number(e.target.value) }))} type="number" step="0.5" placeholder="ساعت ویدیو" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
@@ -1068,13 +1068,13 @@ function AdminAnalytics() {
             <h3 className="text-sm font-bold">درآمد دوره‌ها</h3>
             <span className="text-xs text-gray-500">{data.courseRevenue.reduce((s: number, r: any) => s + (r.price || 0) * r.enrollments, 0).toLocaleString()} تومان پتانسیل</span>
           </div>
-          <div className="space-y-1.5">{data.courseRevenue.map((r: any, i: number) => { const maxE = Math.max(...data.courseRevenue.map((x: any) => x.enrollments), 1); const revenue = (r.price || 0) * r.enrollments; return (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 w-4">{i + 1}</span>
-              <span className="text-xs text-gray-300 w-40 sm:w-56 truncate">{r.title}</span>
-              <div className="flex-1 h-4 bg-gray-800 rounded overflow-hidden"><div className="h-full bg-amber-600/70 rounded" style={{ width: `${(r.enrollments / maxE) * 100}%` }} /></div>
-              <span className="text-xs text-gray-400 w-12 text-left">{r.enrollments}</span>
-              <span className="text-xs text-emerald-400 w-28 text-left">{revenue.toLocaleString()} تومان</span>
+            <div className="space-y-1.5">{data.courseRevenue.map((r: any, i: number) => { const maxE = Math.max(...data.courseRevenue.map((x: any) => x.enrollments), 1); const revenue = (r.price || 0) * r.enrollments; return (
+            <div key={i} className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-400 w-4 shrink-0">{i + 1}</span>
+              <span className="text-xs text-gray-300 min-w-0 flex-1 sm:flex-none sm:w-56 truncate">{r.title}</span>
+              <div className="flex-1 h-4 bg-gray-800 rounded overflow-hidden min-w-[60px]"><div className="h-full bg-amber-600/70 rounded" style={{ width: `${(r.enrollments / maxE) * 100}%` }} /></div>
+              <span className="text-xs text-gray-400 w-12 text-left shrink-0">{r.enrollments}</span>
+              <span className="text-xs text-emerald-400 w-28 text-left shrink-0">{revenue.toLocaleString()} تومان</span>
             </div>)})}</div>
         </div>
       )}
@@ -1085,7 +1085,7 @@ function AdminAnalytics() {
             <h3 className="text-sm font-bold">گرمای فعالیت (۳۶۵ روز)</h3>
             <div className="flex items-center gap-1 text-[10px] text-gray-500">
               <span>کم</span>
-              {['bg-gray-800', 'bg-emerald-900/40', 'bg-emerald-700/50', 'bg-emerald-500/60', 'bg-emerald-400/80'].map(c => <div key={c} className="w-3 h-3 rounded {c}" />)}
+              {['bg-gray-800', 'bg-emerald-900/40', 'bg-emerald-700/50', 'bg-emerald-500/60', 'bg-emerald-400/80'].map(c => <div key={c} className={`w-3 h-3 rounded ${c}`} />)}
               <span>زیاد</span>
             </div>
           </div>

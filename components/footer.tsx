@@ -159,7 +159,7 @@ export function Footer() {
                 <button
                   key={link.label}
                   onClick={() => scrollTo(link.href)}
-                  className="text-right text-muted-foreground text-sm hover:text-primary transition-colors py-1.5 font-medium"
+                  className="text-right text-muted-foreground text-sm hover:text-primary transition-colors py-2.5 font-medium"
                 >
                   {link.label}
                 </button>
