@@ -8,7 +8,6 @@ import { getMyAssets } from '@/app/actions/assets'
 import { getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
-import { AcapOffers } from '@/components/acap-offers'
 import {
   Wallet, TrendingUp, Crown, Brain, Shield,
   X, BarChart3, Loader2, HelpCircle, User
@@ -102,7 +101,6 @@ export default function MergedDashboard() {
   const [showAdvisor, setShowAdvisor] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [tutorialStep, setTutorialStep] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'acap'>('dashboard')
 
   useEffect(() => {
     if (isPending) return
@@ -193,26 +191,7 @@ export default function MergedDashboard() {
 
       {ready && (
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
-          {/* Tab Navigation */}
-          <motion.div variants={itemVariants} className="flex gap-2 border-b border-white/[0.08] pb-0">
-            {[
-              { key: 'dashboard' as const, label: 'داشبورد', icon: BarChart3 },
-              { key: 'acap' as const, label: 'درآمد A|CAP', icon: TrendingUp },
-            ].map(tab => (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-t-xl transition-all border-b-2 ${
-                  activeTab === tab.key
-                    ? 'bg-white/[0.05] border-emerald-400 text-emerald-400'
-                    : 'border-transparent text-gray-400 hover:text-white hover:bg-white/[0.03]'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
-          </motion.div>
-
-          {/* Welcome Header (shown in both tabs) */}
+          {/* Welcome Header */}
           <motion.div variants={itemVariants} className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-black text-white truncate">
@@ -230,11 +209,8 @@ export default function MergedDashboard() {
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assets.length} />
           </motion.div>
 
-          {/* ========== DASHBOARD TAB ========== */}
-          {activeTab === 'dashboard' && (
-            <>
-              {/* Key Stats Row */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {/* ========== DASHBOARD ========== */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'ارزش کل', value: hasAssets ? formatToman(totalValue) : '—', color: '#10B981', icon: Wallet },
                 ].map((stat, i) => (
@@ -474,17 +450,8 @@ export default function MergedDashboard() {
                       پنل مدیریت
                     </motion.button>
                   )}
-                </div>
               </div>
-            </>
-          )}
-
-          {/* ========== A|CAP REVENUE TAB ========== */}
-          {activeTab === 'acap' && (
-            <motion.div variants={itemVariants}>
-              <AcapOffers />
-            </motion.div>
-          )}
+            </div>
 
           {/* Portfolio Advisor Modal */}
           <AnimatePresence>
