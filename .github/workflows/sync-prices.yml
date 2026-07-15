@@ -1,0 +1,15 @@
+name: Sync Prices (Hourly)
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call price sync API
+        run: |
+          curl -s "https://a-cap.xyz/api/cron/prices?token=${{ secrets.CRON_SECRET }}" \
+            -o /dev/null -w "%{http_code}" | grep -q 200

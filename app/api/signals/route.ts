@@ -53,9 +53,7 @@ export async function GET(req: Request) {
     const enriched = signals.map((s: any) => {
       const currentPrice = prices[s.symbol] ?? s.priceAtPublish
       const expected = s.expectedProfit ?? 0
-      const actual = currentPrice > 0 && s.priceAtPublish > 0
-        ? Math.round(((currentPrice - s.priceAtPublish) / s.priceAtPublish) * 10000) / 100
-        : expected
+      const actual = s.actualReturn ?? expected
       const daysSince = Math.floor((Date.now() - new Date(s.publishedAt).getTime()) / (1000 * 60 * 60 * 24))
       return {
         ...s,
