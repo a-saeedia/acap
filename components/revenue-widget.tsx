@@ -74,24 +74,18 @@ function genOffers() {
 }
 
 export function RevenueWidget() {
-  const [activeMonth, setActiveMonth] = useState<string | null>(null)
+  const [range, setRange] = useState(0)
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
   const OFFERS = useMemo(() => genOffers(), [])
 
-  const months = useMemo(() => {
-    const m = [...new Set(OFFERS.map(o => `${o.year}__${o.month}`))]
-    m.sort()
-    return m.map(k => {
-      const [yr, mo] = k.split('__')
-      return { key: k, year: +yr, month: +mo, mon: PM[(+mo) - 1] }
-    })
-  }, [OFFERS])
-
   const filtered = useMemo(() => {
-    if (!activeMonth) return OFFERS
-    return OFFERS.filter(o => `${o.year}__${o.month}` === activeMonth)
-  }, [OFFERS, activeMonth])
+    if (range === 0) return OFFERS
+    const now = pDate(new Date())
+    const totalMonths = now.year * 12 + now.month
+    const cutoff = totalMonths - range
+    return OFFERS.filter(o => (o.year * 12 + o.month) >= cutoff)
+  }, [OFFERS, range])
 
   const stats = useMemo(() => {
     const total = filtered.length
@@ -102,7 +96,7 @@ export function RevenueWidget() {
   }, [filtered])
 
   const maxAbsProfit = Math.max(...filtered.map(o => Math.abs(o.profit)), 1)
-  const showLimit = !activeMonth && filtered.length > 6
+  const showLimit = range === 0 && filtered.length > 6
   const display = showLimit ? filtered.slice(0, 6) : filtered
 
   return (
@@ -146,21 +140,20 @@ export function RevenueWidget() {
         <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
           className="flex gap-2 justify-center flex-wrap mb-8"
         >
-          <button onClick={() => setActiveMonth(null)}
-            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-              !activeMonth
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                : 'glass border-border text-muted-foreground hover:border-white/20 hover:text-foreground'
-            }`}
-          >همه</button>
-          {months.reverse().map(m => (
-            <button key={m.key} onClick={() => setActiveMonth(m.key)}
+          {[
+            { label: 'همه', value: 0 },
+            { label: '۱ ماهه', value: 1 },
+            { label: '۳ ماهه', value: 3 },
+            { label: '۶ ماهه', value: 6 },
+            { label: '۱۲ ماهه', value: 12 },
+          ].map(r => (
+            <button key={r.value} onClick={() => setRange(r.value)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                activeMonth === m.key
+                range === r.value
                   ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
                   : 'glass border-border text-muted-foreground hover:border-white/20 hover:text-foreground'
               }`}
-            >{m.mon} {m.year}</button>
+            >{r.label}</button>
           ))}
         </motion.div>
 
