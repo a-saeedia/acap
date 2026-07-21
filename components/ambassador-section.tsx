@@ -1,21 +1,146 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, Users, FileText, ShoppingCart } from 'lucide-react'
+import { TrendingUp, Users, FileText, ShoppingCart, Calculator, Trophy, Medal, Crown, Star, ChevronUp, Gift, DollarSign } from 'lucide-react'
+
+const TOP_AMBASSADORS = [
+  { rank: 1, name: 'امیرحسین رضایی', invites: 20, reward: '۲۴۰,۰۰۰,۰۰۰ تومان', badge: 'طلایی', color: '#F59E0B' },
+  { rank: 2, name: 'سارا محمدی', invites: 10, reward: '۱۲۰,۰۰۰,۰۰۰ تومان', badge: 'نقره‌ای', color: '#94A3B8' },
+  { rank: 3, name: 'علی کریمی', invites: 5, reward: '۶۰,۰۰۰,۰۰۰ تومان', badge: 'برنزی', color: '#B45309' },
+]
+
+function AmbassadorCalculator() {
+  const [referrals, setReferrals] = useState('')
+  const num = parseInt(referrals) || 0
+  const perReferral = 12000000
+  const total = num * perReferral
+
+  return (
+    <div className="glass border border-border rounded-3xl p-6 sm:p-8">
+      <div className="flex items-center gap-2 mb-6">
+        <Calculator className="w-5 h-5 text-primary" />
+        <h3 className="text-foreground font-black text-lg">محاسبه درآمد سفیران</h3>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <label className="text-xs text-muted-foreground block mb-1.5">تعداد دعوت‌های مورد انتظار</label>
+          <div className="relative">
+            <input value={referrals} onChange={e => setReferrals(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="مثلاً ۱۰"
+              className="w-full px-4 py-3 rounded-xl bg-accent/50 border border-border text-foreground text-lg font-black outline-none transition-all focus:border-primary/50 ltr text-left tabular-nums"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">نفر</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-accent/30 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-muted-foreground mb-1">درآمد به ازای هر نفر</div>
+            <div className="text-sm font-black text-emerald-400">۱۲,۰۰۰,۰۰۰ تومان</div>
+          </div>
+          <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-muted-foreground mb-1">درآمد کل تخمینی</div>
+            <div className="text-lg font-black text-emerald-400 tabular-nums">
+              {total > 0 ? `${total.toLocaleString()} تومان` : '—'}
+            </div>
+          </div>
+        </div>
+        {num > 0 && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            className="bg-accent/30 rounded-xl p-3"
+          >
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>پیشرفت به سوی سطح بعدی</span>
+              <span>{Math.min(num, 50)}/۵۰ نفر</span>
+            </div>
+            <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(num / 50 * 100, 100)}%` }}
+                className="h-full rounded-full bg-gradient-to-l from-primary to-emerald-400"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {num >= 50 ? '🎉 به حداکثر سطح رسیده‌ای!' : `${50 - Math.min(num, 50)} نفر دیگر تا سطح بعدی`}
+            </p>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TopAmbassadors() {
+  const [expanded, setExpanded] = useState(false)
+  const display = expanded ? TOP_AMBASSADORS : TOP_AMBASSADORS.slice(0, 3)
+
+  return (
+    <div className="glass border border-border rounded-3xl p-6 sm:p-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-amber-400" />
+          <h3 className="text-foreground font-black text-lg">برترین سفیران</h3>
+        </div>
+        <button onClick={() => setExpanded(!expanded)}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          {expanded ? 'کمتر' : 'بیشتر'}
+          <ChevronUp className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      <div className="space-y-3">
+        {display.map((a, i) => (
+          <motion.div key={a.rank} layout
+            className={`relative rounded-2xl p-4 border transition-all ${
+              a.rank === 1
+                ? 'bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/30'
+                : a.rank === 2
+                ? 'bg-gradient-to-br from-slate-400/10 to-slate-400/5 border-slate-500/20'
+                : 'bg-gradient-to-br from-orange-600/10 to-orange-600/5 border-orange-700/20'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  a.rank === 1 ? 'bg-amber-500/20' : a.rank === 2 ? 'bg-slate-400/20' : 'bg-orange-600/20'
+                }`}>
+                  {a.rank === 1 ? <Crown className="w-5 h-5 text-amber-400" /> :
+                   a.rank === 2 ? <Medal className="w-5 h-5 text-slate-300" /> :
+                   <Medal className="w-5 h-5 text-orange-400" />}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-foreground">{a.name}</div>
+                  <div className="text-[10px] text-muted-foreground">{a.badge}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-black text-foreground">{a.invites}</span>
+                  <span className="text-[10px] text-muted-foreground">دعوت</span>
+                </div>
+                <div className="text-[10px] text-emerald-400 font-semibold">{a.reward}</div>
+              </div>
+            </div>
+            <div className="mt-2 h-1 rounded-full bg-accent/50 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-l from-primary to-emerald-400"
+                style={{ width: `${(3 - a.rank + 1) / 3 * 100}%` }} />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function AmbassadorSection() {
   return (
     <section id="ambassador" className="relative py-24 lg:py-32 overflow-hidden bg-background">
-      <div className="absolute inset-0 grid-pattern opacity-40 pointer-events-none" />
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute inset-0">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/3 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/3 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+      </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }}
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 glass border border-border rounded-full px-4 py-1.5 mb-6">
@@ -25,27 +150,31 @@ export function AmbassadorSection() {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground mb-4 text-balance">
             با لینک اختصاصی خودت،
             <br />
-            <span className="text-brand-shimmer">ACAP را به دیگران معرفی کن</span>
+            <span className="bg-gradient-to-r from-emerald-400 to-primary bg-clip-text text-transparent">ACAP را به دیگران معرفی کن</span>
           </h2>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            پس از انجام تست شخصیت مالی، یک لینک اختصاصی می‌گیری. هرکس با لینک تو بیاد، توی آمارت ثبت می‌شه.
+            پس از انجام تست شخصیت مالی، یک لینک اختصاصی می‌گیری. هرکس با لینک تو بیاد، توی آمارت ثبت می‌شه و درآمد کسب می‌کنی.
           </p>
         </motion.div>
 
-        {/* How it works */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.15 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
+            <AmbassadorCalculator />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.15 }}>
+            <TopAmbassadors />
+          </motion.div>
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.6, delay: 0.1 }}
           className="glass border border-border rounded-3xl p-6 sm:p-8 mb-12"
         >
           <h3 className="text-foreground font-black text-xl mb-6 text-center">چگونه کار می‌کند؟</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { step: '۱', icon: TrendingUp, title: 'تست شخصیت مالی', desc: 'اول شخصیت مالی خودت را در کمتر از ۳ دقیقه کشف کن' },
-              { step: '۲', icon: Users, title: 'لینک اختصاصی بگیر', desc: 'بعد از تست، لینک منحصربه‌فرد خودت را دریافت می‌کنی' },
-              { step: '۳', icon: FileText, title: 'آمار رو پیگیری کن', desc: 'ببین چند نفر بازدید کردند، چند نفر تست دادند، چند نفر خریدند' },
+              { step: '۲', icon: Gift, title: 'لینک اختصاصی بگیر', desc: 'بعد از تست، لینک منحصربه‌فرد خودت را دریافت می‌کنی' },
+              { step: '۳', icon: DollarSign, title: 'درآمد کسب کن', desc: 'به ازای هر نفری که از لینک تو ثبت‌نام کند، پاداش می‌گیری' },
             ].map((step) => {
               const Icon = step.icon
               return (
@@ -66,20 +195,15 @@ export function AmbassadorSection() {
           </div>
         </motion.div>
 
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center"
         >
-          <motion.a
-            href="/#quiz"
+          <motion.a href="/#quiz"
             whileHover={{ scale: 1.04, boxShadow: '0 0 40px rgba(37,99,235,0.5)' }}
             whileTap={{ scale: 0.96 }}
-            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 sm:px-10 py-4 rounded-2xl font-black text-base sm:text-lg transition-all duration-300 mb-4"
+            className="inline-flex items-center gap-3 bg-gradient-to-l from-primary to-emerald-500 text-white px-6 sm:px-10 py-4 rounded-2xl font-black text-base sm:text-lg transition-all duration-300 mb-4 shadow-lg shadow-primary/25"
           >
+            <Star className="w-5 h-5" />
             همین حالا سفیر شو — رایگان
           </motion.a>
           <p className="text-muted-foreground text-sm">
