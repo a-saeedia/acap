@@ -9,6 +9,7 @@ import { AdminComments } from '@/components/admin/admin-comments'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, Settings, MessageSquare, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
+import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
 type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
@@ -876,7 +877,7 @@ function AdminSignals() {
   useEffect(() => { load().catch(() => {}).finally(() => setLoading(false)) }, [load])
 
   function openSignalForm(s?: any) {
-    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', expiresAt: s.expiresAt ? new Date(s.expiresAt).toISOString().slice(0, 16) : '', publishedAt: s.publishedAt ? new Date(s.publishedAt).toISOString().slice(0, 16) : '' }) }
+    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
     else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', expiresAt: '', publishedAt: '' }) }
     setShowSignalForm(true)
   }
@@ -892,7 +893,7 @@ function AdminSignals() {
     setSignalSaving(true)
     try {
       const m = await import('@/app/actions/admin')
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, expiresAt: sf.expiresAt || undefined, publishedAt: sf.publishedAt || undefined }
+      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
       if (signalFormMode === 'create') await m.createSignal(data); else if (editSignalId) await m.updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
     } catch (e) { console.error(e) }; setSignalSaving(false)
@@ -939,8 +940,8 @@ function AdminSignals() {
             <input value={sf.priceNow} onChange={e => setSf(p => ({ ...p, priceNow: e.target.value }))} placeholder="قیمت فعلی" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))} type="datetime-local" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
-            <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} type="datetime-local" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))} type="text" placeholder="مثال: 1402-10-25 14:30 (شمسی)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
+            <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} type="text" placeholder="مثال: 1402-10-25 14:30 (شمسی)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
           </div>
           <button onClick={saveSignal} disabled={signalSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors disabled:opacity-50">{signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}</button>
         </div>

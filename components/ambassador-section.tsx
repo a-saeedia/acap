@@ -11,10 +11,9 @@ const TOP_AMBASSADORS = [
 ]
 
 function AmbassadorCalculator() {
-  const [referrals, setReferrals] = useState('')
-  const num = parseInt(referrals) || 0
+  const [referrals, setReferrals] = useState(10)
   const perReferral = 12000000
-  const total = num * perReferral
+  const total = referrals * perReferral
 
   return (
     <div className="glass border border-border rounded-3xl p-6 sm:p-8">
@@ -22,15 +21,17 @@ function AmbassadorCalculator() {
         <Calculator className="w-5 h-5 text-primary" />
         <h3 className="text-foreground font-black text-lg">محاسبه درآمد سفیران</h3>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <label className="text-xs text-muted-foreground block mb-1.5">تعداد دعوت‌های مورد انتظار</label>
-          <div className="relative">
-            <input value={referrals} onChange={e => setReferrals(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="مثلاً ۱۰"
-              className="w-full px-4 py-3 rounded-xl bg-accent/50 border border-border text-foreground text-lg font-black outline-none transition-all focus:border-primary/50 ltr text-left tabular-nums"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">نفر</span>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-muted-foreground">تعداد دعوت</label>
+            <span className="text-lg font-black text-foreground tabular-nums ltr">{referrals} <span className="text-xs font-medium text-muted-foreground">نفر</span></span>
+          </div>
+          <input type="range" min={0} max={100} value={referrals} onChange={e => setReferrals(Number(e.target.value))}
+            className="w-full h-2 rounded-full appearance-none cursor-pointer bg-accent/50 accent-emerald-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-emerald-400 [&::-webkit-slider-thumb]:to-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-emerald-500/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20"
+          />
+          <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+            <span>۰</span><span>۲۵</span><span>۵۰</span><span>۷۵</span><span>۱۰۰</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -41,28 +42,24 @@ function AmbassadorCalculator() {
           <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 text-center">
             <div className="text-[10px] text-muted-foreground mb-1">درآمد کل تخمینی</div>
             <div className="text-lg font-black text-emerald-400 tabular-nums">
-              {total > 0 ? `${total.toLocaleString()} تومان` : '—'}
+              {total.toLocaleString()} تومان
             </div>
           </div>
         </div>
-        {num > 0 && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-            className="bg-accent/30 rounded-xl p-3"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-              <span>پیشرفت به سوی سطح بعدی</span>
-              <span>{Math.min(num, 50)}/۵۰ نفر</span>
-            </div>
-            <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(num / 50 * 100, 100)}%` }}
-                className="h-full rounded-full bg-gradient-to-l from-primary to-emerald-400"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {num >= 50 ? '🎉 به حداکثر سطح رسیده‌ای!' : `${50 - Math.min(num, 50)} نفر دیگر تا سطح بعدی`}
-            </p>
-          </motion.div>
-        )}
+        <div className="bg-accent/30 rounded-xl p-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+            <span>پیشرفت به سوی سطح بعدی</span>
+            <span>{Math.min(referrals, 50)}/۵۰ نفر</span>
+          </div>
+          <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
+            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(referrals / 50 * 100, 100)}%` }}
+              className="h-full rounded-full bg-gradient-to-l from-primary to-emerald-400"
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {referrals >= 50 ? '🎉 به حداکثر سطح رسیده‌ای!' : `${50 - Math.min(referrals, 50)} نفر دیگر تا سطح بعدی`}
+          </p>
+        </div>
       </div>
     </div>
   )

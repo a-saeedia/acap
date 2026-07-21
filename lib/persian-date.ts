@@ -45,6 +45,25 @@ export function persianInputToGregorian(persianStr: string): Date | null {
   return new Date(g.gy, g.gm - 1, g.gd)
 }
 
+export function persianDatetimeToGregorianISO(persianStr: string): string {
+  const parts = persianStr.trim().split(/\s+/)
+  if (!parts[0]) return ''
+  const d = persianInputToGregorian(parts[0])
+  if (!d) return ''
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const time = parts[1] || '00:00'
+  return `${date}T${time}`
+}
+
+export function gregorianISOToPersianDatetime(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+  const date = `${j.jy}-${String(j.jm).padStart(2, '0')}-${String(j.jd).padStart(2, '0')}`
+  const time = iso.includes('T') ? iso.split('T')[1].slice(0, 5) : ''
+  return time ? `${date} ${time}` : date
+}
+
 export function persianMonthKey(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return iso

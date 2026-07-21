@@ -717,13 +717,13 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] text-muted-foreground mb-1 block">تعداد *</label>
-                <input value={form.quantity || ''} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} type="number"
-                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+                <input value={form.quantity ? form.quantity.toLocaleString('en-US') : ''} onChange={e => setForm({ ...form, quantity: Number(e.target.value.replace(/[^0-9.]/g, '')) })} type="text" inputMode="numeric"
+                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none ltr text-left" />
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground mb-1 block">قیمت خرید (تومان)</label>
-                <input value={form.purchasePrice || ''} onChange={e => setForm({ ...form, purchasePrice: Number(e.target.value) })} type="number"
-                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none" />
+                <input value={form.purchasePrice ? form.purchasePrice.toLocaleString('en-US') : ''} onChange={e => setForm({ ...form, purchasePrice: Number(e.target.value.replace(/[^0-9.]/g, '')) })} type="text" inputMode="numeric"
+                  className="w-full px-3 py-2.5 rounded-xl bg-accent border border-border text-foreground text-sm outline-none ltr text-left" />
               </div>
             </div>
 

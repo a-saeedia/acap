@@ -3,8 +3,8 @@ const TGJU_AJAX = 'https://call2.tgju.org/ajax.json'
 const TGJU_HTML = 'https://www.tgju.org/'
 const TSETMC_API = 'https://cdn.tsetmc.com/api'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-const FETCH_OPTS = { signal: AbortSignal.timeout(4000), headers: { 'User-Agent': UA } }
-const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(4000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
+const FETCH_OPTS = { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': UA } }
+const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
 // Last-resort fallback rate (1709000 Rial ≈ 170900 Toman per USD, from TGJU live data)
 const FALLBACK_USD_RATE = 1709000
 

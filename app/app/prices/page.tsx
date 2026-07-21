@@ -126,18 +126,24 @@ export default function PricesPage() {
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string; change?: number }>>({})
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  async function loadPrices() {
+    setLoading(true)
     const controller = new AbortController()
-    const tid = setTimeout(() => controller.abort(), 8000)
-    fetch('/api/prices', { signal: controller.signal }).then(r => r.json()).then(d => {
+    const tid = setTimeout(() => controller.abort(), 20000)
+    try {
+      const r = await fetch('/api/prices', { signal: controller.signal })
+      const d = await r.json()
       const m: Record<string, { price: number; currency: string; change?: number }> = {}
       for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) {
         if (v.price > 0) m[k] = v
       }
       setPrices(m)
-    }).catch(() => {}).finally(() => setLoading(false))
-    return () => { clearTimeout(tid); controller.abort() }
-  }, [])
+    } catch { setPrices({}) }
+    clearTimeout(tid)
+    setLoading(false)
+  }
+
+  useEffect(() => { loadPrices() }, [])
 
   const grouped = useMemo(() => {
     const groups: Record<string, [string, { price: number; currency: string; change?: number }][]> = {
@@ -186,7 +192,7 @@ export default function PricesPage() {
             <AlertCircle className="w-7 h-7 text-muted-foreground" />
           </div>
           <p className="text-muted-foreground">در حال حاضر داده قیمتی در دسترس نیست</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-5 py-2.5 rounded-xl bg-muted hover:bg-accent text-sm font-semibold transition-colors">
+          <button onClick={loadPrices} className="mt-4 px-5 py-2.5 rounded-xl bg-muted hover:bg-accent text-sm font-semibold transition-colors">
             تلاش مجدد
           </button>
         </div>
