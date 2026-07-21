@@ -100,7 +100,7 @@ export function RevenueWidget() {
   const display = showLimit ? filtered.slice(0, 6) : filtered
 
   return (
-    <section className="relative py-20 lg:py-28 overflow-hidden">
+    <section className="relative py-16 lg:py-20">
       <div className="absolute inset-0">
         <div className="absolute top-1/3 left-1/4 w-72 h-72 rounded-full bg-emerald-500/5 blur-[100px] animate-pulse" style={{ animationDuration: '4s' }} />
         <div className="absolute bottom-1/3 right-1/4 w-96 h-96 rounded-full bg-primary/5 blur-[120px] animate-pulse" style={{ animationDuration: '6s' }} />
