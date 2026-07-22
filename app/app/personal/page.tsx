@@ -8,6 +8,47 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
 }
 
+const GRADIENTS = [
+  'from-blue-600/40 to-blue-900/40',
+  'from-emerald-600/40 to-emerald-900/40',
+  'from-purple-600/40 to-purple-900/40',
+  'from-rose-600/40 to-rose-900/40',
+  'from-amber-600/40 to-amber-900/40',
+  'from-cyan-600/40 to-cyan-900/40',
+  'from-fuchsia-600/40 to-fuchsia-900/40',
+  'from-lime-600/40 to-lime-900/40',
+  'from-orange-600/40 to-orange-900/40',
+  'from-indigo-600/40 to-indigo-900/40',
+  'from-teal-600/40 to-teal-900/40',
+  'from-pink-600/40 to-pink-900/40',
+  'from-sky-600/40 to-sky-900/40',
+  'from-violet-600/40 to-violet-900/40',
+]
+
+const GRADIENT_BORDERS = [
+  'border-blue-500/30',
+  'border-emerald-500/30',
+  'border-purple-500/30',
+  'border-rose-500/30',
+  'border-amber-500/30',
+  'border-cyan-500/30',
+  'border-fuchsia-500/30',
+  'border-lime-500/30',
+  'border-orange-500/30',
+  'border-indigo-500/30',
+  'border-teal-500/30',
+  'border-pink-500/30',
+  'border-sky-500/30',
+  'border-violet-500/30',
+]
+
+const ICON_COLORS = [
+  'text-blue-400', 'text-emerald-400', 'text-purple-400', 'text-rose-400',
+  'text-amber-400', 'text-cyan-400', 'text-fuchsia-400', 'text-lime-400',
+  'text-orange-400', 'text-indigo-400', 'text-teal-400', 'text-pink-400',
+  'text-sky-400', 'text-violet-400',
+]
+
 export default function PersonalPage() {
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,40 +94,53 @@ export default function PersonalPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {sorted.map((item: any) => (
-              <button key={item.id} onClick={() => setSelected(item)}
-                className="bg-[#1c1f2e] rounded-xl border border-[#2a2d3a] p-3 flex flex-col items-center justify-center text-center hover:border-[#2AABEE]/30 hover:bg-[#1c1f2e]/80 transition-all group aspect-square"
-              >
-                {/* Read status */}
-                <div className="self-end mb-1">
-                  {item.isRead ? (
-                    <span className="text-blue-400 text-[7px]">✓✓</span>
-                  ) : (
-                    <span className="text-[#2AABEE] text-[7px]">✓</span>
-                  )}
-                </div>
+            {sorted.map((item: any, idx: number) => {
+              const g = GRADIENTS[idx % GRADIENTS.length]
+              const b = GRADIENT_BORDERS[idx % GRADIENT_BORDERS.length]
+              const ic = ICON_COLORS[idx % ICON_COLORS.length]
+              return (
+                <button key={item.id} onClick={() => setSelected(item)}
+                  className={`rounded-xl border ${b} p-3 flex flex-col items-center justify-center text-center hover:scale-[1.02] hover:shadow-lg transition-all group aspect-square relative overflow-hidden`}
+                >
+                  {/* Gradient bg */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${g} opacity-100`} />
+                  <div className="absolute inset-0 bg-[#0b0e17]/60" />
 
-                {/* Icon area */}
-                <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center mb-1.5 group-hover:bg-[#2AABEE]/20 transition-colors">
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt="" className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    <Crown className="w-4 h-4 text-[#2AABEE]" />
-                  )}
-                </div>
+                  {/* Content */}
+                  <div className="relative z-10 flex flex-col items-center w-full">
 
-                {/* Title */}
-                <span className="text-[10px] font-bold text-white leading-tight line-clamp-2 mb-0.5">{item.title}</span>
+                    {/* Read status */}
+                    <div className="self-end mb-1">
+                      {item.isRead ? (
+                        <span className="text-blue-400 text-[7px]">✓✓</span>
+                      ) : (
+                        <span className={`${ic} text-[7px]`}>●</span>
+                      )}
+                    </div>
 
-                {/* Profit */}
-                {item.profitPercent && (
-                  <span className="text-[9px] font-bold text-emerald-400">+{Number(item.profitPercent).toFixed(1)}%</span>
-                )}
+                    {/* Icon */}
+                    <div className={`w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mb-1.5 group-hover:bg-white/20 transition-colors`}>
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <Crown className={`w-4 h-4 ${ic}`} />
+                      )}
+                    </div>
 
-                {/* Time */}
-                <span className="text-[7px] text-gray-600 mt-auto">{formatTime(new Date(item.createdAt))}</span>
-              </button>
-            ))}
+                    {/* Title */}
+                    <span className="text-[10px] font-bold text-white leading-tight line-clamp-2 mb-0.5">{item.title}</span>
+
+                    {/* Profit */}
+                    {item.profitPercent && (
+                      <span className="text-[9px] font-bold text-emerald-400">+{Number(item.profitPercent).toFixed(1)}%</span>
+                    )}
+
+                    {/* Time */}
+                    <span className="text-[7px] text-white/40 mt-auto">{formatTime(new Date(item.createdAt))}</span>
+                  </div>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
