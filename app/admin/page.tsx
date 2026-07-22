@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
-import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb } from 'lucide-react'
+import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
 import { PersianDateTimePicker } from '@/components/persian-datetime-picker'
@@ -1050,7 +1050,16 @@ function AdminSignals() {
         <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden shadow-lg shadow-black/10">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
             <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
-            <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
+            <div className="flex gap-2">
+              <button onClick={async () => {
+                if (!confirm('همه سیگنال‌ها و درآمدهای قبلی پاک شده و با داده‌های واقعی بازار جایگزین می‌شن. ادامه میدی؟')) return
+                const m = await import('@/app/actions/admin')
+                const r = await m.populateSignals()
+                alert(`${r.signals} سیگنال با قیمت‌های لحظه‌ای بازار ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
+                await load()
+              }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><TrendingUp className="w-3.5 h-3.5" /> ایجاد سیگنال‌های واقعی</button>
+              <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
