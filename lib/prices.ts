@@ -499,13 +499,18 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
       }
       const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
       if (usdRow) {
-        irrRate = Number(usdRow.price)
-        prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-        prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-        for (const sym of Object.keys(crypto)) {
-          const usdPrice = crypto[sym]?.price
-          if (usdPrice) {
-            prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+        const dbRate = Number(usdRow.price)
+        if (dbRate < 5000000) {
+          console.warn('[prices] Rejecting DB USD rate (too low):', dbRate)
+        } else {
+          irrRate = dbRate
+          prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+          prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+          for (const sym of Object.keys(crypto)) {
+            const usdPrice = crypto[sym]?.price
+            if (usdPrice) {
+              prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+            }
           }
         }
       }
