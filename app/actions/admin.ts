@@ -521,17 +521,16 @@ export async function populateRevenueFromSignals() {
       .where(and(eq(acapRevenue.year, year), eq(acapRevenue.month, month)))
       .limit(1)
 
-    const avgProfit = data.amount / data.count
-    const estimatedAmount = Math.round(avgProfit * DEFAULT_BASE_INVESTMENT / 100 * data.count)
+    const avgReturn = Math.round((data.amount / data.count) * 10) / 10 // average return %
     if (existing.length > 0) {
-      await db.update(acapRevenue).set({ amount: estimatedAmount }).where(eq(acapRevenue.id, existing[0].id))
+      await db.update(acapRevenue).set({ amount: avgReturn }).where(eq(acapRevenue.id, existing[0].id))
     } else {
       await db.insert(acapRevenue).values({
         id: randomUUID(),
-        amount: estimatedAmount,
+        amount: avgReturn,
         month,
         year,
-        description: `تخمین درآمد از ${data.count} سیگنال موفق`,
+        description: `میانگین بازده ${data.count} سیگنال موفق`,
       })
     }
     inserted++

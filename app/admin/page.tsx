@@ -1080,9 +1080,31 @@ function AdminSignals() {
       )}
       {signalTab === 'revenue' && (
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10"><div className="flex items-center justify-between"><span className="text-xs text-gray-400">مجموع درآمد A|CAP</span><span className="text-xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</span></div></div>
+          {/* Performance stats */}
+          {signals.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'کل سیگنال‌ها', value: signals.length, color: 'text-white' },
+                { label: 'نرخ برد', value: `${(() => { const w = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length; return signals.length > 0 ? Math.round(w / signals.length * 100) : 0 })()}%`, color: 'text-emerald-400' },
+                { label: 'میانگین بازده', value: `${(() => { const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined); if (withR.length === 0) return '—'; const avg = withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length; return (avg >= 0 ? '+' : '') + avg.toFixed(1) })()}%`, color: 'text-amber-400' },
+                { label: 'بهترین بازده', value: `${(() => { const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined); if (withR.length === 0) return '—'; return '+' + Math.max(...withR.map((s: any) => s.actualReturn ?? 0)).toFixed(1) })()}%`, color: 'text-emerald-400' },
+              ].map(stat => (
+                <div key={stat.label} className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10">
+                  <div className="text-[10px] text-gray-500 mb-1">{stat.label}</div>
+                  <div className={`text-lg font-black ${stat.color}`}>{stat.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {signals.length === 0 && (
+            <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10">
+              <div className="text-[10px] text-gray-500 mb-1">آمار عملکرد</div>
+              <div className="text-lg font-black text-gray-600">هنوز سیگنالی ثبت نشده</div>
+            </div>
+          )}
+          {/* Monthly revenue records (as percentages) */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">ثبت درآمد ماهانه</span>
+            <span className="text-xs text-gray-500">عملکرد ماهانه</span>
             <div className="flex gap-2">
               <button onClick={async () => {
                 const m = await import('@/app/actions/admin')
@@ -1108,13 +1130,13 @@ function AdminSignals() {
                       <button onClick={() => deleteRevenue(r.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                     </div>
                   </div>
-                  <div className="text-lg font-black text-emerald-400">{Number(r.amount).toLocaleString()} تومان</div>
+                  <div className="text-lg font-black text-emerald-400">+{Number(r.amount).toFixed(1)}%</div>
                   {r.description && <div className="text-[11px] text-gray-500 mt-1.5 line-clamp-2">{r.description}</div>}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center py-8 text-gray-500">درآمدی ثبت نشده است</p>
+            <p className="text-center py-8 text-gray-500">عملکردی ثبت نشده است</p>
           )}
         </div>
       )}
