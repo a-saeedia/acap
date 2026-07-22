@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset, deduplicateAssets } from '@/app/actions/assets'
 import {
-  Plus, X, RefreshCw, Loader2, Crown, Target, Wallet,
+  Plus, X, RefreshCw, Loader2, Crown, Target, Wallet, Upload, FileText,
 } from 'lucide-react'
 
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
@@ -245,6 +245,10 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   const [cashAmount, setCashAmount] = useState(0)
   const [cashSubmitting, setCashSubmitting] = useState(false)
   const [showAdvisor, setShowAdvisor] = useState(false)
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadText, setUploadText] = useState('')
+  const [uploadParsing, setUploadParsing] = useState(false)
+  const [uploadResult, setUploadResult] = useState<{ symbol: string; label: string; type: string; quantity: number }[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AssetForm>(INITIAL_FORM)
   const [stockSearch, setStockSearch] = useState('')
@@ -394,6 +398,66 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
       setAssets(await getMyAssets())
       showToast('دارایی حذف شد')
     } catch { showToast('خطا در حذف دارایی', 'error') }
+  }
+
+  const STOCK_LOOKUP: Record<string, string> = {
+    فولاد: 'فولاد مبارکه اصفهان', فملی: 'ملی صنایع مس ایران', فخوز: 'فولاد خوزستان',
+    فایرا: 'آلومینیوم ایران', کگل: 'گل گهر', کچاد: 'چادرملو',
+    خودرو: 'ایران خودرو', خساپا: 'سایپا', خگستر: 'گسترش ایران خودرو',
+    وبملت: 'بانک ملت', وتجارت: 'بانک تجارت', وبصادر: 'بانک صادرات',
+    پارسان: 'پتروشیمی پارس', جم: 'پتروشیمی جم', شپنا: 'پالایش نفت بندرعباس',
+    شتران: 'پالایش نفت تهران', وغدیر: 'سرمایه گذاری غدیر', شستا: 'شستا',
+    رمپنا: 'گروه مپنا', حفاری: 'حفاری شمال', ذوب: 'ذوب آهن اصفهان',
+  }
+
+  function detectType(sym: string): { type: string; label: string } {
+    const u = sym.toUpperCase()
+    const crypto = ['BTC', 'ETH', 'USDT', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX', 'BNB', 'DOT', 'MATIC', 'LINK', 'AVAX', 'SHIB']
+    const gold = ['GOLD18', 'GOLD24', 'COIN', 'HALF_COIN', 'QUARTER_COIN']
+    const currency = ['USD', 'EUR', 'AED', 'TRY', 'GBP']
+    if (crypto.includes(u)) return { type: 'crypto', label: u }
+    if (gold.includes(u)) return { type: 'gold', label: u === 'GOLD18' ? 'طلای ۱۸' : u === 'GOLD24' ? 'طلای ۲۴' : u === 'COIN' ? 'سکه امامی' : u === 'HALF_COIN' ? 'نیم سکه' : 'ربع سکه' }
+    if (currency.includes(u)) return { type: 'currency', label: u }
+    const name = STOCK_LOOKUP[sym] || sym
+    return { type: 'stock', label: name }
+  }
+
+  async function handleUploadParse() {
+    setUploadParsing(true)
+    setUploadResult(null)
+    try {
+      const lines = uploadText.trim().split('\n').filter(Boolean)
+      const items: { symbol: string; label: string; type: string; quantity: number }[] = []
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length < 2) continue
+        const sym = parts[0].trim()
+        const qty = parseFloat(parts.slice(1).join('').replace(/[^0-9.]/g, ''))
+        if (!sym || !qty || qty <= 0) continue
+        const { type, label } = detectType(sym)
+        items.push({ symbol: sym, label, type, quantity: qty })
+      }
+      if (items.length === 0) { showToast('هیچ دارایی معتبری یافت نشد', 'error'); return }
+      setUploadResult(items)
+    } catch { showToast('خطا در پردازش', 'error') }
+    setUploadParsing(false)
+  }
+
+  async function handleUploadConfirm() {
+    if (!uploadResult || uploadResult.length === 0) return
+    let count = 0
+    for (const item of uploadResult) {
+      try {
+        await createAsset({ type: item.type, symbol: item.symbol, label: item.label, quantity: item.quantity })
+        count++
+      } catch { /* continue */ }
+    }
+    setAssets(await getMyAssets())
+    setShowUpload(false)
+    setUploadText('')
+    setUploadResult(null)
+    showToast(`${count} دارایی با موفقیت اضافه شد`)
+    if (count > 0) setShowAdvisor(true)
   }
 
   function handleQuickSymbol(sym: string, label?: string) {
@@ -594,6 +658,14 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
           </div>
         )}
 
+        {/* ── Upload Portfolio ── */}
+        <button onClick={() => { setShowUpload(true); setUploadText(''); setUploadResult(null) }}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-l from-emerald-600 to-green-500 text-white text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all shadow-lg shadow-emerald-600/20 mb-4"
+        >
+          <Upload className="w-4 h-4" />
+          آپلود سبد سهام (批量)
+        </button>
+
         {/* ── Assets Grid ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -781,6 +853,60 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                 {cashSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ثبت وجه نقد'}
               </button>
               <button onClick={() => setShowCashModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
+              >انصراف</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Upload Portfolio Modal */}
+      {showUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); setUploadResult(null) } }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border rounded-2xl p-5 w-full max-w-lg space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-foreground">آپلود سبد سرمایه</h2>
+              <button onClick={() => { setShowUpload(false); setUploadResult(null) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              در هر خط یک دارایی وارد کنید: <span className="font-mono text-foreground">نماد مقدار</span>
+            </p>
+            <div className="bg-accent/30 rounded-xl p-3 text-[11px] text-muted-foreground leading-loose font-mono" dir="ltr">
+              فولاد ۱۰۰۰<br />فملی ۵۰۰<br />BTC 0.5<br />ETH 2<br />GOLD18 ۱۰<br />USD ۱۰۰۰
+            </div>
+            <textarea value={uploadText} onChange={e => setUploadText(e.target.value)} rows={6} placeholder="فولاد 1000&#10;فملی 500&#10;BTC 0.5"
+              className="w-full px-3 py-3 rounded-xl bg-accent border border-border text-foreground text-sm font-mono outline-none resize-none ltr text-left"
+            />
+            {uploadResult && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-1">
+                <p className="text-xs font-bold text-emerald-400 mb-1.5">{uploadResult.length} دارایی شناسایی شد</p>
+                {uploadResult.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs text-foreground">
+                    <span className="font-mono">{item.symbol}</span>
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className="font-mono">{item.quantity.toLocaleString('fa-IR')}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+            <div className="flex gap-2">
+              {!uploadResult ? (
+                <button onClick={handleUploadParse} disabled={!uploadText.trim() || uploadParsing}
+                  className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50"
+                >
+                  {uploadParsing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'بررسی و شناسایی'}
+                </button>
+              ) : (
+                <button onClick={handleUploadConfirm}
+                  className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all"
+                >
+                  افزودن همه و اسکن
+                </button>
+              )}
+              <button onClick={() => { setShowUpload(false); setUploadResult(null) }}
                 className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
               >انصراف</button>
             </div>
