@@ -306,17 +306,17 @@ export default function ScanPage() {
 
               {/* Scan button */}
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-                <button onClick={handleScan} disabled={!investorType || totalEntered <= 0}
+                <button onClick={handleScan} disabled={!investorType || totalEntered <= 0 || Object.keys(prices).length === 0}
                   className="w-full py-4 rounded-2xl bg-gradient-to-l from-primary to-emerald-500 text-white font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   <span className="flex items-center justify-center gap-2">
-                    <Scan className="w-4 h-4" />
-                    اسکن پرتفوی
+                    {Object.keys(prices).length === 0 ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scan className="w-4 h-4" />}
+                    {Object.keys(prices).length === 0 ? 'در حال دریافت قیمت‌ها...' : 'اسکن پرتفوی'}
                   </span>
                 </button>
                 {(!investorType || totalEntered <= 0) && (
                   <p className="text-[11px] text-muted-foreground text-center mt-2">
-                    {!investorType ? 'لطفاً نوع سرمایه‌گذار را انتخاب کنید' : 'لطفاً حداقل یک دارایی وارد کنید'}
+                    {!investorType ? 'لطفاً نوع سرمایه‌گذار را انتخاب کنید' : Object.keys(prices).length === 0 ? 'در حال دریافت قیمت‌های لحظه‌ای...' : 'لطفاً حداقل یک دارایی وارد کنید'}
                   </p>
                 )}
               </motion.div>
