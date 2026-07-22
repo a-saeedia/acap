@@ -7,7 +7,7 @@ import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import { getMyAssets } from '@/app/actions/assets'
 import {
-  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft, Gift, Bot, MessageSquare, ChevronDown, Play, Pause
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft, Gift, Bot, MessageSquare, ChevronDown, Play, Pause, Mic
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { getMyReferralStats } from '@/app/actions/referral'
@@ -312,8 +312,9 @@ export function DashboardClient() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-xs font-black text-foreground">سیگنال‌ها</span>
+                      <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-xs font-black text-foreground">A|CAP Signal Bot</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     </div>
                     {signalStats && (
                       <span className="text-[10px] text-muted-foreground">
@@ -329,23 +330,17 @@ export function DashboardClient() {
                       </div>
                     ) : (
                       signals.slice(0, 5).map((s) => {
-                        const color = ({ crypto: '#F7931A', stock: '#10B981', gold: '#FFD700', forex: '#3B82F6', dollar: '#34D399' } as any)[s.type] || '#666'
                         const isWin = s.actualProfit > 0
                         const isExpanded = expandedSignalId === s.id
                         const sd = s.publishedAt ? new Date(s.publishedAt) : new Date()
                         return (
                           <div key={s.id}
-                            className="rounded-xl px-3 py-2 cursor-pointer transition-all border"
-                            style={{
-                              backgroundColor: `${color}08`,
-                              borderColor: isExpanded ? `${color}25` : 'transparent',
-                              borderRight: `2.5px solid ${color}`,
-                            }}
+                            className="rounded-xl px-3 py-2 cursor-pointer transition-all border border-gray-700/30 bg-gray-800/60 hover:border-gray-600/50"
                             onClick={() => setExpandedSignalId(isExpanded ? null : s.id)}
                           >
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <Bot className="w-3 h-3 shrink-0" style={{ color }} />
+                                <Bot className="w-3 h-3 text-emerald-400 shrink-0" />
                                 <span className="text-[11px] font-bold text-foreground truncate">{s.title}</span>
                                 <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
                                   s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
@@ -360,21 +355,42 @@ export function DashboardClient() {
                               <span className="text-[9px] text-muted-foreground">{String(s.type) === 'crypto' ? 'ارز دیجیتال' : String(s.type) === 'stock' ? 'سهام' : String(s.type) === 'gold' ? 'طلا' : String(s.type) === 'dollar' ? 'دلار' : 'فارکس'}</span>
                               <span className="text-[9px] text-muted-foreground/60">{sd.getHours().toString().padStart(2,'0')}:{sd.getMinutes().toString().padStart(2,'0')}</span>
                             </div>
-                            {s.description && isExpanded && (
-                              <p className="mt-1.5 text-[10px] text-muted-foreground leading-relaxed">{s.description}</p>
-                            )}
-                            {s.imageUrl && isExpanded && (
-                              <img src={s.imageUrl} alt="" className="mt-1.5 rounded-lg w-full h-24 object-cover" />
-                            )}
-                            {s.audioUrl && isExpanded && (
-                              <div className="mt-1.5 flex items-center gap-1.5">
-                                <button onClick={e => { e.stopPropagation(); setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl) }}
-                                  className="p-1 rounded-lg" style={{ backgroundColor: `${color}15` }}>
-                                  {playingAudio === s.audioUrl ? <Pause className="w-3 h-3" style={{ color }} /> : <Play className="w-3 h-3" style={{ color }} />}
-                                </button>
-                                <span className="text-[9px] text-muted-foreground">ویس تحلیل</span>
-                              </div>
-                            )}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                  {s.description && (
+                                    <div className="mt-1.5 text-[10px] text-muted-foreground leading-relaxed space-y-1">
+                                      {s.description.split('\n').map((line: string, i: number) => {
+                                        const t = line.trim()
+                                        if (!t) return <div key={i} className="h-0.5" />
+                                        const isEmojiHeader = /^[🟡🔵🟢🔴🟣🟠⚪✅❌⚠️⏳🎯📊📈📉💰💎🔥⭐🌟✨💡📌🔔🚀🏆]/.test(t) && t.length < 80
+                                        const hasPrice = /[\d,]+(,\d{3})*(\.\d+)?\s*(تومان|ریال|دلار)/.test(t)
+                                        const hasPercent = /\d+(\.\d+)?%/.test(t)
+                                        let cls = 'text-[10px] leading-6'
+                                        if (isEmojiHeader) cls += ' text-amber-300 font-bold text-[11px]'
+                                        else if (hasPrice) cls += ' text-emerald-400'
+                                        else if (hasPercent) cls += ' text-amber-400'
+                                        return <p key={i} className={cls} style={{ direction: 'rtl', textAlign: 'right' }}>{t}</p>
+                                      })}
+                                    </div>
+                                  )}
+                                  {s.imageUrl && (
+                                    <img src={s.imageUrl} alt="" className="mt-1.5 rounded-lg w-full h-24 object-cover border border-gray-700/30" />
+                                  )}
+                                  {s.audioUrl && (
+                                    <div className="mt-1.5 flex items-center gap-1.5 bg-gray-900/50 rounded-lg px-2 py-1.5 border border-gray-700/20">
+                                      <button onClick={e => { e.stopPropagation(); setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl) }}
+                                        className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center hover:bg-emerald-500/30 transition-colors shrink-0"
+                                      >
+                                        {playingAudio === s.audioUrl ? <Pause className="w-3 h-3 text-emerald-400" /> : <Play className="w-3 h-3 text-emerald-400 mr-0.5" />}
+                                      </button>
+                                      <Mic className="w-3 h-3 text-gray-600 shrink-0" />
+                                      <span className="text-[9px] text-muted-foreground">ویس تحلیل</span>
+                                    </div>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                             <ChevronDown className={`w-2.5 h-2.5 text-muted-foreground/40 mx-auto mt-0.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
                         )
