@@ -403,6 +403,61 @@ export async function recalculateSignalReturn(id: string) {
   return { actualReturn, priceNow: currentPrice }
 }
 
+export async function recalculateAllSignals() {
+  await requireAdmin()
+  const { fetchAllPrices } = await import('@/lib/prices')
+  const allPrices = await fetchAllPrices()
+  const prices = allPrices.prices
+  const stockPrices = allPrices.stockPrices
+
+  const allSignals = await db.select().from(signal)
+  let updated = 0
+
+  for (const s of allSignals) {
+    let currentPrice: number | null = null
+    const sym = s.symbol.toUpperCase()
+
+    // Try to get current price based on type
+    if (s.type === 'crypto') {
+      // Try IRR price first (more useful for Persian users), then USD
+      const irrKey = `${sym}-IRR`
+      if (prices[irrKey]?.price) currentPrice = prices[irrKey].price
+      else if (prices[sym]?.price) currentPrice = prices[sym].price
+      // Also check CoinGecko as fallback
+      if (!currentPrice) {
+        try {
+          const coinMap: Record<string, string> = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'XRP': 'ripple', 'ADA': 'cardano', 'DOGE': 'dogecoin', 'TRX': 'tron', 'BNB': 'bnb' }
+          const geckoId = coinMap[sym]
+          if (geckoId) {
+            const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`)
+            const json = await res.json()
+            if (json[geckoId]?.usd) currentPrice = json[geckoId].usd
+          }
+        } catch {}
+      }
+    } else if (s.type === 'stock') {
+      if (stockPrices?.[s.symbol]?.price) currentPrice = stockPrices[s.symbol].price
+      else if (prices[s.symbol]?.price) currentPrice = prices[s.symbol].price
+    } else if (s.type === 'gold') {
+      if (prices[s.symbol]?.price) currentPrice = prices[s.symbol].price
+      else if (prices['GOLD18']?.price) currentPrice = prices['GOLD18'].price
+    } else if (s.type === 'dollar') {
+      if (prices['USD-IRR']?.price) currentPrice = prices['USD-IRR'].price
+    } else if (s.type === 'forex') {
+      if (prices[s.symbol]?.price) currentPrice = prices[s.symbol].price
+      else if (prices['EUR-IRR']?.price) currentPrice = prices['EUR-IRR'].price
+    }
+
+    if (currentPrice && currentPrice > 0 && s.priceAtPublish > 0) {
+      const actualReturn = Math.round(((currentPrice - s.priceAtPublish) / s.priceAtPublish) * 10000) / 100
+      await db.update(signal).set({ actualReturn, priceNow: currentPrice }).where(eq(signal.id, s.id))
+      updated++
+    }
+  }
+
+  return { updated, total: allSignals.length }
+}
+
 export async function deleteSignal(id: string) {
   await requireAdmin()
   await db.delete(signal).where(eq(signal.id, id))
