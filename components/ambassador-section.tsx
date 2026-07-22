@@ -12,8 +12,10 @@ const TOP_AMBASSADORS = [
 
 function AmbassadorCalculator() {
   const [referrals, setReferrals] = useState(10)
-  const perReferral = 12000000
-  const total = referrals * perReferral
+  const [avgInvestment, setAvgInvestment] = useState(30000000)
+  const commissionPct = 20
+  const totalInvestment = referrals * avgInvestment
+  const totalEarning = Math.round(totalInvestment * commissionPct / 100)
 
   return (
     <div className="glass border border-border rounded-3xl p-6 sm:p-8">
@@ -34,18 +36,35 @@ function AmbassadorCalculator() {
             <span>۰</span><span>۲۵</span><span>۵۰</span><span>۷۵</span><span>۱۰۰</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-accent/30 rounded-xl p-3 text-center">
-            <div className="text-[10px] text-muted-foreground mb-1">درآمد به ازای هر نفر</div>
-            <div className="text-sm font-black text-emerald-400">۱۲,۰۰۰,۰۰۰ تومان</div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-muted-foreground">میانگین سرمایه‌گذاری هر نفر</label>
+            <span className="text-sm font-black text-foreground tabular-nums ltr">{avgInvestment.toLocaleString('fa-IR')} <span className="text-xs font-medium text-muted-foreground">تومان</span></span>
           </div>
-          <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 text-center">
-            <div className="text-[10px] text-muted-foreground mb-1">درآمد کل تخمینی</div>
-            <div className="text-lg font-black text-emerald-400 tabular-nums">
-              {total.toLocaleString()} تومان
-            </div>
+          <input type="range" min={1000000} max={200000000} step={1000000} value={avgInvestment} onChange={e => setAvgInvestment(Number(e.target.value))}
+            className="w-full h-2 rounded-full appearance-none cursor-pointer bg-accent/50 accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20"
+          />
+          <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+            <span>۱ میلیون</span><span>۵۰ میلیون</span><span>۱۰۰ میلیون</span><span>۲۰۰ میلیون</span>
           </div>
         </div>
+
+        <div className="bg-accent/30 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">مجموع سرمایه‌گذاری دعوت‌شوندگان</span>
+            <span className="font-bold text-foreground tabular-nums">{totalInvestment.toLocaleString('fa-IR')} تومان</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">درصد پاداش</span>
+            <span className="font-bold text-emerald-400">{commissionPct}%</span>
+          </div>
+          <div className="border-t border-border pt-2 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">درآمد کل تخمینی</span>
+            <span className="text-lg font-black text-emerald-400 tabular-nums">{totalEarning.toLocaleString('fa-IR')} تومان</span>
+          </div>
+        </div>
+
         <div className="bg-accent/30 rounded-xl p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
             <span>پیشرفت به سوی سطح بعدی</span>
