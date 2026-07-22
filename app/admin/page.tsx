@@ -283,12 +283,11 @@ export default function AdminPage() {
                 </button>
               )
             })}
-            <div className="border-t border-gray-800 pt-2 mt-2">
+            <div className="border-t border-gray-800 pt-2 mt-2 flex justify-center">
               <a href="/api/export-csv" download
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all"
+                className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/50 hover:scale-110 active:scale-95 transition-all duration-200"
               >
-                <Download className="w-4 h-4" />
-                خروجی CSV
+                <Download className="w-5 h-5" />
               </a>
             </div>
           </nav>
