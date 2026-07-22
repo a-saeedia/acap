@@ -594,12 +594,12 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
     return result
   } catch (e) { console.error('fetchCryptoPrices error:', e) }
 
-  // Fallback: try Nobitex (Iranian exchange) for USDT/IRT rate + crypto prices
+  // Fallback: try Nobitex (Iranian exchange) — returns Toman, multiply by 10 for Rial format
   try {
     const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=usdt&dstCurrency=irt`, { ...FETCH_OPTS })
     const data = await res.json()
     if (data?.status === 'ok' && data.stats?.['usdt-irt']) {
-      const usdtIrt = parseFloat(data.stats['usdt-irt'].latest)
+      const usdtIrt = parseFloat(data.stats['usdt-irt'].latest) * 10
       if (usdtIrt > 0) {
         const result: PriceMap = {
           USDT: { price: 1, currency: 'USD' },
