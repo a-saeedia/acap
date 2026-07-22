@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Scan, Brain, Shield, TrendingUp, Target, Loader2, Sparkles, ArrowLeft, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
+import { getAssetPriceIr } from '@/lib/price-utils'
 
 const INVESTOR_TYPES = [
   { id: 'conservative', name: 'محافظه‌کار', emoji: '🛡️', color: '#10B981', desc: 'ریسک کم، بازده مطمئن', bg: 'rgba(16,185,129,0.08)' },
@@ -27,20 +28,6 @@ const IDEAL_ALLOCATION: Record<string, Record<string, number>> = {
 }
 
 const TYPE_LABELS: Record<string, string> = { crypto: 'ارز دیجیتال', stock: 'بورس ایران', gold: 'طلا', currency: 'ارز' }
-
-function getAssetPriceIr(sym: string, prices: Record<string, { price: number; currency: string }>, stockPrices: Record<string, number>): number {
-  if (stockPrices[sym] !== undefined) return stockPrices[sym] / 10
-  const irrKey = `${sym.toUpperCase()}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price / 10
-  const d = prices[sym.toUpperCase()] ?? prices[sym]
-  if (!d) return 0
-  if (d.currency === 'IRR') return d.price / 10
-  if (d.currency === 'USD') {
-    const usdRate = prices['USDT-IRR']?.price
-    return usdRate ? (d.price * usdRate) / 10 : d.price
-  }
-  return 0
-}
 
 function formatTomanShort(n: number): string {
   if (n >= 1_000_000_000_000) return (n / 1_000_000_000_000).toFixed(2) + ' همت'

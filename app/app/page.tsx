@@ -13,6 +13,7 @@ import {
   X, BarChart3, Loader2, HelpCircle, User
 } from 'lucide-react'
 import { formatToman, toPersianDigits } from '@/lib/utils'
+import { getAssetPriceIr } from '@/lib/price-utils'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
@@ -31,27 +32,6 @@ const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
   currency: { label: 'ارز', color: '#10B981' },
   cash: { label: 'وجه نقد', color: '#06B6D4' },
   other: { label: 'سایر', color: '#8B5CF6' },
-}
-
-function getAssetPriceIr(
-  symbol: string,
-  prices: Record<string, { price: number; currency: string }>,
-  stockPrices: Record<string, number>
-): number {
-  if (stockPrices[symbol] !== undefined) return stockPrices[symbol] / 10
-  const upper = symbol.toUpperCase()
-  if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
-  const irrKey = `${upper}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price / 10
-  const direct = prices[upper] ?? prices[symbol]
-  if (!direct) return 0
-  if (direct.currency === 'IRR') return direct.price / 10
-  if (direct.currency === 'USD') {
-    const usdRate = prices['USDT-IRR']?.price
-    if (usdRate) return (direct.price * usdRate) / 10
-    return direct.price
-  }
-  return 0
 }
 
 const containerVariants = {

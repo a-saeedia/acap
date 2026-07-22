@@ -11,6 +11,7 @@ import {
 
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
 import { formatToman } from '@/lib/utils'
+import { getAssetPriceIr } from '@/lib/price-utils'
 
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 
@@ -93,27 +94,6 @@ function formatQuantity(n: number, symbol: string): string {
   }
   if (n < 1) return n.toFixed(2)
   return n.toLocaleString('fa-IR', { maximumFractionDigits: 0 })
-}
-
-function getAssetPriceIr(
-  symbol: string,
-  prices: PriceMap,
-  stockPrices: Record<string, number>
-): number | null {
-  if (stockPrices[symbol] !== undefined) return stockPrices[symbol] / 10
-  const upper = symbol.toUpperCase()
-  if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
-  const irrKey = `${upper}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price / 10
-  const direct = prices[upper] ?? prices[symbol]
-  if (!direct) return null
-  if (direct.currency === 'IRR') return direct.price / 10
-  if (direct.currency === 'USD') {
-    const usdRate = prices['USDT-IRR']?.price
-    if (usdRate) return (direct.price * usdRate) / 10
-    return direct.price
-  }
-  return null
 }
 
 function getTotalCost(asset: Asset): number {

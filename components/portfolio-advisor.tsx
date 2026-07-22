@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Brain, PieChart, Target } from 'lucide-react'
+import { getAssetPriceIr } from '@/lib/price-utils'
 
 const TYPE_LABELS: Record<string, string> = {
   crypto: 'رمز ارز',
@@ -42,27 +43,6 @@ interface AdvisorProps {
   stockPrices: Record<string, number>
   investorType: string | null
   quizTaken: boolean
-}
-
-function getAssetPriceIr(
-  symbol: string,
-  prices: Record<string, { price: number; currency: string }>,
-  stockPrices: Record<string, number>
-): number {
-  if (stockPrices[symbol] !== undefined) return stockPrices[symbol] / 10
-  const upper = symbol.toUpperCase()
-  if (stockPrices[upper] !== undefined) return stockPrices[upper] / 10
-  const irrKey = `${upper}-IRR`
-  if (prices[irrKey]) return prices[irrKey].price / 10
-  const direct = prices[upper] ?? prices[symbol]
-  if (!direct) return 0
-  if (direct.currency === 'IRR') return direct.price / 10
-  if (direct.currency === 'USD') {
-    const usdRate = prices['USDT-IRR']?.price
-    if (usdRate) return (direct.price * usdRate) / 10
-    return direct.price
-  }
-  return 0
 }
 
 function formatCurrency(n: number): string {

@@ -288,7 +288,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       }
     }
 
-    console.log('[prices] After computed fallbacks - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
+    if (process.env.NODE_ENV !== 'production') console.log('[prices] After computed fallbacks - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
 
     // TGJU AJAX tolerance arrays: only fill what's STILL MISSING (don't overwrite computed values)
     if (irrRate > 0) {
@@ -320,7 +320,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       } catch {
         console.error('[prices] TGJU AJAX fetch failed (Vercel IP may be blocked)')
       }
-      console.log('[prices] AJAX ok:', ajaxSucceeded, '| GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
+      if (process.env.NODE_ENV !== 'production') console.log('[prices] AJAX ok:', ajaxSucceeded, '| GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
       // Also fetch coin page for nim/rob if still missing from AJAX tolerances
       for (const [slug, sym] of Object.entries({ nim: 'HALF_COIN', rob: 'QUARTER_COIN' })) {
         if (prices[sym]) continue
@@ -334,20 +334,20 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
             const sectionMatch = coinHtml.match(new RegExp(`<tr data-market-row="${slug}".*?<td[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\\d,]+)"`, 's'))
             if (sectionMatch) {
               setWithChange(sym, parseTgjuPrice(sectionMatch[1]), 'IRR', slug)
-              console.log(`[prices] Coin page gave ${sym}: ${sectionMatch[1]}`)
+              if (process.env.NODE_ENV !== 'production') console.log(`[prices] Coin page gave ${sym}: ${sectionMatch[1]}`)
             }
           }
         } catch {
           console.error(`[prices] Coin page fetch failed for ${slug}`)
         }
       }
-      console.log('[prices] After coin page fallback - HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
+      if (process.env.NODE_ENV !== 'production') console.log('[prices] After coin page fallback - HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
     }
 
-    console.log('[prices] Final - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
+    if (process.env.NODE_ENV !== 'production') console.log('[prices] Final - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
     
     return { prices, irrRate, timestamp }
-  } catch { return { prices: {}, irrRate: 0, timestamp: '' } }
+  } catch (e) { console.error('[prices] fetchTgjuHTML error:', e); return { prices: {}, irrRate: 0, timestamp: '' } }
 }
 
 export async function fetchTgjuData(): Promise<{
@@ -467,7 +467,8 @@ export async function fetchTgjuData(): Promise<{
       }
 
       return { prices, irrRate, timestamp }
-    } catch {
+    } catch (e) {
+      console.error('[prices] fetchTgjuData AJAX error:', e)
       continue
     }
   }
@@ -505,7 +506,7 @@ export async function fetchTsetmcSearch(symbol: string): Promise<string | null> 
       return data.instrumentSearch[0]?.insCode || null
     }
     return null
-  } catch { return null }
+  } catch (e) { console.error('[prices] fetchTsetmcSearch error:', e); return null }
 }
 
 export async function fetchTsetmcSearchAll(query: string): Promise<Array<{ symbol: string; name: string; sector: string; insCode: string }>> {
@@ -526,7 +527,7 @@ export async function fetchTsetmcSearchAll(query: string): Promise<Array<{ symbo
         insCode: i.insCode || '',
       }))
       .filter((i: any) => i.symbol && i.name && i.insCode)
-  } catch { return [] }
+  } catch (e) { console.error('[prices] fetchTsetmcSearchAll error:', e); return [] }
 }
 
 export async function fetchTsetmcFullList(): Promise<Array<{ symbol: string; name: string; sector: string }>> {
@@ -545,7 +546,7 @@ export async function fetchTsetmcFullList(): Promise<Array<{ symbol: string; nam
         sector: i.cgrValCot?.replace(/^[NAB]/, '').trim() || '',
       }))
       .filter((i: any) => i.symbol && i.name)
-  } catch { return [] }
+  } catch (e) { console.error('[prices] fetchTsetmcFullList error:', e); return [] }
 }
 
 export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
@@ -577,7 +578,7 @@ export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
       volume: info.qTotTran5J ?? 0,
       yesterday: info.priceYesterday ?? 0,
     }
-  } catch { return null }
+  } catch (e) { console.error('[prices] fetchTsetmcPriceInfo error:', e); return null }
 }
 
 export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
@@ -671,7 +672,7 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
           }
         }
       }
-    } catch {}
+    } catch (e) { console.error('[prices] DB fallback error:', e) }
   }
 
   // Hardcoded fallback when everything fails
@@ -704,3 +705,5 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
 
   return { prices, irrRate, stockPrices }
 }
+
+
