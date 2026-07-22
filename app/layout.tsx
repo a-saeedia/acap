@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { SelfDestructGuard } from '@/components/self-destruct-guard'
 
 const SITE_NAME = 'A | CAP'
 const SITE_DESCRIPTION = 'پلتفرم هوشمند مدیریت سرمایه بر اساس شخصیت مالی در ایران. تحلیل بازار طلا، ارز، رمز ارز و بورس با هوش مصنوعی.'
@@ -97,7 +98,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Vazirmatn, sans-serif' }}>
-        <ThemeProvider><ErrorBoundary>{children}</ErrorBoundary></ThemeProvider>
+        <ThemeProvider><ErrorBoundary><SelfDestructGuard>{children}</SelfDestructGuard></ErrorBoundary></ThemeProvider>
       </body>
     </html>
   )

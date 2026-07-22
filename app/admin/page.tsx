@@ -7,7 +7,7 @@ import { useSession } from '@/lib/auth-client'
 import { AdminSettings } from '@/components/admin/admin-settings'
 import { AdminComments } from '@/components/admin/admin-comments'
 import { AdminTasks } from '@/components/admin/admin-tasks'
-import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, Settings, MessageSquare, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield } from 'lucide-react'
+import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, Settings, MessageSquare, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, Undo2 } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
 
@@ -61,6 +61,33 @@ export default function AdminPage() {
   const [scannerToggling, setScannerToggling] = useState(false)
   const [adminError, setAdminError] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sdHover, setSdHover] = useState(false)
+
+  async function sha256(msg: string): Promise<string> {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg))
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+
+  const SD_HASH = 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b'
+
+  async function handleSelfDestruct() {
+    const pwd = prompt('🔐 رمز خودتخریبی را وارد کنید:')
+    if (!pwd) return
+    if (await sha256(pwd) !== SD_HASH) { alert('❌ رمز اشتباه است!'); return }
+    localStorage.setItem('acap_self_destruct', 'true')
+    window.location.href = '/404'
+  }
+
+  function handleRestore() {
+    const pwd = prompt('🔐 رمز بازگردانی را وارد کنید:')
+    if (!pwd) return
+    sha256(pwd).then(hash => {
+      if (hash !== SD_HASH) { alert('❌ رمز اشتباه است!'); return }
+      localStorage.removeItem('acap_self_destruct')
+      alert('✅ سایت بازگردانی شد!')
+      window.location.reload()
+    })
+  }
 
   useEffect(() => {
     if (!isPending && !session) router.push('/')
@@ -294,6 +321,37 @@ export default function AdminPage() {
               >
                 <Download className="w-6 h-6" />
               </a>
+            </div>
+
+            {/* Self Destruct */}
+            <div className="border-t border-red-900/30 pt-2 mt-2 space-y-1.5">
+              <div className="relative" onMouseEnter={() => setSdHover(true)} onMouseLeave={() => setSdHover(false)}>
+                <button onClick={handleSelfDestruct}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-red-700 to-red-900 text-white text-xs font-black hover:from-red-600 hover:to-red-800 transition-all shadow-lg shadow-red-900/40 hover:shadow-red-700/50 active:scale-[0.97] border border-red-500/20"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Bomb className="w-4 h-4" />
+                    <span>SELF DESTRUCT</span>
+                  </div>
+                </button>
+                {sdHover && (
+                  <div className="absolute bottom-full left-0 right-0 mb-2 z-50">
+                    <div className="bg-gray-900 border border-red-500/30 rounded-xl p-3 shadow-2xl shadow-red-900/40">
+                      <p className="text-[10px] text-red-400 leading-relaxed text-center">
+                        یک یادآوری دوستانه: اگر این دکمه توسط توسعه‌دهنده فشار داده شود،
+                        این پروژه برای همیشه نابود می‌شود و هیچ اثری از آن باقی نمی‌ماند
+                      </p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 border-r border-b border-red-500/30 rotate-45 -mt-1" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button onClick={handleRestore}
+                className="w-full py-2 rounded-lg bg-gradient-to-r from-emerald-700 to-green-900 text-white text-[10px] font-bold hover:from-emerald-600 hover:to-green-800 transition-all border border-emerald-500/20 flex items-center justify-center gap-1.5"
+              >
+                <Undo2 className="w-3 h-3" />
+                بازگردانی
+              </button>
             </div>
           </nav>
         </aside>
