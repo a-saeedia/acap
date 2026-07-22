@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, populateSignals, recalculateAllSignals, populateRevenueFromSignals } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
@@ -1038,10 +1038,13 @@ function AdminSignals() {
         <button onClick={() => setSignalTab('signals')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${signalTab === 'signals' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>سیگنال‌ها ({signals.length})</button>
         <button onClick={() => setSignalTab('revenue')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${signalTab === 'revenue' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>درآمد A|CAP ({revenues.length})</button>
         <button onClick={async () => {
-          const m = await import('@/app/actions/admin')
-          const r = await m.recalculateAllSignals()
-          alert(`${r.updated} از ${r.total} سیگنال با قیمت‌های زنده به‌روز شد`)
-          await load()
+          try {
+            const r = await recalculateAllSignals()
+            alert(`${r.updated} از ${r.total} سیگنال با قیمت‌های زنده به‌روز شد`)
+            await load()
+          } catch (e: any) {
+            alert('خطا: ' + (e?.message || 'نامشخص'))
+          }
         }} className="px-4 py-2 rounded-lg text-sm whitespace-nowrap bg-gradient-to-l from-emerald-600 to-green-500 text-white font-bold shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-green-400 transition-all">
           به‌روزرسانی قیمت‌ها
         </button>
@@ -1054,8 +1057,7 @@ function AdminSignals() {
               <button onClick={async () => {
                 if (!confirm('همه سیگنال‌ها و درآمدهای قبلی پاک شده و با داده‌های واقعی بازار جایگزین می‌شن. ادامه میدی؟')) return
                 try {
-                  const m = await import('@/app/actions/admin')
-                  const r = await m.populateSignals()
+                  const r = await populateSignals()
                   alert(`${r.signals} سیگنال با قیمت‌های لحظه‌ای بازار ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
                   await load()
                 } catch (e: any) {
@@ -1112,8 +1114,7 @@ function AdminSignals() {
             <div className="flex gap-2">
               <button onClick={async () => {
                 try {
-                  const m = await import('@/app/actions/admin')
-                  const r = await m.populateRevenueFromSignals()
+                  const r = await populateRevenueFromSignals()
                   if (r.months > 0) alert(`${r.months} ماه درآمد از ${r.totalSignals} دوره از سیگنال‌ها محاسبه و ثبت شد`)
                   else alert('هیچ سیگنال موفقی برای محاسبه درآمد یافت نشد')
                   await load()

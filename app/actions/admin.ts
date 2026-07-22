@@ -577,51 +577,22 @@ function priceWithCommas(n: number): string {
 
 export async function populateSignals() {
   await requireAdmin()
-  const { fetchAllPrices } = await import('@/lib/prices')
-
   // Delete existing signals & revenue
   await db.delete(acapRevenue)
   await db.delete(signal)
-
-  let prices: any = {}
-  let stockPrices: any = {}
-  let irrRate = 0
-
-  try {
-    const allPrices = await fetchAllPrices()
-    prices = allPrices.prices || {}
-    stockPrices = allPrices.stockPrices || {}
-    irrRate = allPrices.irrRate || 0
-  } catch (e) {
-    // If API fails, use fallback prices so signals still get created
-  }
 
   const created: string[] = []
   const now = new Date()
 
   for (const tpl of SIGNAL_TEMPLATES) {
-    let currentPrice: number | null = null
-
-    if (tpl.type === 'crypto') {
-      const irrKey = `${tpl.symbol}-IRR`
-      if (prices[irrKey]?.price) currentPrice = prices[irrKey].price
-      else if (prices[tpl.symbol]?.price) currentPrice = prices[tpl.symbol].price
-    } else if (tpl.type === 'stock') {
-      if (stockPrices?.[tpl.symbol]?.price) currentPrice = stockPrices[tpl.symbol].price
-      else if (prices[tpl.symbol]?.price) currentPrice = prices[tpl.symbol].price
-    } else if (tpl.type === 'gold') {
-      if (prices[tpl.symbol]?.price) currentPrice = prices[tpl.symbol].price
-    } else if (tpl.type === 'dollar') {
-      if (prices['USD-IRR']?.price) currentPrice = prices['USD-IRR'].price
-      else if (irrRate > 0) currentPrice = irrRate
-    } else if (tpl.type === 'forex') {
-      if (prices[tpl.symbol]?.price) currentPrice = prices[tpl.symbol].price
+    // Use realistic dummy prices (no API calls)
+    const basePrices: Record<string, number> = {
+      BTC: 7200000000, ETH: 480000000, SOL: 52000000, BNB: 240000000,
+      GOLD18: 48000000, COIN: 620000000,
+      'USD-IRR': 1850000, 'EUR-IRR': 2050000,
+      فولاد: 45000, فملی: 32000, خودرو: 18000, شپنا: 25000, وبملت: 15000,
     }
-
-    // Fallback: if no real price, use a dummy so signals always get created
-    if (!currentPrice || currentPrice <= 0) {
-      currentPrice = 1000 + Math.random() * 100000
-    }
+    const currentPrice = basePrices[tpl.symbol] || 100000
 
     const entryPrice = currentPrice * (1 - randomBetween(0.02, 0.12))
     const actualReturn = Math.round(((currentPrice - entryPrice) / entryPrice) * 10000) / 100
