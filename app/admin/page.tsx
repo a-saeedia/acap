@@ -241,21 +241,21 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-gray-950/90 backdrop-blur-md border-b border-gray-800">
+      <header className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-800/60">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors">
               <Menu className="w-5 h-5 text-gray-300" />
             </button>
-            <span className="font-black text-lg tracking-widest">A <span className="text-blue-400">|</span> CAP</span>
-            <span className="text-[10px] text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full mr-2">مدیریت</span>
+            <span className="font-black text-lg tracking-widest bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">A <span className="text-blue-400">|</span> CAP</span>
+            <span className="text-[10px] text-gray-500 bg-gray-800/60 px-2 py-0.5 rounded-full mr-2 border border-gray-700/30">مدیریت</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs font-bold transition-colors">
+            <button onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl text-xs font-bold transition-all border border-gray-700/30 hover:border-gray-600/50">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">بازگشت به داشبورد</span>
             </button>
-            <button onClick={() => router.push('/')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs font-bold transition-colors">
+            <button onClick={() => router.push('/')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl text-xs font-bold transition-all border border-gray-700/30 hover:border-gray-600/50">
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">صفحه اصلی</span>
             </button>
@@ -268,26 +268,31 @@ export default function AdminPage() {
         <aside className={`fixed lg:static inset-0 z-40 lg:z-auto ${sidebarOpen ? 'flex' : 'hidden'} lg:flex flex-col w-56 shrink-0`}>
           {/* Overlay for mobile */}
           <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <nav className="relative lg:relative w-56 bg-gray-900 lg:bg-transparent border-l lg:border-l-0 lg:border border-gray-800 rounded-2xl p-2 h-fit max-h-[calc(100vh-8rem)] overflow-y-auto space-y-0.5">
+          <nav className="relative lg:relative w-56 bg-gray-900/50 lg:bg-transparent border-l lg:border-l-0 lg:border border-gray-800/50 rounded-2xl p-2 h-fit max-h-[calc(100vh-8rem)] overflow-y-auto space-y-0.5">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon
               const isActive = tab === item.id
               return (
                 <button key={item.id} onClick={() => { setTab(item.id); setSidebarOpen(false); if (item.id === 'users') setSelectedUser(null) }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    isActive ? 'bg-gray-800 text-white shadow-sm' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-gray-800 to-gray-800/50 text-white shadow-sm border border-gray-700/30'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? item.color : ''}`} />
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isActive ? 'bg-gray-700/50' : 'bg-gray-800/50'}`}>
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                  </div>
                   <span className="truncate">{item.label}</span>
                 </button>
               )
             })}
             <div className="border-t border-gray-800 pt-2 mt-2 flex justify-center">
               <a href="/api/export-csv" download
-                className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/50 hover:scale-110 active:scale-95 transition-all duration-200"
+                className="w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/50 hover:scale-110 active:scale-95 transition-all duration-200"
+                title="خروجی CSV"
               >
-                <Download className="w-5 h-5" />
+                <Download className="w-6 h-6" />
               </a>
             </div>
           </nav>
@@ -748,10 +753,10 @@ function AdminContent() {
         ))}
       </div>
       {contentTab === 'courses' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
-            <span className="text-xs text-gray-500">مدیریت دوره‌ها</span>
-            <button onClick={() => openCourseForm()} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold transition-colors"><Plus className="w-3.5 h-3.5" /> دوره جدید</button>
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden shadow-lg shadow-black/10">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
+            <span className="text-xs font-bold text-gray-400">مدیریت دوره‌ها</span>
+            <button onClick={() => openCourseForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-600/20"><Plus className="w-3.5 h-3.5" /> دوره جدید</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -877,7 +882,7 @@ function AdminSignals() {
 
   function openSignalForm(s?: any) {
     if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
-    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: '' }) }
+    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: gregorianISOToPersianDatetime(new Date().toISOString()) }) }
     setShowSignalForm(true)
   }
 
@@ -917,50 +922,56 @@ function AdminSignals() {
 
   const signalFormOverlay = showSignalForm && (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowSignalForm(false) }}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between"><h3 className="text-base font-bold">{signalFormMode === 'create' ? 'افزودن' : 'ویرایش'} سیگنال</h3><button onClick={() => setShowSignalForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
+      <div className="bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-700/50 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-2 border-b border-gray-800"><h3 className="text-base font-bold flex items-center gap-2"><Signal className="w-4 h-4 text-amber-400" />{signalFormMode === 'create' ? 'افزودن' : 'ویرایش'} سیگنال</h3><button onClick={() => setShowSignalForm(false)} className="text-gray-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button></div>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <select value={sf.type} onChange={e => setSf(p => ({ ...p, type: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none"><option value="crypto">ارز دیجیتال</option><option value="stock">سهام</option><option value="gold">طلا</option><option value="forex">فارکس</option><option value="dollar">دلار</option></select>
-            <input value={sf.symbol} onChange={e => setSf(p => ({ ...p, symbol: e.target.value }))} placeholder="نماد (مثلاً BTC)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr" dir="ltr" />
+            <div><label className="text-[10px] text-gray-500 mb-1 block">نوع دارایی</label><select value={sf.type} onChange={e => setSf(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="crypto">ارز دیجیتال</option><option value="stock">سهام</option><option value="gold">طلا</option><option value="forex">فارکس</option><option value="dollar">دلار</option></select></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">نماد</label><input value={sf.symbol} onChange={e => setSf(p => ({ ...p, symbol: e.target.value }))} placeholder="مثلاً BTC" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors ltr" dir="ltr" /></div>
           </div>
-          <input value={sf.title} onChange={e => setSf(p => ({ ...p, title: e.target.value }))} placeholder="عنوان" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
-          <textarea value={sf.description} onChange={e => setSf(p => ({ ...p, description: e.target.value }))} placeholder="توضیحات" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <div><label className="text-[10px] text-gray-500 mb-1 block">عنوان سیگنال</label><input value={sf.title} onChange={e => setSf(p => ({ ...p, title: e.target.value }))} placeholder="مثلاً خرید بیت‌کوین در حمایت" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات</label><textarea value={sf.description} onChange={e => setSf(p => ({ ...p, description: e.target.value }))} placeholder="تحلیل و دلیل سیگنال" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
           <div className="grid grid-cols-2 gap-2">
-            <select value={sf.action} onChange={e => setSf(p => ({ ...p, action: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none"><option value="buy">خرید</option><option value="sell">فروش</option></select>
-            <select value={sf.investorType} onChange={e => setSf(p => ({ ...p, investorType: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none"><option value="conservative">محافظه‌کار</option><option value="balanced">متعادل</option><option value="growth">رشدگرا</option><option value="aggressive">تهاجمی</option></select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <input value={sf.expectedProfit} onChange={e => setSf(p => ({ ...p, expectedProfit: e.target.value }))} placeholder="درصد سود مورد انتظار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
-            <input value={sf.actualReturn} onChange={e => setSf(p => ({ ...p, actualReturn: e.target.value }))} placeholder="بازده واقعی" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <div><label className="text-[10px] text-gray-500 mb-1 block">نوع معامله</label><select value={sf.action} onChange={e => setSf(p => ({ ...p, action: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="buy">خرید</option><option value="sell">فروش</option></select></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">تیپ سرمایه‌گذار</label><select value={sf.investorType} onChange={e => setSf(p => ({ ...p, investorType: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="conservative">محافظه‌کار</option><option value="balanced">متعادل</option><option value="growth">رشدگرا</option><option value="aggressive">تهاجمی</option></select></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input value={sf.priceAtPublish} onChange={e => setSf(p => ({ ...p, priceAtPublish: e.target.value }))} placeholder="قیمت در زمان انتشار" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
-            <input value={sf.priceNow} onChange={e => setSf(p => ({ ...p, priceNow: e.target.value }))} placeholder="قیمت فعلی" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <div><label className="text-[10px] text-gray-500 mb-1 block">درصد سود هدف</label><input value={sf.expectedProfit} onChange={e => setSf(p => ({ ...p, expectedProfit: e.target.value }))} placeholder="مثلاً 15" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">بازده واقعی</label><input value={sf.actualReturn} onChange={e => setSf(p => ({ ...p, actualReturn: e.target.value }))} placeholder="مثلاً 12.5" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className="text-[10px] text-gray-500 mb-1 block">قیمت در انتشار</label><input value={sf.priceAtPublish} onChange={e => setSf(p => ({ ...p, priceAtPublish: e.target.value }))} placeholder="قیمت به تومان" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">قیمت فعلی (اختیاری)</label><input value={sf.priceNow} onChange={e => setSf(p => ({ ...p, priceNow: e.target.value }))} placeholder="در صورت تغییر" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[10px] text-gray-500 mb-1 block">تاریخ انتشار</label>
-              <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))} placeholder="1402-10-25 14:30" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
+              <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))}
+                placeholder="1404-04-31 14:30"
+                className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono focus:border-amber-500/50 transition-colors text-gray-300" />
+              <p className="text-[8px] text-gray-600 mt-0.5">به صورت خودکار پر شد. در صورت نیاز تغییر دهید.</p>
             </div>
             <div>
               <label className="text-[10px] text-gray-500 mb-1 block">تاریخ انقضا (اختیاری)</label>
-              <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} placeholder="1402-11-15 14:30" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
+              <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} placeholder="1404-05-15 14:30" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono focus:border-amber-500/50 transition-colors" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[10px] text-gray-500 mb-1 block">تصویر سیگنال</label>
-              {sf.imageUrl && <img src={sf.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg mb-1" />}
-              <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setSf(p => ({ ...p, imageUrl: r.result as string })); r.readAsDataURL(f) } }} className="w-full text-[11px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-blue-600 file:text-white" />
+              {sf.imageUrl && <img src={sf.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg mb-1 border border-gray-700" />}
+              <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setSf(p => ({ ...p, imageUrl: r.result as string })); r.readAsDataURL(f) } }} className="w-full text-[11px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-amber-600 file:text-white file:cursor-pointer cursor-pointer" />
             </div>
             <div>
               <label className="text-[10px] text-gray-500 mb-1 block">ویس / صدا</label>
               {sf.audioUrl && <audio src={sf.audioUrl} controls className="w-full h-8 mb-1" />}
-              <input type="file" accept="audio/*" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setSf(p => ({ ...p, audioUrl: r.result as string })); r.readAsDataURL(f) } }} className="w-full text-[11px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-blue-600 file:text-white" />
+              <input type="file" accept="audio/*" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setSf(p => ({ ...p, audioUrl: r.result as string })); r.readAsDataURL(f) } }} className="w-full text-[11px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-amber-600 file:text-white file:cursor-pointer cursor-pointer" />
             </div>
           </div>
-          <button onClick={saveSignal} disabled={signalSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors disabled:opacity-50">{signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}</button>
+          <button onClick={saveSignal} disabled={signalSaving}
+            className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
+            {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : signalFormMode === 'create' ? 'انتشار سیگنال' : 'ذخیره تغییرات'}
+          </button>
         </div>
       </div>
     </div>
@@ -968,16 +979,16 @@ function AdminSignals() {
 
   const revenueFormOverlay = showRevenueForm && (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowRevenueForm(false) }}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between"><h3 className="text-base font-bold">{revenueFormMode === 'create' ? 'افزودن' : 'ویرایش'} درآمد A|CAP</h3><button onClick={() => setShowRevenueForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
+      <div className="bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-700/50 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-2 border-b border-gray-800"><h3 className="text-base font-bold">{revenueFormMode === 'create' ? 'افزودن' : 'ویرایش'} درآمد A|CAP</h3><button onClick={() => setShowRevenueForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
         <div className="space-y-3">
-          <input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مبلغ (تومان)" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+          <div><label className="text-[10px] text-gray-500 mb-1 block">مبلغ (تومان)</label><input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مثلاً 15000000" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           <div className="grid grid-cols-2 gap-2">
-            <select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none">{persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}</select>
-            <input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="سال" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
+            <div><label className="text-[10px] text-gray-500 mb-1 block">ماه</label><select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors">{persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}</select></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           </div>
-          <textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="توضیحات (اختیاری)" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none" />
-          <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors disabled:opacity-50">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}</button>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات (اختیاری)</label><textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="منبع درآمد" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
+          <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : <><Plus className="w-4 h-4 inline-block ml-1" />{revenueFormMode === 'create' ? 'ثبت درآمد' : 'ذخیره'}</>}</button>
         </div>
       </div>
     </div>
@@ -989,14 +1000,14 @@ function AdminSignals() {
     <div dir="rtl">
       {signalFormOverlay}{revenueFormOverlay}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-        <button onClick={() => setSignalTab('signals')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${signalTab === 'signals' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>سیگنال‌ها ({signals.length})</button>
-        <button onClick={() => setSignalTab('revenue')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${signalTab === 'revenue' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>درآمد A|CAP ({revenues.length})</button>
+        <button onClick={() => setSignalTab('signals')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${signalTab === 'signals' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>سیگنال‌ها ({signals.length})</button>
+        <button onClick={() => setSignalTab('revenue')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${signalTab === 'revenue' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>درآمد A|CAP ({revenues.length})</button>
       </div>
       {signalTab === 'signals' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
-            <span className="text-xs text-gray-500">مدیریت سیگنال‌ها</span>
-            <button onClick={() => openSignalForm()} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold transition-colors"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden shadow-lg shadow-black/10">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
+            <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
+            <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -1017,15 +1028,15 @@ function AdminSignals() {
       )}
       {signalTab === 'revenue' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800"><div className="flex items-center justify-between"><span className="text-xs text-gray-400">مجموع درآمد A|CAP</span><span className="text-xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</span></div></div>
+          <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10"><div className="flex items-center justify-between"><span className="text-xs text-gray-400">مجموع درآمد A|CAP</span><span className="text-xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</span></div></div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">ثبت درآمد ماهانه</span>
-            <button onClick={() => openRevenueForm()} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold transition-colors"><Plus className="w-3.5 h-3.5" /> ثبت درآمد</button>
+            <button onClick={() => openRevenueForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Plus className="w-3.5 h-3.5" /> ثبت درآمد</button>
           </div>
           {revenues.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {[...revenues].sort((a, b) => (b.year - a.year) || (b.month - a.month)).map(r => (
-                <div key={r.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-all">
+                <div key={r.id} className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-all hover:shadow-lg hover:shadow-emerald-500/5 group">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-gray-300">{persianMonths[r.month - 1] || r.month}</span>

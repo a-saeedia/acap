@@ -679,24 +679,23 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
           </div>
         )}
 
-        {/* ── Upload Portfolio ── */}
-        <button onClick={() => { setShowUpload(true); setUploadText(''); setUploadResult(null); setUploadCsvFile(null) }}
-          className="w-full relative overflow-hidden group flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-l from-emerald-600 via-green-500 to-emerald-400 text-white text-sm font-black hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-600/30 hover:shadow-emerald-500/40 mb-4"
-        >
-          <div className="absolute inset-0 bg-[length:200%_200%] bg-gradient-to-r from-emerald-600 via-green-400 to-emerald-600 group-hover:animate-shimmer opacity-60" />
-          <svg className="w-5 h-5 relative z-10" viewBox="0 0 48 48" fill="none">
-            <rect x="6" y="6" width="36" height="36" rx="4" fill="#1D6F42"/>
-            <text x="24" y="30" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial">X</text>
-            <text x="30" y="14" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="Arial">CSV</text>
-          </svg>
-          <span className="relative z-10">آپلود از فایل CSV</span>
-        </button>
-
         {/* ── Assets Grid ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground">دارایی‌ها</h3>
-            <span className="text-xs text-muted-foreground">{assets.length} مورد</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setShowUpload(true); setUploadText(''); setUploadResult(null); setUploadCsvFile(null) }}
+                className="w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/50 hover:scale-110 active:scale-95 transition-all duration-200"
+                title="آپلود از فایل CSV / Excel"
+              >
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </button>
+              <span className="text-xs text-muted-foreground">{assets.length} مورد</span>
+            </div>
           </div>
 
           {assets.length === 0 ? (
