@@ -8,6 +8,8 @@ import { eq, desc, and, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import { toJalaali } from 'jalaali-js'
 
+const DEFAULT_BASE_INVESTMENT = 50_000_000 // 50M تومان assumed base per signal
+
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) throw new Error('Unauthorized')
@@ -464,7 +466,8 @@ export async function populateRevenueFromSignals() {
       .where(and(eq(acapRevenue.year, year), eq(acapRevenue.month, month)))
       .limit(1)
 
-    const estimatedAmount = Math.round(data.amount * 100000) // rough estimate based on profit %
+    const avgProfit = data.amount / data.count
+    const estimatedAmount = Math.round(avgProfit * DEFAULT_BASE_INVESTMENT / 100 * data.count)
     if (existing.length > 0) {
       await db.update(acapRevenue).set({ amount: estimatedAmount }).where(eq(acapRevenue.id, existing[0].id))
     } else {

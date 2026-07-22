@@ -4,10 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
-import { AdminSettings } from '@/components/admin/admin-settings'
-import { AdminComments } from '@/components/admin/admin-comments'
 import { AdminTasks } from '@/components/admin/admin-tasks'
-import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, Settings, MessageSquare, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, Undo2 } from 'lucide-react'
+import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
 import { PersianDateTimePicker } from '@/components/persian-datetime-picker'
@@ -22,8 +20,6 @@ const NAV_ITEMS = [
   { id: 'content', label: 'دوره‌ها و مقالات', icon: BookOpen, color: 'text-cyan-400' },
   { id: 'signals', label: 'سیگنال‌ها و درآمد', icon: Signal, color: 'text-amber-400' },
   { id: 'plus-requests', label: 'درخواست‌های A|CAP+', icon: Crown, color: 'text-amber-400' },
-  { id: 'settings', label: 'تنظیمات سایت', icon: Settings, color: 'text-gray-400' },
-  { id: 'comments', label: 'نظرات صفحات', icon: MessageSquare, color: 'text-indigo-400' },
   { id: 'tasks', label: 'وظایف', icon: ClipboardList, color: 'text-rose-400' },
   { id: 'referrals', label: 'معرفی‌ها', icon: Gift, color: 'text-orange-400' },
 ]
@@ -79,17 +75,6 @@ export default function AdminPage() {
     if (await sha256(pwd) !== SD_HASH) { alert('❌ رمز اشتباه است!'); return }
     localStorage.setItem('acap_self_destruct', 'true')
     window.location.href = '/404'
-  }
-
-  function handleRestore() {
-    const pwd = prompt('🔐 رمز بازگردانی را وارد کنید:')
-    if (!pwd) return
-    sha256(pwd).then(hash => {
-      if (hash !== SD_HASH) { alert('❌ رمز اشتباه است!'); return }
-      localStorage.removeItem('acap_self_destruct')
-      alert('✅ سایت بازگردانی شد!')
-      window.location.reload()
-    })
   }
 
   useEffect(() => {
@@ -317,33 +302,34 @@ export default function AdminPage() {
                 </button>
               )
             })}
-            {/* Self Destruct — big round button right under nav */}
+            {/* Self Destruct — no return */}
             <div className="border-t border-red-900/20 pt-3 mt-3 flex flex-col items-center gap-2">
               <div className="relative" onMouseEnter={() => setSdHover(true)} onMouseLeave={() => setSdHover(false)}>
                 <button onClick={handleSelfDestruct}
-                  className="w-20 h-20 flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 via-red-700 to-red-900 text-white shadow-2xl shadow-red-900/60 hover:shadow-red-700/60 hover:scale-110 active:scale-95 transition-all duration-200 border-2 border-red-500/30"
+                  className="w-20 h-20 flex items-center justify-center rounded-full bg-gradient-to-br from-red-500 via-orange-600 to-red-900 text-white shadow-[0_0_30px_rgba(255,80,0,0.5)] hover:shadow-[0_0_50px_rgba(255,50,0,0.8)] hover:scale-110 active:scale-95 transition-all duration-200 border-2 border-orange-400/30 animate-pulse"
                 >
-                  <Bomb className="w-9 h-9" />
+                  <Bomb className="w-9 h-9 drop-shadow-[0_0_8px_rgba(255,100,0,0.8)]" />
                 </button>
+                {/* Burning ember particles */}
+                <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-orange-500 animate-ping" style={{ animationDuration: '1.5s' }} />
+                <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 rounded-full bg-red-600 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute top-1/2 -right-2 w-1 h-1 rounded-full bg-yellow-400 animate-ping" style={{ animationDuration: '1.2s' }} />
+                <div className="absolute top-0 right-0 w-1 h-1 rounded-full bg-orange-300 animate-ping" style={{ animationDuration: '1.8s' }} />
                 {sdHover && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-52">
-                    <div className="bg-gray-900 border border-red-500/30 rounded-xl p-3 shadow-2xl shadow-red-900/40">
-                      <p className="text-[10px] text-red-400 leading-relaxed text-center">
-                        یک یادآوری دوستانه: اگر این دکمه توسط توسعه‌دهنده فشار داده شود،
-                        این پروژه برای همیشه نابود می‌شود و هیچ اثری از آن باقی نمی‌ماند
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-60">
+                    <div className="bg-gray-950 border border-red-500/40 rounded-xl p-3 shadow-[0_0_30px_rgba(255,0,0,0.3)]">
+                      <p className="text-[11px] text-red-400 leading-relaxed text-center font-bold">
+                        ☠️ این اقدام غیرقابل بازگشت است
                       </p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 border-r border-b border-red-500/30 rotate-45 -mt-0.5" />
+                      <p className="text-[10px] text-red-400/60 leading-relaxed text-center mt-1">
+                        در صورت تأیید، تمام محتوا و دیتابیس برای همیشه نابود می‌شود
+                      </p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-950 border-r border-b border-red-500/40 rotate-45 -mt-0.5" />
                     </div>
                   </div>
                 )}
               </div>
               <span className="text-[8px] text-red-700 font-bold tracking-widest">SELF DESTRUCT</span>
-              <button onClick={handleRestore}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-700 to-green-900 text-white shadow-lg shadow-emerald-900/40 hover:shadow-emerald-700/50 hover:scale-110 active:scale-95 transition-all duration-200 border border-emerald-500/20"
-                title="بازگردانی"
-              >
-                <Undo2 className="w-4 h-4" />
-              </button>
             </div>
             <div className="border-t border-gray-800 pt-2 mt-2 flex justify-center">
               <a href="/api/export-csv" download
@@ -607,8 +593,6 @@ export default function AdminPage() {
           {tab === 'signals' && <AdminSignals />}
           {tab === 'plus-requests' && <AdminPlusRequests />}
           {tab === 'analytics' && <AdminAnalytics />}
-          {tab === 'settings' && <AdminSettings />}
-          {tab === 'comments' && <AdminComments />}
           {tab === 'tasks' && <AdminTasks />}
           {tab === 'referrals' && <AdminReferrals />}
         </main>
