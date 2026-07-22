@@ -6,7 +6,6 @@ const NOBITEX = 'https://api.nobitex.ir'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const FETCH_OPTS = { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': UA } }
 const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
-// Last-resort fallback rate (1709000 Rial ≈ 170900 Toman per USD, from TGJU live data)
 const FALLBACK_USD_RATE = 1709000
 
 const COINGECKO_IDS: Record<string, string> = {
@@ -17,7 +16,6 @@ const COINGECKO_IDS: Record<string, string> = {
 }
 
 export const DEFAULT_STOCKS = [
-  // فلزات اساسی
   { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان', sector: 'فلزات اساسی', tsetmcSearch: 'فولاد' },
   { symbol: 'کگل', name: 'گل گهر', sector: 'فلزات اساسی', tsetmcSearch: 'کگل' },
   { symbol: 'فملی', name: 'ملی صنایع مس ایران', sector: 'فلزات اساسی', tsetmcSearch: 'فملی' },
@@ -28,8 +26,6 @@ export const DEFAULT_STOCKS = [
   { symbol: 'فیروز', name: 'آلومراد', sector: 'فلزات اساسی', tsetmcSearch: 'فیروز' },
   { symbol: 'فاسمین', name: 'آلومینای ایران', sector: 'فلزات اساسی', tsetmcSearch: 'فاسمین' },
   { symbol: 'محیر', name: 'کالسیمین', sector: 'فلزات اساسی', tsetmcSearch: 'محیر' },
-
-  // خودرو
   { symbol: 'خودرو', name: 'ایران خودرو', sector: 'خودرو', tsetmcSearch: 'خودرو' },
   { symbol: 'خساپا', name: 'سایپا', sector: 'خودرو', tsetmcSearch: 'خساپا' },
   { symbol: 'خگستر', name: 'گسترش سرمایه گذاری ایران خودرو', sector: 'خودرو', tsetmcSearch: 'خگستر' },
@@ -38,8 +34,6 @@ export const DEFAULT_STOCKS = [
   { symbol: 'خمحور', name: 'محور خودرو', sector: 'خودرو', tsetmcSearch: 'خمحور' },
   { symbol: 'خاذین', name: 'آذین خودرو', sector: 'خودرو', tsetmcSearch: 'خاذین' },
   { symbol: 'ختور', name: 'تویو', sector: 'خودرو', tsetmcSearch: 'ختور' },
-
-  // بانک
   { symbol: 'وبملت', name: 'بانک ملت', sector: 'بانک', tsetmcSearch: 'وبملت' },
   { symbol: 'وتجارت', name: 'بانک تجارت', sector: 'بانک', tsetmcSearch: 'وتجارت' },
   { symbol: 'وبصادر', name: 'بانک صادرات', sector: 'بانک', tsetmcSearch: 'وبصادر' },
@@ -51,8 +45,6 @@ export const DEFAULT_STOCKS = [
   { symbol: 'وبیمه', name: 'بانک ایران زمین', sector: 'بانک', tsetmcSearch: 'وبیمه' },
   { symbol: 'وگردش', name: 'بانک گردشگری', sector: 'بانک', tsetmcSearch: 'وگردش' },
   { symbol: 'ودانا', name: 'بانک دی', sector: 'بانک', tsetmcSearch: 'ودانا' },
-
-  // پتروشیمی
   { symbol: 'پارسان', name: 'پتروشیمی پارس', sector: 'پتروشیمی', tsetmcSearch: 'پارسان' },
   { symbol: 'جم', name: 'پتروشیمی جم', sector: 'پتروشیمی', tsetmcSearch: 'جم' },
   { symbol: 'خارک', name: 'پتروشیمی نفت خارک', sector: 'پتروشیمی', tsetmcSearch: 'خارک' },
@@ -64,16 +56,12 @@ export const DEFAULT_STOCKS = [
   { symbol: 'شاراک', name: 'پتروشیمی اراک', sector: 'پتروشیمی', tsetmcSearch: 'شاراک' },
   { symbol: 'پیروز', name: 'پتروشیمی تبریز', sector: 'پتروشیمی', tsetmcSearch: 'پیروز' },
   { symbol: 'شصفها', name: 'پتروشیمی اصفهان', sector: 'پتروشیمی', tsetmcSearch: 'شصفها' },
-
-  // پالایشی
   { symbol: 'شپنا', name: 'پالایش نفت بندرعباس', sector: 'پالایشی', tsetmcSearch: 'شپنا' },
   { symbol: 'شتران', name: 'پالایش نفت تهران', sector: 'پالایشی', tsetmcSearch: 'شتران' },
   { symbol: 'تبرک', name: 'پالایش نفت تبریز', sector: 'پالایشی', tsetmcSearch: 'تبرک' },
   { symbol: 'شبریز', name: 'پالایش نفت شیراز', sector: 'پالایشی', tsetmcSearch: 'شبریز' },
   { symbol: 'شاهن', name: 'پالایش نفت اصفهان', sector: 'پالایشی', tsetmcSearch: 'شاهن' },
   { symbol: 'شلاکه', name: 'پالایش نفت لاوان', sector: 'پالایشی', tsetmcSearch: 'شلاکه' },
-
-  // سرمایه گذاری
   { symbol: 'وغدیر', name: 'سرمایه گذاری غدیر', sector: 'سرمایه گذاری', tsetmcSearch: 'وغدیر' },
   { symbol: 'شستا', name: 'شستا', sector: 'سرمایه گذاری', tsetmcSearch: 'شستا' },
   { symbol: 'تاپیکو', name: 'سرمایه گذاری نفت و گاز', sector: 'سرمایه گذاری', tsetmcSearch: 'تاپیکو' },
@@ -81,16 +69,11 @@ export const DEFAULT_STOCKS = [
   { symbol: 'وهنر', name: 'سرمایه گذاری هنر', sector: 'سرمایه گذاری', tsetmcSearch: 'وهنر' },
   { symbol: 'وصندوق', name: 'سرمایه گذاری صندوق بازنشستگی', sector: 'سرمایه گذاری', tsetmcSearch: 'وصندوق' },
   { symbol: 'سهام', name: 'سرمایه گذاری سهام عدالت', sector: 'سرمایه گذاری', tsetmcSearch: 'سهام' },
-  { symbol: 'وبانوان', name: 'سرمایه گذاری بانوان', sector: 'سرمایه گذاری', tsetmcSearch: 'وبانوان' },
-
-  // انرژی
   { symbol: 'رمپنا', name: 'گروه مپنا', sector: 'انرژی', tsetmcSearch: 'رمپنا' },
   { symbol: 'حفاری', name: 'حفاری شمال', sector: 'انرژی', tsetmcSearch: 'حفاری' },
   { symbol: 'حفا', name: 'حفاری آریا', sector: 'انرژی', tsetmcSearch: 'حفا' },
   { symbol: 'نیشکر', name: 'نیشکر هفت تپه', sector: 'انرژی', tsetmcSearch: 'نیشکر' },
   { symbol: 'مپنا', name: 'مپنا', sector: 'انرژی', tsetmcSearch: 'مپنا' },
-
-  // داروسازی
   { symbol: 'دالبر', name: 'البرز دارو', sector: 'داروسازی', tsetmcSearch: 'دالبر' },
   { symbol: 'درخشان', name: 'داروسازی رخشان', sector: 'داروسازی', tsetmcSearch: 'درخشان' },
   { symbol: 'ددام', name: 'داروسازی ابوریحان', sector: 'داروسازی', tsetmcSearch: 'ددام' },
@@ -99,8 +82,6 @@ export const DEFAULT_STOCKS = [
   { symbol: 'دشیمی', name: 'داروسازی شیمی', sector: 'داروسازی', tsetmcSearch: 'دشیمی' },
   { symbol: 'دعبیدی', name: 'عبیدی', sector: 'داروسازی', tsetmcSearch: 'دعبیدی' },
   { symbol: 'دزهراوی', name: 'زهراوی', sector: 'داروسازی', tsetmcSearch: 'دزهراوی' },
-
-  // غذایی
   { symbol: 'غمارگ', name: 'مارگارین', sector: 'غذایی', tsetmcSearch: 'غمارگ' },
   { symbol: 'غپونه', name: 'پونه', sector: 'غذایی', tsetmcSearch: 'غپونه' },
   { symbol: 'غشهد', name: 'شهد', sector: 'غذایی', tsetmcSearch: 'غشهد' },
@@ -109,58 +90,37 @@ export const DEFAULT_STOCKS = [
   { symbol: 'غگل', name: 'گلستان', sector: 'غذایی', tsetmcSearch: 'غگل' },
   { symbol: 'غفام', name: 'فامیلی', sector: 'غذایی', tsetmcSearch: 'غفام' },
   { symbol: 'غزر', name: 'زر ماکارون', sector: 'غذایی', tsetmcSearch: 'غزر' },
-
-  // مخابرات و IT
   { symbol: 'اخابر', name: 'مخابرات ایران', sector: 'مخابرات', tsetmcSearch: 'اخابر' },
   { symbol: 'همراه', name: 'همراه اول', sector: 'مخابرات', tsetmcSearch: 'همراه' },
   { symbol: 'آسیاتک', name: 'آسیاتک', sector: 'فناوری اطلاعات', tsetmcSearch: 'آسیاتک' },
   { symbol: 'فناور', name: 'فناوری اطلاعات', sector: 'فناوری اطلاعات', tsetmcSearch: 'فناور' },
-
-  // سیمان
   { symbol: 'سیدکو', name: 'سیمان کردستان', sector: 'سیمان', tsetmcSearch: 'سیدکو' },
   { symbol: 'سفاس', name: 'سیمان فارس', sector: 'سیمان', tsetmcSearch: 'سفاس' },
   { symbol: 'ساهور', name: 'سیمان هورامان', sector: 'سیمان', tsetmcSearch: 'ساهور' },
   { symbol: 'ساروم', name: 'سیمان ارومیه', sector: 'سیمان', tsetmcSearch: 'ساروم' },
   { symbol: 'سخوز', name: 'سیمان خوزستان', sector: 'سیمان', tsetmcSearch: 'سخوز' },
-
-  // ساختمانی
   { symbol: 'ثباغ', name: 'باغمیشه', sector: 'ساختمانی', tsetmcSearch: 'ثباغ' },
   { symbol: 'ثامان', name: 'ساختمانی امید', sector: 'ساختمانی', tsetmcSearch: 'ثامان' },
   { symbol: 'ثفارس', name: 'عمران فارس', sector: 'ساختمانی', tsetmcSearch: 'ثفارس' },
   { symbol: 'ثشرق', name: 'عمران شرق', sector: 'ساختمانی', tsetmcSearch: 'ثشرق' },
-
-  // بیمه
   { symbol: 'بیمه', name: 'بیمه ایران', sector: 'بیمه', tsetmcSearch: 'بیمه' },
   { symbol: 'وبیمه', name: 'بیمه البرز', sector: 'بیمه', tsetmcSearch: 'وبیمه' },
-  { symbol: 'بیمه', name: 'بیمه ایران', sector: 'بیمه', tsetmcSearch: 'بیمه' },
-
-  // حمل و نقل
   { symbol: 'حمل', name: 'حمل و نقل', sector: 'حمل و نقل', tsetmcSearch: 'حمل' },
   { symbol: 'رحوان', name: 'هواپیمایی آسمان', sector: 'حمل و نقل', tsetmcSearch: 'رحوان' },
   { symbol: 'رخواند', name: 'هواپیمایی ماهان', sector: 'حمل و نقل', tsetmcSearch: 'رخواند' },
   { symbol: 'ریبیر', name: 'بیمه ری', sector: 'حمل و نقل', tsetmcSearch: 'ریبیر' },
-
-  // شیمیایی
   { symbol: 'شخارک', name: 'صنایع شیمیایی خارک', sector: 'شیمیایی', tsetmcSearch: 'شخارک' },
   { symbol: 'شیران', name: 'صنایع شیمیایی ایران', sector: 'شیمیایی', tsetmcSearch: 'شیران' },
   { symbol: 'شسم', name: 'صنایع شیمیایی سمند', sector: 'شیمیایی', tsetmcSearch: 'شسم' },
   { symbol: 'شکبیر', name: 'صنایع شیمیایی کبیر', sector: 'شیمیایی', tsetmcSearch: 'شکبیر' },
-
-  // لاستیک و پلاستیک
   { symbol: 'پکویر', name: 'پلیمر کرمانشاه', sector: 'پلیمر', tsetmcSearch: 'پکویر' },
   { symbol: 'پلاس', name: 'پلاستیک', sector: 'پلیمر', tsetmcSearch: 'پلاس' },
-
-  // معدنی
   { symbol: 'کگهر', name: 'گهرزمین', sector: 'معدنی', tsetmcSearch: 'کگهر' },
   { symbol: 'کچاد', name: 'چادرملو', sector: 'معدنی', tsetmcSearch: 'کچاد' },
   { symbol: 'کالسیمین', name: 'سیمین', sector: 'معدنی', tsetmcSearch: 'کالسیمین' },
   { symbol: 'کاو', name: 'کاوه', sector: 'معدنی', tsetmcSearch: 'کاو' },
-
-  // هتل و گردشگری
   { symbol: 'هتل', name: 'هتل پارسیان', sector: 'گردشگری', tsetmcSearch: 'هتل' },
   { symbol: 'وآوا', name: 'آوا', sector: 'گردشگری', tsetmcSearch: 'وآوا' },
-
-  // سایر
   { symbol: 'ونیکی', name: 'نیکی', sector: 'سایر', tsetmcSearch: 'ونیکی' },
 ]
 
@@ -170,17 +130,48 @@ function parseTgjuPrice(val: string): number {
   return Number(val.replace(/,/g, ''))
 }
 
+// ---- Nobitex: PRIMARY for USD/IRR rate ----
+export async function fetchNobitexUsdRate(): Promise<number> {
+  try {
+    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=usdt&dstCurrency=irt`, { ...FETCH_OPTS })
+    const data = await res.json()
+    if (data?.status === 'ok' && data.stats?.['usdt-irt']?.latest) {
+      return parseFloat(data.stats['usdt-irt'].latest) * 10
+    }
+  } catch { console.error('[prices] Nobitex USDT rate failed') }
+  return 0
+}
+
+// ---- Nobitex: PRIMARY for crypto in USD ----
+export async function fetchNobitexCrypto(symbols: string[]): Promise<PriceMap> {
+  const result: PriceMap = {}
+  try {
+    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=${symbols.map(s => s.toLowerCase()).join(',')}&dstCurrency=usdt`, { ...FETCH_OPTS })
+    const data = await res.json()
+    if (data?.status !== 'ok') return result
+    for (const marketKey of Object.keys(data.stats ?? {})) {
+      const [base, quote] = marketKey.split('-')
+      if (quote !== 'usdt') continue
+      const latest = parseFloat(data.stats[marketKey]?.latest ?? '0')
+      if (latest > 0) {
+        result[base.toUpperCase()] = { price: latest, currency: 'USD', change: parseFloat(data.stats[marketKey]?.['24h_ch'] ?? '0') }
+      }
+    }
+  } catch { console.error('[prices] Nobitex crypto failed') }
+  return result
+}
+
+// ---- TGJU: gold, coins, forex in IRR ----
 async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; timestamp: string }> {
   try {
     const res = await fetch(TGJU_HTML, { cache: 'no-store', next: { revalidate: 0 }, ...TGJU_FETCH_OPTS })
     if (!res.ok) return { prices: {}, irrRate: 0, timestamp: '' }
     const html = await res.text()
-    
+
     const prices: PriceMap = {}
     let irrRate = 0
-    
+
     const extractRowData = (selector: string): { price: number; change: number | null } | null => {
-      // Pattern 1: <tr data-market-row="X"> ... <td>PRICE</td> ... CHANGE
       const p1 = new RegExp(`<tr[^>]*data-market-row="${selector}"[^>]*>[\\s\\S]*?<td[^>]*>([\\d,]+)</td>[\\s\\S]*?<td[^>]*class="([^"]*)"[^>]*>([\\s\\S]*?)</td>`)
       const m1 = html.match(p1)
       if (m1) {
@@ -188,25 +179,20 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
         const changeMatch = m1[3].match(/\(([\d.-]+)%\)/)
         return { price, change: changeMatch ? parseFloat(changeMatch[1]) : null }
       }
-      // Pattern 2: data-market-row + data-price attribute
       const p2 = new RegExp(`data-market-row="${selector}"[^>]*data-price="([\\d,]+)"`)
       const m2 = html.match(p2)
       if (m2) return { price: parseTgjuPrice(m2[1]), change: null }
-      // Pattern 3: td.nf (old format)
       const p3 = new RegExp(`data-market-row="${selector}"[^>]*>.*?<td[^>]*class="[^"]*nf[^"]*"[^>]*>([\\d,]+)</td>`, 's')
       const m3 = html.match(p3)
       if (m3) return { price: parseTgjuPrice(m3[1]), change: null }
-      // Pattern 4: td with data-price (no data-market-row, just table row)
       const p4 = new RegExp(`<tr[^>]*>[\\s\\S]*?<td[^>]*data-price="([\\d,]+)"[^>]*>[\\s\\S]*?${selector === 'geram18' ? 'طلا' : selector === 'price_dollar_rl' ? 'دلار' : ''}[\\s\\S]*?</tr>`)
       const m4 = html.match(p4)
       if (m4) return { price: parseTgjuPrice(m4[1]), change: null }
-      // Pattern 5: span.nf price
       const p5 = new RegExp(`<span[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\\d,]+)"`)
       const m5 = html.match(p5)
       if (m5) return { price: parseTgjuPrice(m5[1]), change: null }
       return null
     }
-    // Keep old extractPrice/setWithChange for non-row items (crypto, etc.)
     const extractPrice = (selector: string): number | null => {
       const row = extractRowData(selector)
       return row ? row.price : null
@@ -215,7 +201,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       const row = extractRowData(slug)
       prices[sym] = { price, currency, ...(row?.change !== null && row?.change !== undefined ? { change: row.change } : {}) }
     }
-    
+
     const usdRow = extractRowData('price_dollar_rl')
     if (usdRow) {
       irrRate = usdRow.price
@@ -223,7 +209,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       prices['USD-IRR'] = { price: usdRow.price, currency: 'IRR', ...(usdRow.change !== null ? { change: usdRow.change } : {}) }
       prices['USDT-IRR'] = { price: usdRow.price, currency: 'IRR', change: prices['USD-IRR']?.change }
     }
-    
+
     const forexPairs: Record<string, string> = {
       price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
       price_try: 'TRY', price_chf: 'CHF', price_cny: 'CNY',
@@ -238,7 +224,7 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
         prices[`${sym}-IRR`] = { price: row.price, currency: 'IRR', ...(row.change !== null ? { change: row.change } : {}) }
       }
     }
-    
+
     const goldSlugs: Record<string, string> = {
       geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
       nim: 'HALF_COIN', rob: 'QUARTER_COIN',
@@ -248,25 +234,8 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       const row = extractRowData(slug)
       if (row) prices[sym] = { price: row.price, currency: 'IRR', ...(row.change !== null ? { change: row.change } : {}) }
     }
-    
-    const cryptoIrSlugs: Record<string, string> = {
-      'crypto-bitcoin-irr': 'BTC-IRR',
-      'crypto-ethereum-irr': 'ETH-IRR',
-      'crypto-tether-irr': 'USDT-IRR',
-      'crypto-dash-irr': 'DASH-IRR',
-      'crypto-ripple-irr': 'XRP-IRR',
-      'crypto-litecoin-irr': 'LTC-IRR',
-    }
-    for (const [slug, sym] of Object.entries(cryptoIrSlugs)) {
-      const p = extractPrice(slug)
-      if (p) setWithChange(sym, p, 'IRR', slug)
-    }
-    
-    const timestampMatch = html.match(/data-last-update="([^"]+)"/)
-    const timestamp = timestampMatch ? timestampMatch[1] : ''
 
-    // COMPUTED FALLBACKS FIRST (before tolerance arrays, so math-based values take priority)
-    // GOLD24 = GOLD18 × 4/3 (24k vs 18k purity ratio)
+    // GOLD24 = GOLD18 × 4/3
     if (!prices['GOLD24'] && prices['GOLD18']) {
       prices['GOLD24'] = {
         price: Math.round(prices['GOLD18'].price * 4 / 3),
@@ -274,7 +243,6 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
         ...(prices['GOLD18'].change !== undefined ? { change: prices['GOLD18'].change } : {}),
       }
     }
-    // HALF_COIN ≈ 52% of COIN, QUARTER_COIN ≈ 30% of COIN (market-typical ratios)
     if (!prices['HALF_COIN'] && prices['COIN']) {
       prices['HALF_COIN'] = {
         price: Math.round(prices['COIN'].price * 0.52),
@@ -288,18 +256,12 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
       }
     }
 
-    if (process.env.NODE_ENV !== 'production') console.log('[prices] After computed fallbacks - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
-
-    // TGJU AJAX tolerance arrays: only fill what's STILL MISSING (don't overwrite computed values)
+    // TGJU AJAX tolerance arrays fill what's still missing
     if (irrRate > 0) {
-      let ajaxSucceeded = false
       try {
         const rev = Math.random().toString(36).substring(2, 12)
-        const ajaxRes = await fetch(`${TGJU_AJAX}?rev=${rev}`, {
-          cache: 'no-store', ...TGJU_FETCH_OPTS,
-        })
+        const ajaxRes = await fetch(`${TGJU_AJAX}?rev=${rev}`, { cache: 'no-store', ...TGJU_FETCH_OPTS })
         if (ajaxRes.ok) {
-          ajaxSucceeded = true
           const ajaxData = await ajaxRes.json()
           const toleranceNameMap: Record<string, string> = {
             geram18: 'GOLD18', geram24: 'GOLD24',
@@ -317,36 +279,24 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
             }
           }
         }
-      } catch {
-        console.error('[prices] TGJU AJAX fetch failed (Vercel IP may be blocked)')
-      }
-      if (process.env.NODE_ENV !== 'production') console.log('[prices] AJAX ok:', ajaxSucceeded, '| GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
-      // Also fetch coin page for nim/rob if still missing from AJAX tolerances
+      } catch {}
+
       for (const [slug, sym] of Object.entries({ nim: 'HALF_COIN', rob: 'QUARTER_COIN' })) {
         if (prices[sym]) continue
         try {
-          const coinRes = await fetch('https://www.tgju.org/coin', {
-            cache: 'no-store', ...TGJU_FETCH_OPTS,
-          })
+          const coinRes = await fetch('https://www.tgju.org/coin', { cache: 'no-store', ...TGJU_FETCH_OPTS })
           if (coinRes.ok) {
             const coinHtml = await coinRes.text()
-            // Only match the FIRST row in the "قیمت نقدی" section (before the next <thead>)
             const sectionMatch = coinHtml.match(new RegExp(`<tr data-market-row="${slug}".*?<td[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\\d,]+)"`, 's'))
             if (sectionMatch) {
               setWithChange(sym, parseTgjuPrice(sectionMatch[1]), 'IRR', slug)
-              if (process.env.NODE_ENV !== 'production') console.log(`[prices] Coin page gave ${sym}: ${sectionMatch[1]}`)
             }
           }
-        } catch {
-          console.error(`[prices] Coin page fetch failed for ${slug}`)
-        }
+        } catch {}
       }
-      if (process.env.NODE_ENV !== 'production') console.log('[prices] After coin page fallback - HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
     }
 
-    if (process.env.NODE_ENV !== 'production') console.log('[prices] Final - GOLD18:', prices['GOLD18']?.price, 'GOLD24:', prices['GOLD24']?.price, 'COIN:', prices['COIN']?.price, 'HALF_COIN:', prices['HALF_COIN']?.price, 'QUARTER_COIN:', prices['QUARTER_COIN']?.price)
-    
-    return { prices, irrRate, timestamp }
+    return { prices, irrRate, timestamp: '' }
   } catch (e) { console.error('[prices] fetchTgjuHTML error:', e); return { prices: {}, irrRate: 0, timestamp: '' } }
 }
 
@@ -355,27 +305,20 @@ export async function fetchTgjuData(): Promise<{
   irrRate: number
   timestamp: string
 }> {
-  // Try HTML scrape first (works reliably from any IP)
   const htmlResult = await fetchTgjuHTML()
   if (htmlResult.prices && Object.keys(htmlResult.prices).length > 0 && htmlResult.irrRate > 0) {
     return htmlResult
   }
-  
-  // Fallback: single AJAX endpoint (try once)
+
   const rev = Math.random().toString(36).substring(2, 12)
   const ajaxUrls = [`${TGJU_AJAX}?rev=${rev}`]
-  
+
   for (const url of ajaxUrls) {
     try {
-      const res = await fetch(url, { 
-        cache: 'no-store',
-        next: { revalidate: 0 },
-        ...TGJU_FETCH_OPTS,
-      })
+      const res = await fetch(url, { cache: 'no-store', next: { revalidate: 0 }, ...TGJU_FETCH_OPTS })
       if (!res.ok) continue
       const data = await res.json()
       if (!data?.current) continue
-
       const c = data.current
       const prices: PriceMap = {}
       const timestamp = c.price_dollar_rl?.ts || ''
@@ -402,7 +345,6 @@ export async function fetchTgjuData(): Promise<{
         }
       }
 
-      // Gold/coin from current object directly
       const goldSlugs: Record<string, string> = {
         geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
         nim: 'HALF_COIN', rob: 'QUARTER_COIN',
@@ -414,28 +356,16 @@ export async function fetchTgjuData(): Promise<{
         }
       }
 
-      // Computed fallbacks FIRST (before tolerance arrays)
       if (!prices['GOLD24'] && prices['GOLD18']) {
-        prices['GOLD24'] = {
-          price: Math.round(prices['GOLD18'].price * 4 / 3),
-          currency: 'IRR',
-        }
+        prices['GOLD24'] = { price: Math.round(prices['GOLD18'].price * 4 / 3), currency: 'IRR' }
       }
       if (!prices['HALF_COIN'] && prices['COIN']) {
-        prices['HALF_COIN'] = {
-          price: Math.round(prices['COIN'].price * 0.52),
-          currency: 'IRR',
-        }
+        prices['HALF_COIN'] = { price: Math.round(prices['COIN'].price * 0.52), currency: 'IRR' }
       }
       if (!prices['QUARTER_COIN'] && prices['COIN']) {
-        prices['QUARTER_COIN'] = {
-          price: Math.round(prices['COIN'].price * 0.30),
-          currency: 'IRR',
-        }
+        prices['QUARTER_COIN'] = { price: Math.round(prices['COIN'].price * 0.30), currency: 'IRR' }
       }
 
-      // TGJU stores some gold/coin items in tolerance_high/tolerance_low arrays
-      // Only fill what's STILL MISSING (don't overwrite computed values)
       const toleranceNameMap: Record<string, string> = {
         geram18: 'GOLD18', geram24: 'GOLD24',
         sekee: 'COIN', sekeb: 'COIN',
@@ -452,30 +382,145 @@ export async function fetchTgjuData(): Promise<{
         }
       }
 
-      const cryptoIrSlugs: Record<string, string> = {
-        'crypto-bitcoin-irr': 'BTC-IRR',
-        'crypto-ethereum-irr': 'ETH-IRR',
-        'crypto-tether-irr': 'USDT-IRR',
-        'crypto-dash-irr': 'DASH-IRR',
-        'crypto-ripple-irr': 'XRP-IRR',
-        'crypto-litecoin-irr': 'LTC-IRR',
-      }
-      for (const [slug, sym] of Object.entries(cryptoIrSlugs)) {
-        if (c[slug]?.p) {
-          prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
-        }
-      }
-
       return { prices, irrRate, timestamp }
     } catch (e) {
       console.error('[prices] fetchTgjuData AJAX error:', e)
       continue
     }
   }
-  
+
   return { prices: {}, irrRate: 0, timestamp: '' }
 }
 
+// ---- CoinGecko: fallback for crypto ----
+export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
+  // Try Nobitex FIRST
+  const nobitexResult = await fetchNobitexCrypto(['USDT', 'BTC', 'ETH', 'TRX', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'SHIB', 'MATIC', 'LINK', 'AVAX'])
+  if (Object.keys(nobitexResult).length > 0) return nobitexResult
+
+  // Fallback: CoinGecko
+  const geckoSymbols = symbols.filter(s => COINGECKO_IDS[s]).map(s => COINGECKO_IDS[s])
+  if (geckoSymbols.length > 0) {
+    const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd&include_24hr_change=true`
+    try {
+      const res = await fetch(url, { ...FETCH_OPTS })
+      const data = await res.json()
+      const result: PriceMap = {}
+      for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
+        if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD', change: data[id].usd_24h_change ?? 0 }
+      }
+      if (Object.keys(result).length > 0) return result
+    } catch (e) { console.error('fetchCryptoPrices CoinGecko error:', e) }
+  }
+
+  return {}
+}
+
+export function convertUsdToIrr(usdPrice: number, irrRate: number): number {
+  return Math.round(usdPrice * irrRate)
+}
+
+export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promise<{
+  prices: PriceMap
+  irrRate: number
+  stockPrices: Record<string, { price: number; change: number; closePrice: number }>
+}> {
+  const stockFetch = insCodeMap
+    ? Promise.allSettled(
+        Object.entries(insCodeMap).map(([symbol, code]) =>
+          fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))
+        )
+      )
+    : Promise.resolve([] as PromiseSettledResult<{ symbol: string; info: any }>[])
+
+  // Only need nobitex for rate + TGJU for commodities
+  const [nobitexRate, tgju, stockResults] = await Promise.all([
+    fetchNobitexUsdRate(),
+    fetchTgjuData(),
+    stockFetch,
+  ])
+
+  let irrRate = nobitexRate > 0 ? nobitexRate : tgju.irrRate
+  const prices: PriceMap = { ...tgju.prices }
+
+  // Get crypto - Nobitex first
+  const crypto = await fetchCryptoPrices(['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX'])
+  for (const [sym, d] of Object.entries(crypto)) {
+    prices[sym] = d
+  }
+
+  // Set IRR rate from nobitex (preferred)
+  if (nobitexRate > 0) {
+    prices['USD-IRR'] = { price: nobitexRate, currency: 'IRR' }
+    prices['USDT-IRR'] = { price: nobitexRate, currency: 'IRR' }
+  }
+
+  // Compute crypto-IRR
+  if (irrRate > 0) {
+    for (const sym of Object.keys(crypto)) {
+      const usdPrice = crypto[sym]?.price
+      if (usdPrice) {
+        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+      }
+    }
+  }
+
+  // DB fallback
+  if (irrRate === 0) {
+    try {
+      const { pool } = await import('@/lib/db')
+      const r = await pool.query(`SELECT symbol, price, currency FROM asset_price WHERE price > 0 ORDER BY "updatedAt" DESC`)
+      for (const row of r.rows) {
+        if (!prices[row.symbol]) {
+          prices[row.symbol] = { price: Number(row.price), currency: row.currency ?? 'IRR' }
+        }
+      }
+      const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
+      if (usdRow) {
+        irrRate = Number(usdRow.price)
+        prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+        prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+        for (const sym of Object.keys(crypto)) {
+          const usdPrice = crypto[sym]?.price
+          if (usdPrice) {
+            prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+          }
+        }
+      }
+    } catch (e) { console.error('[prices] DB fallback error:', e) }
+  }
+
+  if (irrRate === 0) {
+    irrRate = FALLBACK_USD_RATE
+    prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+    prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+    for (const sym of Object.keys(crypto)) {
+      const usdPrice = crypto[sym]?.price
+      if (usdPrice) {
+        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+      }
+    }
+  }
+
+  const stockPrices: Record<string, { price: number; change: number; closePrice: number }> = {}
+  for (const r of stockResults) {
+    if (r.status === 'fulfilled' && r.value.info) {
+      const { symbol, info } = r.value
+      const change = info.yesterday > 0
+        ? Math.round(((info.lastPrice - info.yesterday) / info.yesterday) * 10000) / 100
+        : 0
+      stockPrices[symbol] = {
+        price: info.lastPrice,
+        change,
+        closePrice: info.closePrice,
+      }
+    }
+  }
+
+  return { prices, irrRate, stockPrices }
+}
+
+// ---- TSETMC stock functions ----
 export async function fetchTsetmcSearch(symbol: string): Promise<string | null> {
   try {
     const encoded = encodeURIComponent(symbol)
@@ -488,21 +533,12 @@ export async function fetchTsetmcSearch(symbol: string): Promise<string | null> 
     }
     const data = await res.json()
     if (data?.instrumentSearch?.length > 0) {
-      const exactMatch = data.instrumentSearch.find(
-        (i: any) => i.lVal18AFC === symbol
-      )
+      const exactMatch = data.instrumentSearch.find((i: any) => i.lVal18AFC === symbol)
       if (exactMatch) return exactMatch.insCode
-      
-      const nameMatch = data.instrumentSearch.find(
-        (i: any) => i.lVal30 === symbol
-      )
+      const nameMatch = data.instrumentSearch.find((i: any) => i.lVal30 === symbol)
       if (nameMatch) return nameMatch.insCode
-      
-      const mainBoard = data.instrumentSearch.find(
-        (i: any) => i.flow === 1 && i.cgrValCot?.startsWith('N')
-      )
+      const mainBoard = data.instrumentSearch.find((i: any) => i.flow === 1 && i.cgrValCot?.startsWith('N'))
       if (mainBoard) return mainBoard.insCode
-      
       return data.instrumentSearch[0]?.insCode || null
     }
     return null
@@ -580,162 +616,3 @@ export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
     }
   } catch (e) { console.error('[prices] fetchTsetmcPriceInfo error:', e); return null }
 }
-
-export async function fetchNobitexUsdRate(): Promise<number> {
-  try {
-    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=usdt&dstCurrency=irt`, { ...FETCH_OPTS })
-    const data = await res.json()
-    if (data?.status === 'ok' && data.stats?.['usdt-irt']?.latest) {
-      return parseFloat(data.stats['usdt-irt'].latest) * 10
-    }
-  } catch { console.error('[prices] Nobitex USDT rate failed') }
-  return 0
-}
-
-export async function fetchNobitexCrypto(symbols: string[]): Promise<PriceMap> {
-  const result: PriceMap = {}
-  try {
-    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=${symbols.map(s => s.toLowerCase()).join(',')}&dstCurrency=usdt`, { ...FETCH_OPTS })
-    const data = await res.json()
-    if (data?.status !== 'ok') return result
-    for (const marketKey of Object.keys(data.stats ?? {})) {
-      const [base, quote] = marketKey.split('-')
-      if (quote !== 'usdt') continue
-      const latest = parseFloat(data.stats[marketKey]?.latest ?? '0')
-      if (latest > 0) {
-        result[base.toUpperCase()] = { price: latest, currency: 'USD', change: parseFloat(data.stats[marketKey]?.['24h_ch'] ?? '0') }
-      }
-    }
-  } catch { console.error('[prices] Nobitex crypto failed') }
-  return result
-}
-
-export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
-  // Try CoinGecko first
-  const geckoSymbols = symbols.filter(s => COINGECKO_IDS[s]).map(s => COINGECKO_IDS[s])
-  if (geckoSymbols.length > 0) {
-    const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd&include_24hr_change=true`
-    try {
-      const res = await fetch(url, { ...FETCH_OPTS })
-      const data = await res.json()
-      const result: PriceMap = {}
-      for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
-        if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD', change: data[id].usd_24h_change ?? 0 }
-      }
-      if (Object.keys(result).length > 0) return result
-    } catch (e) { console.error('fetchCryptoPrices CoinGecko error:', e) }
-  }
-
-  // Fallback: Nobitex for USDT, BTC, ETH, TRX, SOL, etc.
-  return fetchNobitexCrypto(['USDT', 'BTC', 'ETH', 'TRX', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'SHIB', 'MATIC', 'LINK'])
-}
-
-export function convertUsdToIrr(usdPrice: number, irrRate: number): number {
-  return Math.round(usdPrice * irrRate)
-}
-
-export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promise<{
-  prices: PriceMap
-  irrRate: number
-  stockPrices: Record<string, { price: number; change: number; closePrice: number }>
-}> {
-  // Run crypto, TGJU, AND stock price fetches in parallel — total time ~4s instead of 8s
-  const stockFetch = insCodeMap
-    ? Promise.allSettled(
-        Object.entries(insCodeMap).map(([symbol, code]) =>
-          fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))
-        )
-      )
-    : Promise.resolve([] as PromiseSettledResult<{ symbol: string; info: any }>[])
-
-  const [crypto, tgju, stockResults] = await Promise.all([
-    fetchCryptoPrices(['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'TRX']),
-    fetchTgjuData(),
-    stockFetch,
-  ])
-
-  let irrRate = tgju.irrRate
-  const prices: PriceMap = { ...tgju.prices, ...crypto }
-
-  if (irrRate > 0) {
-    for (const sym of Object.keys(crypto)) {
-      const usdPrice = crypto[sym]?.price
-      if (usdPrice) {
-        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
-      }
-    }
-  }
-
-  // Nobitex fallback for irrRate when TGJU fails (Vercel IP blocked)
-  if (irrRate === 0) {
-    const nobitexRate = await fetchNobitexUsdRate()
-    if (nobitexRate > 0) {
-      irrRate = nobitexRate
-      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-      for (const sym of Object.keys(crypto)) {
-        const usdPrice = crypto[sym]?.price
-        if (usdPrice) {
-          prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
-        }
-      }
-    }
-  }
-
-  // DB fallback for irrRate when both TGJU and Nobitex fail
-  if (irrRate === 0) {
-    try {
-      const { pool } = await import('@/lib/db')
-      const r = await pool.query(`SELECT symbol, price, currency FROM asset_price WHERE price > 0 ORDER BY "updatedAt" DESC`)
-      for (const row of r.rows) {
-        if (!prices[row.symbol]) {
-          prices[row.symbol] = { price: Number(row.price), currency: row.currency ?? 'IRR' }
-        }
-      }
-      const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
-      if (usdRow) {
-        irrRate = Number(usdRow.price)
-        prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-        prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-        for (const sym of Object.keys(crypto)) {
-          const usdPrice = crypto[sym]?.price
-          if (usdPrice) {
-            prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
-          }
-        }
-      }
-    } catch (e) { console.error('[prices] DB fallback error:', e) }
-  }
-
-  // Hardcoded fallback when everything fails
-  if (irrRate === 0) {
-    irrRate = FALLBACK_USD_RATE
-    prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-    prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-    for (const sym of Object.keys(crypto)) {
-      const usdPrice = crypto[sym]?.price
-      if (usdPrice) {
-        prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
-      }
-    }
-  }
-
-  const stockPrices: Record<string, { price: number; change: number; closePrice: number }> = {}
-  for (const r of stockResults) {
-    if (r.status === 'fulfilled' && r.value.info) {
-      const { symbol, info } = r.value
-      const change = info.yesterday > 0
-        ? Math.round(((info.lastPrice - info.yesterday) / info.yesterday) * 10000) / 100
-        : 0
-      stockPrices[symbol] = {
-        price: info.lastPrice,
-        change,
-        closePrice: info.closePrice,
-      }
-    }
-  }
-
-  return { prices, irrRate, stockPrices }
-}
-
-

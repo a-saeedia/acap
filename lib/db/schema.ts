@@ -193,6 +193,8 @@ export const signal = pgTable('signal', {
   actualReturn: real('actualReturn'),
   priceAtPublish: real('priceAtPublish').notNull(),
   priceNow: real('priceNow'),
+  imageUrl: text('imageUrl'),
+  audioUrl: text('audioUrl'),
   expiresAt: timestamp('expiresAt'),
   publishedAt: timestamp('publishedAt').notNull().defaultNow(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),

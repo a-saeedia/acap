@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, BarChart3, Target, Droplets, Building2, Activity, ChevronDown } from 'lucide-react'
+import { TrendingUp, BarChart3, Target, Droplets, Building2, Activity, ChevronDown, Play, Pause, ImageIcon, Volume2, X } from 'lucide-react'
 
 const TC: Record<string, string> = {
   btc: '#F7931A', eth: '#627EEA', gold: '#FFD700', gold18: '#DAA520',
@@ -10,11 +10,8 @@ const TC: Record<string, string> = {
 }
 
 const TI: Record<string, any> = {
-  btc: TrendingUp, eth: TrendingUp, gold: Target, gold18: Target,
-  stock: Building2, forex: Activity, oil: Droplets, silver: Droplets, fund: BarChart3,
+  crypto: TrendingUp, stock: Building2, gold: Target, forex: Activity, dollar: Activity,
 }
-
-const PM = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
 function pDate(d: Date) {
   const g = new Date(d.getTime() + 3.5 * 3600000)
@@ -22,82 +19,52 @@ function pDate(d: Date) {
   const m20 = new Date(y, 2, 20)
   const diff = Math.floor((g.getTime() - m20.getTime()) / 86400000)
   let py = y - 621, pm = diff < 0 ? 11 : Math.min(Math.floor(diff / 31), 11)
-  const pd = diff < 0 ? 30 + diff : diff - (pm > 6 ? 186 + 30 * (pm - 6) : 31 * pm) + 1
   if (diff < 0) { py--; pm += 12 }
-  return { year: py, month: pm + 1, day: pd }
-}
-
-const ASSETS = [
-  { type: 'btc', label: 'BTC (بیت‌کوین)', profits: [7.2, 11.2, -4.5] },
-  { type: 'eth', label: 'ETH (اتریوم)', profits: [10.4, -3.2] },
-  { type: 'gold', label: 'طلای اونس (XAU)', profits: [5.5, 2.8] },
-  { type: 'gold18', label: 'طلای ۱۸ عیار', profits: [5.4, 3.1] },
-  { type: 'stock', label: 'فولاد (بورس)', profits: [8.5] },
-  { type: 'stock', label: 'خودرو (بورس)', profits: [10.7] },
-  { type: 'stock', label: 'شپنا (بورس)', profits: [11.9] },
-  { type: 'stock', label: 'فملی (بورس)', profits: [8.2] },
-  { type: 'stock', label: 'وبملت (بورس)', profits: [11.7] },
-  { type: 'forex', label: 'USD/IRR (دلار)', profits: [7.4] },
-  { type: 'oil', label: 'نفت برنت', profits: [4.5, -2.1] },
-  { type: 'silver', label: 'نقره (XAG)', profits: [-1.8, -2.4] },
-  { type: 'fund', label: 'صندوق بورس', profits: [6.8] },
-]
-
-function genOffers() {
-  const now = pDate(new Date())
-  const offers: any[] = []
-  let pi: Record<string, number> = {}
-  const used = new Set<string>()
-
-  for (let di = 0; di < 6; di++) {
-    let rm = now.month - di, ry = now.year
-    if (rm < 1) { rm += 12; ry-- }
-    const daysInMonth = rm === 12 && ry % 4 !== 1 ? 29 : [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29][rm - 1]
-    const count = di < 2 ? 4 : 3
-    for (let i = 0; i < count; i++) {
-      const a = ASSETS[(di * 3 + i) % ASSETS.length]
-      const key = a.label + '-' + rm + '-' + ry
-      if (used.has(key)) continue
-      used.add(key)
-      pi[a.label] = ((pi[a.label] || 0) + 1) % a.profits.length
-      const profit = a.profits[pi[a.label]]
-      const startDay = 1 + (i * 3 + di * 2) % Math.max(1, daysInMonth - 16)
-      const endDay = Math.min(daysInMonth, startDay + 10 + i * 2)
-      offers.push({
-        id: offers.length + 1, month: rm, mon: PM[rm - 1], year: ry,
-        startDay: Math.max(1, startDay), endDay: Math.min(daysInMonth, endDay),
-        type: a.type, label: a.label, profit,
-      })
-    }
-  }
-  return offers.sort((a, b) => (a.year * 12 + a.month) - (b.year * 12 + b.month)).slice(0, 20)
+  return { year: py, month: pm + 1 }
 }
 
 export function RevenueWidget() {
   const [range, setRange] = useState(0)
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [signals, setSignals] = useState<any[]>([])
+  const [revenue, setRevenue] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const OFFERS = useMemo(() => genOffers(), [])
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/signals${range > 0 ? `?months=${range}` : ''}`)
+      .then(r => r.json())
+      .then(d => { setSignals(d.signals || []); setRevenue(d.revenue || []) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [range])
 
-  const filtered = useMemo(() => {
-    if (range === 0) return OFFERS
-    const now = pDate(new Date())
-    const totalMonths = now.year * 12 + now.month
-    const cutoff = totalMonths - range
-    return OFFERS.filter(o => (o.year * 12 + o.month) >= cutoff)
-  }, [OFFERS, range])
+  useEffect(() => {
+    if (playingAudio && audioRef.current) {
+      audioRef.current.play().catch(() => setPlayingAudio(null))
+    }
+  }, [playingAudio])
 
   const stats = useMemo(() => {
-    const total = filtered.length
-    const wins = filtered.filter(o => o.profit > 0).length
-    const avgWin = wins > 0 ? filtered.filter(o => o.profit > 0).reduce((s, o) => s + o.profit, 0) / wins : 0
-    const avgLoss = total - wins > 0 ? filtered.filter(o => o.profit < 0).reduce((s, o) => s + o.profit, 0) / (total - wins) : 0
+    const total = signals.length
+    const wins = signals.filter(s => s.actualProfit > 0).length
+    const withReturn = signals.filter(s => s.actualProfit !== null && s.actualProfit !== undefined)
+    const avgWin = withReturn.filter(s => s.actualProfit > 0).reduce((s, o) => s + o.actualProfit, 0) / (wins || 1)
+    const avgLoss = withReturn.filter(s => s.actualProfit < 0).reduce((s, o) => s + o.actualProfit, 0) / ((total - wins) || 1)
     return { total, wins, losses: total - wins, winRate: total > 0 ? (wins / total * 100).toFixed(0) : '0', avgWin, avgLoss }
-  }, [filtered])
+  }, [signals])
 
-  const maxAbsProfit = Math.max(...filtered.map(o => Math.abs(o.profit)), 1)
-  const showLimit = range === 0 && filtered.length > 6
-  const display = showLimit ? filtered.slice(0, 6) : filtered
+  const typeLabel = (t: string) => {
+    const m: Record<string, string> = { crypto: 'ارز دیجیتال', stock: 'سهام', gold: 'طلا', forex: 'فارکس', dollar: 'دلار' }
+    return m[t] || t
+  }
+
+  const totalRevenue = revenue.reduce((s, r) => s + Number(r.amount), 0)
+  const persianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
   return (
     <section className="relative py-16 lg:py-20">
@@ -111,12 +78,12 @@ export function RevenueWidget() {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 glass border border-border rounded-full px-4 py-1.5 mb-4">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-xs text-muted-foreground font-semibold">اعتبارسنجی</span>
+            <span className="text-xs text-muted-foreground font-semibold">سیگنال‌ها</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black">
             عملکرد <span className="bg-gradient-to-r from-emerald-400 to-primary bg-clip-text text-transparent">A|CAP</span>
           </h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-xl mx-auto">پیشنهادات معاملاتی ثبت‌شده — شفافیت کامل در عملکرد</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-xl mx-auto">سیگنال‌های معاملاتی ثبت‌شده — شفافیت کامل در عملکرد</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.05 }}
@@ -127,8 +94,6 @@ export function RevenueWidget() {
             { label: 'برد', value: stats.wins, color: '#10B981' },
             { label: 'باخت', value: stats.losses, color: '#EF4444' },
             { label: 'نرخ برد', value: `${stats.winRate}%`, color: '#10B981' },
-            { label: 'سود متوسط', value: `%${stats.avgWin.toFixed(1)}`, color: '#10B981' },
-            { label: 'ضرر متوسط', value: `%${Math.abs(stats.avgLoss).toFixed(1)}`, color: '#EF4444' },
           ].map(s => (
             <div key={s.label} className="glass border border-border rounded-xl px-4 py-2 text-center min-w-[70px]">
               <div className="text-[9px] text-muted-foreground">{s.label}</div>
@@ -136,6 +101,17 @@ export function RevenueWidget() {
             </div>
           ))}
         </motion.div>
+
+        {revenue.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+            className="text-center mb-6"
+          >
+            <div className="inline-block glass border border-border rounded-2xl px-6 py-3">
+              <div className="text-[10px] text-muted-foreground mb-1">مجموع درآمد A|CAP</div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</div>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
           className="flex gap-2 justify-center flex-wrap mb-8"
@@ -157,92 +133,220 @@ export function RevenueWidget() {
           ))}
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.15 }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-            <AnimatePresence>
-              {display.map((offer, i) => {
-                const Icon = TI[offer.type] || Activity
-                const color = TC[offer.type] || '#666'
-                const isWin = offer.profit > 0
-                const pct = Math.abs(offer.profit) / maxAbsProfit * 100
-                const isExpanded = expandedId === offer.id
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto" />
+          </div>
+        ) : signals.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">هنوز سیگنالی ثبت نشده است</p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile: horizontal scroll */}
+            <div ref={scrollRef} className="flex lg:hidden gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-none -mx-4 px-4">
+              <AnimatePresence>
+                {signals.map((s) => {
+                  const Icon = TI[s.type] || TrendingUp
+                  const color = TC[s.type] || '#666'
+                  const isWin = s.actualProfit > 0
+                  const isExpanded = expandedId === s.id
+                  const signalDate = s.publishedAt ? new Date(s.publishedAt) : new Date()
+                  const pd = pDate(signalDate)
 
-                return (
-                  <motion.div key={offer.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }}
-                    className="glass border border-border hover:border-emerald-500/20 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer group"
-                    onClick={() => setExpandedId(isExpanded ? null : offer.id)}
-                  >
-                    <div className="p-4 pb-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}20` }}>
-                            <Icon className="w-4.5 h-4.5" style={{ color }} />
+                  return (
+                    <motion.div key={s.id} layout
+                      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                      className="glass border border-border rounded-2xl overflow-hidden shrink-0 w-[85vw] snap-center transition-all duration-300"
+                      onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                    >
+                      {s.imageUrl && (
+                        <div className="relative h-32 overflow-hidden" onClick={e => { e.stopPropagation(); setPreviewImage(s.imageUrl) }}>
+                          <img src={s.imageUrl} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}20` }}>
+                              <Icon className="w-4.5 h-4.5" style={{ color }} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-foreground leading-tight truncate">{s.title}</div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[9px] text-muted-foreground">{s.symbol}</span>
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-bold text-foreground leading-tight">{offer.label}</div>
-                            <div className="text-[9px] text-muted-foreground">{offer.year} | {offer.mon}</div>
+                          <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-1">
+                          <div className={`text-base font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
+                          </div>
+                          <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                            {isWin ? 'سود' : 'ضرر'}
                           </div>
                         </div>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-accent/50 rounded-lg px-2.5 py-1.5">
-                        <span className="font-semibold text-foreground">{offer.startDay} {offer.mon}</span>
-                        <span>→</span>
-                        <span className="font-semibold text-foreground">{offer.endDay} {offer.mon}</span>
-                      </div>
-                    </div>
 
-                    <div className="px-4">
-                      <div className="h-1.5 rounded-full bg-accent/50 overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: isWin ? '#10B981' : '#EF4444' }} />
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-2 border-t border-border pt-2 space-y-1.5">
+                              {s.description && <p className="text-[11px] text-muted-foreground">{s.description}</p>}
+                              <div className="flex justify-between text-[10px]"><span className="text-muted-foreground">نوع</span><span className="font-semibold">{typeLabel(s.type)}</span></div>
+                              <div className="flex justify-between text-[10px]"><span className="text-muted-foreground">قیمت انتشار</span><span className="font-semibold">{Number(s.priceAtPublish).toLocaleString()}</span></div>
+                              <div className="flex justify-between text-[10px]"><span className="text-muted-foreground">سود هدف</span><span className="font-semibold">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</span></div>
+                              <div className="flex justify-between text-[10px]"><span className="text-muted-foreground">تاریخ</span><span className="font-semibold">{pd.year}/{pd.month}</span></div>
+                              {s.audioUrl && (
+                                <div className="mt-2" onClick={e => e.stopPropagation()}>
+                                  <button onClick={() => setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl)}
+                                    className="flex items-center gap-2 text-[11px] text-primary hover:text-primary/80"
+                                  >
+                                    {playingAudio === s.audioUrl ? <Pause className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                                    {playingAudio === s.audioUrl ? 'توقف' : 'پخش ویس'}
+                                  </button>
+                                </div>
+                              )}
+                              {s.imageUrl && (
+                                <div className="mt-2" onClick={e => e.stopPropagation()}>
+                                  <button onClick={() => setPreviewImage(s.imageUrl)} className="flex items-center gap-2 text-[11px] text-primary hover:text-primary/80">
+                                    <ImageIcon className="w-3.5 h-3.5" /> مشاهده تصویر
+                                  </button>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+            </div>
 
-                    <div className="p-4 pt-3 flex items-center justify-between">
-                      <div className={`text-lg font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {isWin ? '+' : ''}{offer.profit.toFixed(1)}%
-                      </div>
-                      <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                        {isWin ? 'سود' : 'ضرر'}
-                      </div>
-                    </div>
+            {/* Desktop: grid */}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.15 }}
+              className="hidden lg:grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 max-w-6xl mx-auto"
+            >
+              <AnimatePresence>
+                {signals.map((s, i) => {
+                  const Icon = TI[s.type] || TrendingUp
+                  const color = TC[s.type] || '#666'
+                  const isWin = s.actualProfit > 0
+                  const isExpanded = expandedId === s.id
+                  const signalDate = s.publishedAt ? new Date(s.publishedAt) : new Date()
+                  const pd = pDate(signalDate)
 
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-border mx-4 overflow-hidden"
-                        >
-                          <div className="py-3 space-y-2">
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-muted-foreground">نوع دارایی</span>
-                              <span className="text-foreground font-semibold">{offer.type === 'btc' ? 'رمز ارز' : offer.type === 'eth' ? 'رمز ارز' : offer.type === 'stock' ? 'بورس ایران' : offer.type === 'gold' ? 'طلای اونس' : offer.type === 'gold18' ? 'طلای ۱۸ عیار' : offer.type === 'forex' ? 'فارکس' : offer.type === 'oil' ? 'نفت' : offer.type === 'silver' ? 'نقره' : 'صندوق'}</span>
+                  return (
+                    <motion.div key={s.id} layout
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }}
+                      className="glass border border-border hover:border-emerald-500/20 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer group"
+                      onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                    >
+                      {s.imageUrl && (
+                        <div className="relative h-40 overflow-hidden" onClick={e => { e.stopPropagation(); setPreviewImage(s.imageUrl) }}>
+                          <img src={s.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
+                        </div>
+                      )}
+                      <div className="p-4 pb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}20` }}>
+                              <Icon className="w-4.5 h-4.5" style={{ color }} />
                             </div>
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-muted-foreground">مدت معامله</span>
-                              <span className="text-foreground font-semibold">{offer.endDay - offer.startDay} روز</span>
-                            </div>
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-muted-foreground">تاریخ شروع</span>
-                              <span className="text-foreground font-semibold">{offer.startDay} {offer.mon} {offer.year}</span>
-                            </div>
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-muted-foreground">تاریخ پایان</span>
-                              <span className="text-foreground font-semibold">{offer.endDay} {offer.mon} {offer.year}</span>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-foreground leading-tight truncate">{s.title}</div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[9px] text-muted-foreground">{s.symbol}</span>
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span>
+                              </div>
                             </div>
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                )
-              })}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+                          <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+                        {s.description && <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2">{s.description}</p>}
+                      </div>
+
+                      <div className="px-4 pb-3 flex items-center justify-between">
+                        <div className={`text-lg font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {s.audioUrl && (
+                            <button onClick={e => { e.stopPropagation(); setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl) }}
+                              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
+                            >
+                              {playingAudio === s.audioUrl ? <Pause className="w-3.5 h-3.5 text-primary" /> : <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />}
+                            </button>
+                          )}
+                          <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                            {isWin ? 'سود' : 'ضرر'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-border mx-4 overflow-hidden"
+                          >
+                            <div className="py-3 space-y-2">
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">نوع دارایی</span><span className="font-semibold">{typeLabel(s.type)}</span></div>
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">قیمت انتشار</span><span className="font-semibold">{Number(s.priceAtPublish).toLocaleString()}</span></div>
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">سود هدف</span><span className="font-semibold">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</span></div>
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">تاریخ</span><span className="font-semibold">{pd.year}/{pd.month}</span></div>
+                              {s.audioUrl && (
+                                <div className="pt-2 border-t border-border">
+                                  <button onClick={e => { e.stopPropagation(); setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl) }}
+                                    className="flex items-center gap-2 text-[11px] text-primary hover:text-primary/80 w-full"
+                                  >
+                                    {playingAudio === s.audioUrl ? <Pause className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                                    {playingAudio === s.audioUrl ? 'در حال پخش...' : 'پخش ویس'}
+                                  </button>
+                                </div>
+                              )}
+                              {s.imageUrl && (
+                                <div className="pt-2 border-t border-border">
+                                  <button onClick={e => { e.stopPropagation(); setPreviewImage(s.imageUrl) }} className="flex items-center gap-2 text-[11px] text-primary hover:text-primary/80 w-full">
+                                    <ImageIcon className="w-3.5 h-3.5" /> مشاهده تصویر
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+            </motion.div>
+          </>
+        )}
       </div>
+
+      {playingAudio && <audio ref={audioRef} src={playingAudio} onEnded={() => setPlayingAudio(null)} className="hidden" />}
+
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setPreviewImage(null)}
+          >
+            <button onClick={() => setPreviewImage(null)} className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <motion.img initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+              src={previewImage} alt="" className="max-w-full max-h-[90vh] rounded-2xl" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

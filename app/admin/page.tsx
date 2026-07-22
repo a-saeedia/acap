@@ -860,7 +860,7 @@ function AdminSignals() {
   const [showSignalForm, setShowSignalForm] = useState(false)
   const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
   const [editSignalId, setEditSignalId] = useState<string | null>(null)
-  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', expiresAt: '', publishedAt: '' })
+  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: '' })
   const [signalSaving, setSignalSaving] = useState(false)
   const [showRevenueForm, setShowRevenueForm] = useState(false)
   const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
@@ -877,8 +877,8 @@ function AdminSignals() {
   useEffect(() => { load().catch(() => {}).finally(() => setLoading(false)) }, [load])
 
   function openSignalForm(s?: any) {
-    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
-    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', expiresAt: '', publishedAt: '' }) }
+    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
+    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: '' }) }
     setShowSignalForm(true)
   }
 
@@ -893,7 +893,7 @@ function AdminSignals() {
     setSignalSaving(true)
     try {
       const m = await import('@/app/actions/admin')
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
+      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
       if (signalFormMode === 'create') await m.createSignal(data); else if (editSignalId) await m.updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
     } catch (e) { console.error(e) }; setSignalSaving(false)
@@ -942,6 +942,18 @@ function AdminSignals() {
           <div className="grid grid-cols-2 gap-2">
             <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))} type="text" placeholder="مثال: 1402-10-25 14:30 (شمسی)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
             <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} type="text" placeholder="مثال: 1402-10-25 14:30 (شمسی)" className="px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-gray-500 mb-1 block">تصویر سیگنال</label>
+              {sf.imageUrl && <img src={sf.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg mb-1" />}
+              <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setSf(p => ({ ...p, imageUrl: r.result as string })); r.readAsDataURL(f) } }} className="w-full text-[11px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-blue-600 file:text-white" />
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 mb-1 block">ویس / صدا</label>
+              {sf.audioUrl && <audio src={sf.audioUrl} controls className="w-full h-8 mb-1" />}
+              <input type="file" accept="audio/*" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = () => setSf(p => ({ ...p, audioUrl: r.result as string })); r.readAsDataURL(f) } }} className="w-full text-[11px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-blue-600 file:text-white" />
+            </div>
           </div>
           <button onClick={saveSignal} disabled={signalSaving} className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors disabled:opacity-50">{signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ذخیره'}</button>
         </div>

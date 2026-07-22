@@ -7,7 +7,6 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 const FETCH = { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': UA } }
 
-// ---- Helpers ----
 function parseNum(v) { const n = Number(String(v).replace(/,/g, '')); return isNaN(n) ? 0 : n }
 
 async function upsertPrices(client, entries) {
@@ -31,24 +30,53 @@ async function upsertPrices(client, entries) {
   return { up, ins }
 }
 
-// ---- Source 1: TGJU HTML scrape ----
+// ---- Source 1: Nobitex (Iranian exchange - most relevant for local prices) ----
+async function fetchNobitex() {
+  const prices = {}
+  let irrRate = 0
+  try {
+    // USDT/IRT rate → USD/IRR
+    const usdtRes = await fetch('https://api.nobitex.ir/market/stats?srcCurrency=usdt&dstCurrency=irt', { ...FETCH })
+    const usdtData = await usdtRes.json()
+    if (usdtData?.status === 'ok' && usdtData.stats?.['usdt-irt']?.latest) {
+      irrRate = parseFloat(usdtData.stats['usdt-irt'].latest) * 10
+      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+    }
+
+    // All crypto in USDT
+    const allSymbols = ['btc', 'eth', 'usdt', 'bnb', 'sol', 'xrp', 'ada', 'doge', 'trx', 'dot', 'matic', 'link', 'avax', 'shib']
+    const cryptoRes = await fetch(`https://api.nobitex.ir/market/stats?srcCurrency=${allSymbols.join(',')}&dstCurrency=usdt`, { ...FETCH })
+    const cryptoData = await cryptoRes.json()
+    if (cryptoData?.status === 'ok') {
+      for (const [mk, stats] of Object.entries(cryptoData.stats)) {
+        const [base, quote] = mk.split('-')
+        if (quote !== 'usdt') continue
+        const latest = parseFloat(stats.latest)
+        if (latest > 0) {
+          prices[base.toUpperCase()] = { price: latest, currency: 'USD' }
+        }
+      }
+    }
+  } catch { console.error('Nobitex failed') }
+  return { prices, irrRate }
+}
+
+// ---- Source 2: TGJU (gold, coins, forex in IRR) ----
 async function fetchTgju() {
   const prices = {}
   let irrRate = 0
   try {
     const res = await fetch('https://www.tgju.org/', { ...FETCH })
     const html = await res.text()
-    // Extract all data-market-row entries
     const re = /data-market-row="([^"]+)"[^>]*>[\s\S]*?<td[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\d,]+)"/g
     let m
     while ((m = re.exec(html)) !== null) {
       const val = parseNum(m[2])
       if (val > 0) prices[m[1]] = val
     }
-    // USD rate
     const usdMatch = html.match(/data-market-row="price_dollar_rl"[^>]*>[\s\S]*?data-price="([\d,]+)"/)
     if (usdMatch) irrRate = parseNum(usdMatch[1])
-    // Also try pattern 2 (alternative TGJU layout)
     if (irrRate === 0) {
       const altMatch = html.match(/price_dollar_rl[\s\S]*?<td[^>]*>([\d,]+)<\/td>/)
       if (altMatch) irrRate = parseNum(altMatch[1])
@@ -70,7 +98,6 @@ async function fetchTgju() {
     if (prices[slug]) result[sym] = { price: prices[slug], currency: 'IRR' }
   }
 
-  // Computed fallbacks
   if (!result['GOLD24'] && result['GOLD18']) result['GOLD24'] = { price: Math.round(result['GOLD18'].price * 4 / 3), currency: 'IRR' }
   if (!result['HALF_COIN'] && result['COIN']) result['HALF_COIN'] = { price: Math.round(result['COIN'].price * 0.52), currency: 'IRR' }
   if (!result['QUARTER_COIN'] && result['COIN']) result['QUARTER_COIN'] = { price: Math.round(result['COIN'].price * 0.30), currency: 'IRR' }
@@ -78,39 +105,33 @@ async function fetchTgju() {
   return { prices: result, irrRate }
 }
 
-// ---- Source 2: Nobitex (always works) ----
-async function fetchNobitex() {
+// ---- Source 3: TGJU AJAX for oil, silver, gas ----
+async function fetchOilSilverGas() {
   const prices = {}
-  let irrRate = 0
   try {
-    // USDT/IRT rate
-    const usdtRes = await fetch('https://api.nobitex.ir/market/stats?srcCurrency=usdt&dstCurrency=irt', { ...FETCH })
-    const usdtData = await usdtRes.json()
-    if (usdtData?.status === 'ok' && usdtData.stats?.['usdt-irt']?.latest) {
-      irrRate = parseFloat(usdtData.stats['usdt-irt'].latest) * 10
-      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+    const rev = Math.random().toString(36).substring(2, 12)
+    const res = await fetch(`https://call2.tgju.org/ajax.json?rev=${rev}`, { ...FETCH })
+    if (!res.ok) return prices
+    const data = await res.json()
+    const c = data.current
+    if (!c) return prices
+    const globalMap = {
+      'price_namavat': 'OIL', oil_brent: 'BRENT_OIL',
+      'price_silver': 'SILVER', 'price_gas': 'NATURAL_GAS',
     }
-
-    // Crypto in USD
-    const allSymbols = ['btc', 'eth', 'usdt', 'bnb', 'sol', 'xrp', 'ada', 'doge', 'trx', 'dot', 'matic', 'link', 'avax', 'shib']
-    const cryptoRes = await fetch(`https://api.nobitex.ir/market/stats?srcCurrency=${allSymbols.join(',')}&dstCurrency=usdt`, { ...FETCH })
-    const cryptoData = await cryptoRes.json()
-    if (cryptoData?.status === 'ok') {
-      for (const [mk, stats] of Object.entries(cryptoData.stats)) {
-        const [base, quote] = mk.split('-')
-        if (quote !== 'usdt') continue
-        const latest = parseFloat(stats.latest)
-        if (latest > 0) {
-          prices[base.toUpperCase()] = { price: latest, currency: 'USD' }
+    for (const [slug, sym] of Object.entries(globalMap)) {
+      if (c[slug]?.p) {
+        let price = parseNum(c[slug].p)
+        if (price > 0) {
+          prices[sym] = { price, currency: 'USD' }
         }
       }
     }
-  } catch { console.error('Nobitex failed') }
-  return { prices, irrRate }
+  } catch { console.error('Oil/silver/gas fetch failed') }
+  return prices
 }
 
-// ---- Source 3: CoinGecko (global crypto) ----
+// ---- Source 4: CoinGecko (global fallback for crypto) ----
 async function fetchCoinGecko() {
   const prices = {}
   try {
@@ -127,7 +148,7 @@ async function fetchCoinGecko() {
   return prices
 }
 
-// ---- Source 4: TSETMC (Iranian stocks) ----
+// ---- Source 5: TSETMC (Iranian stocks) ----
 const TSETMC = 'https://cdn.tsetmc.com/api'
 const STOCK_SYMBOLS = [
   'فولاد', 'فملی', 'کگل', 'خودرو', 'خساپا', 'وبملت', 'وتجارت',
@@ -171,66 +192,65 @@ async function main() {
   console.log('Price sync started...')
   const start = Date.now()
 
-  // Fetch all sources in parallel
-  const [tgju, nobitex, gecko, stocks] = await Promise.all([
+  const [tgju, nobitex, commodities, gecko, stocks] = await Promise.all([
     fetchTgju(),
     fetchNobitex(),
+    fetchOilSilverGas(),
     fetchCoinGecko(),
     fetchStocks(),
   ])
 
-  // Merge: TGJU prices + Nobitex USDT rate + CoinGecko crypto + stocks
-  const allPrices = { ...tgju.prices }
-  let irrRate = tgju.irrRate
+  // PRIORITY: Nobitex > CoinGecko (crypto) | TGJU > commodities (gold/oil/gas) | TGJU Nobitex (USD rate)
+  const allPrices = {}
 
-  // Use Nobitex rate if TGJU failed
-  if (irrRate === 0 && nobitex.irrRate > 0) {
-    irrRate = nobitex.irrRate
+  // 1. Gold/forex/coin from TGJU (Nobitex doesn't have these)
+  Object.assign(allPrices, tgju.prices)
+
+  // 2. USD rate: Nobitex preferred (live rate), fallback TGJU
+  let irrRate = nobitex.irrRate
+  if (irrRate > 0) {
+    allPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+    allPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+  } else if (tgju.irrRate > 0) {
+    irrRate = tgju.irrRate
     allPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
     allPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
   }
 
-  // Merge Nobitex crypto (if not covered by TGJU)
+  // 3. Crypto in USD: Nobitex preferred, CoinGecko fallback
   for (const [sym, d] of Object.entries(nobitex.prices)) {
-    if (!allPrices[sym] && !sym.endsWith('-IRR') && sym !== 'USD-IRR' && sym !== 'USDT-IRR') {
+    if (d.currency === 'USD' && sym !== 'USD-IRR' && sym !== 'USDT-IRR') {
+      allPrices[sym] = d
+    }
+  }
+  // CoinGecko fills what Nobitex missed
+  for (const [sym, d] of Object.entries(gecko)) {
+    if (!allPrices[sym]) {
       allPrices[sym] = d
     }
   }
 
-  // Merge CoinGecko (preferred over Nobitex for USD prices)
-  for (const [sym, d] of Object.entries(gecko)) {
-    allPrices[sym] = d
-  }
+  // 4. Commodities (oil, silver, gas)
+  Object.assign(allPrices, commodities)
 
-  // Compute crypto-IRR prices if we have irrRate
+  // 5. Crypto in IRR (using Nobitex rate or TGJU rate)
   if (irrRate > 0) {
-    const cryptoUSD = { ...nobitex.prices, ...gecko }
-    for (const [sym, d] of Object.entries(cryptoUSD)) {
-      if (d.currency === 'USD' && d.price > 0 && !allPrices[`${sym}-IRR`]) {
+    for (const [sym, d] of Object.entries(allPrices)) {
+      if (d.currency === 'USD' && !sym.endsWith('-IRR') && d.price > 0) {
         allPrices[`${sym}-IRR`] = { price: Math.round(d.price * irrRate), currency: 'IRR' }
       }
     }
   }
 
-  // Add all forex-IRR from Nobitex USD rate
-  if (irrRate > 0) {
-    // Nobitex doesn't provide EUR/IRR etc directly, so compute from TGJU or fall back
-    // TGJU forex-IRR pairs are already merged from tgju.prices
-    // For any missing, the live API will compute them
-  }
+  // 6. Stock prices
+  Object.assign(allPrices, stocks)
 
-  // Merge stock prices
-  for (const [sym, d] of Object.entries(stocks)) {
-    allPrices[sym] = d
-  }
-
-  // Write to DB
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
     const { up, ins } = await upsertPrices(client, allPrices)
     await client.query('COMMIT')
-    console.log(`DB updated: ${up} updated, ${ins} inserted | Sources: TGJU=${Object.keys(tgju.prices).length}, Nobitex=${Object.keys(nobitex.prices).length}, Gecko=${Object.keys(gecko).length}, Stocks=${Object.keys(stocks).length} | irrRate=${irrRate} | ${Date.now() - start}ms`)
+    console.log(`DB updated: ${up} updated, ${ins} inserted | Nobitex=${Object.keys(nobitex.prices).length}, TGJU=${Object.keys(tgju.prices).length}, Gecko=${Object.keys(gecko).length}, Commodities=${Object.keys(commodities).length}, Stocks=${Object.keys(stocks).length} | irrRate=${irrRate} | ${Date.now() - start}ms`)
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('DB write failed:', e)
