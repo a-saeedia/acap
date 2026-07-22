@@ -1053,10 +1053,14 @@ function AdminSignals() {
             <div className="flex gap-2">
               <button onClick={async () => {
                 if (!confirm('همه سیگنال‌ها و درآمدهای قبلی پاک شده و با داده‌های واقعی بازار جایگزین می‌شن. ادامه میدی؟')) return
-                const m = await import('@/app/actions/admin')
-                const r = await m.populateSignals()
-                alert(`${r.signals} سیگنال با قیمت‌های لحظه‌ای بازار ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
-                await load()
+                try {
+                  const m = await import('@/app/actions/admin')
+                  const r = await m.populateSignals()
+                  alert(`${r.signals} سیگنال با قیمت‌های لحظه‌ای بازار ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
+                  await load()
+                } catch (e: any) {
+                  alert('خطا: ' + (e?.message || 'نامشخص'))
+                }
               }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><TrendingUp className="w-3.5 h-3.5" /> ایجاد سیگنال‌های واقعی</button>
               <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
             </div>
@@ -1107,11 +1111,15 @@ function AdminSignals() {
             <span className="text-xs text-gray-500">عملکرد ماهانه</span>
             <div className="flex gap-2">
               <button onClick={async () => {
-                const m = await import('@/app/actions/admin')
-                const r = await m.populateRevenueFromSignals()
-                if (r.months > 0) alert(`${r.months} ماه درآمد از ${r.totalSignals} دوره از سیگنال‌ها محاسبه و ثبت شد`)
-                else alert('هیچ سیگنال موفقی برای محاسبه درآمد یافت نشد')
-                await load()
+                try {
+                  const m = await import('@/app/actions/admin')
+                  const r = await m.populateRevenueFromSignals()
+                  if (r.months > 0) alert(`${r.months} ماه درآمد از ${r.totalSignals} دوره از سیگنال‌ها محاسبه و ثبت شد`)
+                  else alert('هیچ سیگنال موفقی برای محاسبه درآمد یافت نشد')
+                  await load()
+                } catch (e: any) {
+                  alert('خطا: ' + (e?.message || 'نامشخص'))
+                }
               }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Signal className="w-3.5 h-3.5" /> محاسبه از سیگنال‌ها</button>
               <button onClick={() => openRevenueForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Plus className="w-3.5 h-3.5" /> ثبت دستی</button>
             </div>
