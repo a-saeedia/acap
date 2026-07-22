@@ -1,11 +1,5 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { RevenueWidget } from '@/components/revenue-widget'
-
-export default function SignalsPage() {
-  return (
-    <div dir="rtl">
-      <RevenueWidget />
-    </div>
-  )
+export default function SignalsRedirect() {
+  redirect('/app/personal')
 }

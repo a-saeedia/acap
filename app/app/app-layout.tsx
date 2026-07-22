@@ -11,7 +11,7 @@ const navItems = [
   { href: '/app', label: 'خلاصه من', icon: LayoutDashboard },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
-  { href: '/app/signals', label: 'درآمد A|CAP', icon: Zap },
+  { href: '/app/personal', label: 'پیام‌های شخصی', icon: Crown },
   { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },
   { href: '/app/academy', label: 'آکادمی', icon: GraduationCap },
   { href: '/app/invite', label: 'دعوت از دوستان', icon: Gift },
