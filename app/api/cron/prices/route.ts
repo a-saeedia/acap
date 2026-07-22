@@ -50,21 +50,29 @@ export async function GET(req: Request) {
 
     const { prices, irrRate, stockPrices } = await fetchAllPrices(insCodeMap)
 
-    for (const [sym, d] of Object.entries(prices)) {
-      if (d.price > 0) {
-        await pool.query(
-          'INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW()) ON CONFLICT (symbol) DO UPDATE SET price = $4, "updatedAt" = NOW()',
-          [randomUUID(), 'crypto', sym, d.price, d.currency, 'cron']
-        )
-      }
-    }
+    // Batch upsert: update existing rows, insert new ones
+    const allEntries = [
+      ...Object.entries(prices).filter(([, d]) => d.price > 0).map(([sym, d]) => ({ sym, price: d.price, currency: d.currency, type: 'crypto' })),
+      ...Object.entries(stockPrices).filter(([, d]) => d.price > 0).map(([sym, d]) => ({ sym, price: d.price, currency: 'IRR', type: 'iran-stock' })),
+    ]
 
-    for (const [sym, d] of Object.entries(stockPrices)) {
-      if (d.price > 0) {
-        await pool.query(
-          'INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW()) ON CONFLICT (symbol) DO UPDATE SET price = $4, "updatedAt" = NOW()',
-          [randomUUID(), 'iran-stock', sym, d.price, 'IRR', 'cron']
-        )
+    if (allEntries.length > 0) {
+      const existing = await pool.query('SELECT DISTINCT symbol FROM asset_price')
+      const existingSet = new Set(existing.rows.map((r: any) => r.symbol))
+
+      const toInsert = allEntries.filter(e => !existingSet.has(e.sym))
+      const toUpdate = allEntries.filter(e => existingSet.has(e.sym))
+
+      if (toInsert.length > 0) {
+        const placeholders = toInsert.map((_, i) =>
+          `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6}, NOW())`
+        ).join(',')
+        const params = toInsert.flatMap(e => [randomUUID(), e.type, e.sym, e.price, e.currency, 'cron'])
+        try { await pool.query(`INSERT INTO asset_price (id, type, symbol, price, currency, source, "updatedAt") VALUES ${placeholders}`, params) } catch (e2) { console.error('cron insert error:', e2) }
+      }
+
+      for (const e of toUpdate) {
+        try { await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [e.price, e.sym]) } catch (e2) { console.error('cron update error:', e2) }
       }
     }
 

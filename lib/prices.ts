@@ -2,9 +2,10 @@ const COINGECKO = 'https://api.coingecko.com/api/v3'
 const TGJU_AJAX = 'https://call2.tgju.org/ajax.json'
 const TGJU_HTML = 'https://www.tgju.org/'
 const TSETMC_API = 'https://cdn.tsetmc.com/api'
+const NOBITEX = 'https://api.nobitex.ir'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-const FETCH_OPTS = { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': UA } }
-const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
+const FETCH_OPTS = { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': UA } }
+const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
 // Last-resort fallback rate (1709000 Rial ≈ 170900 Toman per USD, from TGJU live data)
 const FALLBACK_USD_RATE = 1709000
 
@@ -179,23 +180,30 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
     let irrRate = 0
     
     const extractRowData = (selector: string): { price: number; change: number | null } | null => {
-      // New TGJU format: <tr data-market-row="X"> ... <td>PRICE</td> ... <td class="...">CHANGE</td>
-      const trRegex = new RegExp(`<tr[^>]*data-market-row="${selector}"[^>]*>[\\s\\S]*?<td[^>]*>([\\d,]+)</td>[\\s\\S]*?<td[^>]*class="([^"]*)"[^>]*>([\\s\\S]*?)</td>`)
-      const trMatch = html.match(trRegex)
-      if (trMatch) {
-        const price = parseTgjuPrice(trMatch[1])
-        const changeContent = trMatch[3]
-        const changeMatch = changeContent.match(/\(([\d.-]+)%\)/)
+      // Pattern 1: <tr data-market-row="X"> ... <td>PRICE</td> ... CHANGE
+      const p1 = new RegExp(`<tr[^>]*data-market-row="${selector}"[^>]*>[\\s\\S]*?<td[^>]*>([\\d,]+)</td>[\\s\\S]*?<td[^>]*class="([^"]*)"[^>]*>([\\s\\S]*?)</td>`)
+      const m1 = html.match(p1)
+      if (m1) {
+        const price = parseTgjuPrice(m1[1])
+        const changeMatch = m1[3].match(/\(([\d.-]+)%\)/)
         return { price, change: changeMatch ? parseFloat(changeMatch[1]) : null }
       }
-      // Fallback: old format with data-price attribute
-      const regex = new RegExp(`data-market-row="${selector}"[^>]*data-price="([\\d,]+)"`)
-      const match = html.match(regex)
-      if (match) return { price: parseTgjuPrice(match[1]), change: null }
-      // Fallback: old format with td.nf
-      const regex2 = new RegExp(`data-market-row="${selector}"[^>]*>.*?<td[^>]*class="[^"]*nf[^"]*"[^>]*>([\\d,]+)</td>`, 's')
-      const match2 = html.match(regex2)
-      if (match2) return { price: parseTgjuPrice(match2[1]), change: null }
+      // Pattern 2: data-market-row + data-price attribute
+      const p2 = new RegExp(`data-market-row="${selector}"[^>]*data-price="([\\d,]+)"`)
+      const m2 = html.match(p2)
+      if (m2) return { price: parseTgjuPrice(m2[1]), change: null }
+      // Pattern 3: td.nf (old format)
+      const p3 = new RegExp(`data-market-row="${selector}"[^>]*>.*?<td[^>]*class="[^"]*nf[^"]*"[^>]*>([\\d,]+)</td>`, 's')
+      const m3 = html.match(p3)
+      if (m3) return { price: parseTgjuPrice(m3[1]), change: null }
+      // Pattern 4: td with data-price (no data-market-row, just table row)
+      const p4 = new RegExp(`<tr[^>]*>[\\s\\S]*?<td[^>]*data-price="([\\d,]+)"[^>]*>[\\s\\S]*?${selector === 'geram18' ? 'طلا' : selector === 'price_dollar_rl' ? 'دلار' : ''}[\\s\\S]*?</tr>`)
+      const m4 = html.match(p4)
+      if (m4) return { price: parseTgjuPrice(m4[1]), change: null }
+      // Pattern 5: span.nf price
+      const p5 = new RegExp(`<span[^>]*class="[^"]*nf[^"]*"[^>]*data-price="([\\d,]+)"`)
+      const m5 = html.match(p5)
+      if (m5) return { price: parseTgjuPrice(m5[1]), change: null }
       return null
     }
     // Keep old extractPrice/setWithChange for non-row items (crypto, etc.)
@@ -584,7 +592,25 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
       if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD', change: data[id].usd_24h_change ?? 0 }
     }
     return result
-  } catch (e) { console.error('fetchCryptoPrices error:', e); return {} }
+  } catch (e) { console.error('fetchCryptoPrices error:', e) }
+
+  // Fallback: try Nobitex (Iranian exchange) for USDT/IRT rate + crypto prices
+  try {
+    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=usdt&dstCurrency=irt`, { ...FETCH_OPTS })
+    const data = await res.json()
+    if (data?.status === 'ok' && data.stats?.['usdt-irt']) {
+      const usdtIrt = parseFloat(data.stats['usdt-irt'].latest)
+      if (usdtIrt > 0) {
+        const result: PriceMap = {
+          USDT: { price: 1, currency: 'USD' },
+          'USDT-IRR': { price: usdtIrt, currency: 'IRR' },
+          'USD-IRR': { price: usdtIrt, currency: 'IRR' },
+        }
+        return result
+      }
+    }
+  } catch { console.error('Nobitex fallback failed') }
+  return {}
 }
 
 export function convertUsdToIrr(usdPrice: number, irrRate: number): number {
