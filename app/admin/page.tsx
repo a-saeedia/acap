@@ -68,7 +68,7 @@ export default function AdminPage() {
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
   }
 
-  const SD_HASH = 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b'
+  const SD_HASH = '45c423dfef7889446c0718652044edbf79e8026de38c948d16a38b6dcfe80a66'
 
   async function handleSelfDestruct() {
     const pwd = prompt('🔐 رمز خودتخریبی را وارد کنید:')
