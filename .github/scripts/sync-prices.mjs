@@ -42,7 +42,7 @@ async function fetchTgjuAjax() {
     if (!c?.price_dollar_rl?.p) return { prices, irrRate: 0 }
 
     const irrRate = parseNum(c.price_dollar_rl.p)
-    if (irrRate < 5000000) return { prices, irrRate: 0 }
+    if (irrRate < 500000) return { prices, irrRate: 0 }
     const symMap = {
       price_eur: 'EUR-IRR', price_aed: 'AED-IRR', price_gbp: 'GBP-IRR',
       price_try: 'TRY-IRR', price_chf: 'CHF-IRR', price_cny: 'CNY-IRR',

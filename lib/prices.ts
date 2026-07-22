@@ -6,7 +6,7 @@ const NOBITEX = 'https://api.nobitex.ir'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA } }
 const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
-const FALLBACK_USD_RATE = 9230000
+const FALLBACK_USD_RATE = 1850000
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -204,8 +204,8 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
 
     const usdRow = extractRowData('price_dollar_rl')
     if (usdRow) {
-      if (usdRow.price < 5000000) {
-        console.warn('[prices] Rejecting TGJU HTML USD rate (too low):', usdRow.price)
+      if (usdRow.price < 500000) {
+        console.warn('[prices] TGJU HTML USD rate too low (NIMA?):', usdRow.price)
       } else {
         irrRate = usdRow.price
         prices['USD'] = { price: 1, currency: 'USD' }
@@ -349,16 +349,16 @@ function parseTgjuAjax(data: any): { prices: PriceMap; irrRate: number; timestam
   const timestamp = c.price_dollar_rl?.ts || ''
 
   const rawUsd = c.price_dollar_rl?.p
-  if (!rawUsd) return { prices: {}, irrRate: 0, timestamp: '' }
-  const irrRate = parseTgjuPrice(rawUsd)
-  if (irrRate < 5000000) {
-    console.warn('[prices] Rejecting TGJU AJAX USD rate (too low, likely official rate):', irrRate)
-    return { prices: {}, irrRate: 0, timestamp: '' }
+  const irrRate = rawUsd ? parseTgjuPrice(rawUsd) : 0
+  if (irrRate < 500000) {
+    console.warn('[prices] TGJU AJAX USD rate too low (NIMA?), skipping USD:', irrRate)
   }
 
-  prices['USD'] = { price: 1, currency: 'USD' }
-  prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-  prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+  if (irrRate > 500000) {
+    prices['USD'] = { price: 1, currency: 'USD' }
+    prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+    prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+  }
 
   const forexPairs: Record<string, string> = {
     price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
@@ -500,8 +500,8 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
       const usdRow = r.rows.find(r => r.symbol === 'USD-IRR' || r.symbol === 'USDT-IRR')
       if (usdRow) {
         const dbRate = Number(usdRow.price)
-        if (dbRate < 5000000) {
-          console.warn('[prices] Rejecting DB USD rate (too low):', dbRate)
+        if (dbRate < 500000) {
+          console.warn('[prices] DB USD rate too low (NIMA?):', dbRate)
         } else {
           irrRate = dbRate
           prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }

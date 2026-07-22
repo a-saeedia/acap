@@ -4,34 +4,6 @@ import { useState, useEffect } from 'react'
 
 type PriceMap = Record<string, { price: number; currency: string }>
 
-function parseTgjuPrice(val: string): number {
-  return Number(val.replace(/,/g, ''))
-}
-
-async function fetchTgjuPrices(): Promise<PriceMap> {
-  const rev = Math.random().toString(36).substring(2, 12)
-  const urls = [`https://call2.tgju.org/ajax.json?rev=${rev}`]
-  for (const url of urls) {
-    try {
-      const res = await fetch(url)
-      if (!res.ok) continue
-      const data = await res.json()
-      if (!data?.current?.price_dollar_rl?.p) continue
-      const c = data.current
-      const p: PriceMap = {}
-      const irrRate = parseTgjuPrice(c.price_dollar_rl.p)
-      if (irrRate < 5000000) continue
-      p['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-      p['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-      if (c.price_eur?.p) p['EUR-IRR'] = { price: parseTgjuPrice(c.price_eur.p), currency: 'IRR' }
-      if (c.geram18?.p) p['GOLD18'] = { price: parseTgjuPrice(c.geram18.p), currency: 'IRR' }
-      if (c.sekee?.p) p['COIN'] = { price: parseTgjuPrice(c.sekee.p), currency: 'IRR' }
-      return p
-    } catch { continue }
-  }
-  return {}
-}
-
 const TICKER_SYMBOLS = [
   { key: 'BTC', label: 'BTC', format: (p: number) => `$${p.toLocaleString()}` },
   { key: 'ETH', label: 'ETH', format: (p: number) => `$${p.toLocaleString()}` },
@@ -46,9 +18,12 @@ export function PriceTicker() {
   const [prices, setPrices] = useState<PriceMap>({})
 
   useEffect(() => {
-    fetchTgjuPrices().then(tgjuP => {
-      if (Object.keys(tgjuP).length > 0) setPrices(tgjuP)
-    })
+    fetch('/api/prices')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.prices && Object.keys(d.prices).length > 0) setPrices(d.prices)
+      })
+      .catch(() => {})
   }, [])
 
   const items = TICKER_SYMBOLS
