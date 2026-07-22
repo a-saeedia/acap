@@ -230,7 +230,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   const [uploadText, setUploadText] = useState('')
   const [uploadCsvFile, setUploadCsvFile] = useState<File | null>(null)
   const [uploadParsing, setUploadParsing] = useState(false)
-  const [uploadResult, setUploadResult] = useState<{ symbol: string; label: string; type: string; quantity: number }[] | null>(null)
+  const [uploadResult, setUploadResult] = useState<{ symbol: string; label: string; type: string; quantity: number; price: number }[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AssetForm>(INITIAL_FORM)
   const [stockSearch, setStockSearch] = useState('')
@@ -404,6 +404,18 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
     return { type: 'stock', label: name }
   }
 
+  function detectHeaderCols(headers: string[]): { symIdx: number; qtyIdx: number } {
+    const symPatterns = /^(نماد|symbol|stocksymbol|symbole)$/i
+    const qtyPatterns = /^(تعداد|مقدار|quantity|amount|qty|count|shares)$/i
+    let symIdx = 0, qtyIdx = 1
+    for (let i = 0; i < headers.length; i++) {
+      const h = headers[i].trim()
+      if (symPatterns.test(h)) symIdx = i
+      if (qtyPatterns.test(h)) qtyIdx = i
+    }
+    return { symIdx, qtyIdx }
+  }
+
   async function handleUploadParse() {
     if (!uploadCsvFile) return
     setUploadParsing(true)
@@ -414,26 +426,29 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
 
       if (ext === 'csv') {
         const text = await uploadCsvFile.text()
-        rows = text.split('\n').filter(Boolean).map(l => l.split(',').map(s => s.trim()))
+        rows = text.split('\n').filter(Boolean).map(l => l.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')))
       } else if (ext === 'xls' || ext === 'xlsx') {
         const buf = await uploadCsvFile.arrayBuffer()
         const wb = XLSX.read(buf, { type: 'array' })
         const sheet = wb.Sheets[wb.SheetNames[0]]
         const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
-        rows = data.slice(1).filter((r: string[]) => r.length >= 2)
+        rows = data.filter((r: string[]) => r.length >= 2)
       } else {
         showToast('فرمت فایل پشتیبانی نمی‌شود (csv, xls, xlsx)', 'error')
         setUploadParsing(false)
         return
       }
 
-      const items: { symbol: string; label: string; type: string; quantity: number }[] = []
-      for (const row of rows) {
-        const sym = row[0]?.trim()
-        const qty = parseFloat(String(row[1] ?? '').replace(/[^0-9.]/g, ''))
+      const { symIdx, qtyIdx } = rows.length > 0 ? detectHeaderCols(rows[0]) : { symIdx: 0, qtyIdx: 1 }
+      const dataRows = rows.slice(1).filter(r => r[symIdx]?.trim())
+
+      const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
+      for (const row of dataRows) {
+        const sym = row[symIdx]?.trim()
+        const qty = parseFloat(String(row[qtyIdx] ?? '').replace(/[^0-9.]/g, ''))
         if (!sym || !qty || qty <= 0) continue
         const { type, label } = detectType(sym)
-        items.push({ symbol: sym, label, type, quantity: qty })
+        items.push({ symbol: sym, label, type, quantity: qty, price: 0 })
       }
       if (items.length === 0) { showToast('هیچ دارایی معتبری در فایل یافت نشد', 'error'); return }
       setUploadResult(items)
@@ -448,13 +463,15 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
       try {
         await createAsset({ type: item.type, symbol: item.symbol, label: item.label, quantity: item.quantity })
         count++
-      } catch { /* continue */ }
+      } catch {
+        console.error(`خطا در ثبت دارایی ${item.symbol}`, item)
+      }
     }
     setAssets(await getMyAssets())
     setShowUpload(false)
     setUploadText('')
     setUploadResult(null)
-    showToast(`${count} دارایی با موفقیت اضافه شد`)
+    showToast(`${count} از ${uploadResult.length} دارایی با موفقیت اضافه شد`)
     if (count > 0) setShowAdvisor(true)
   }
 

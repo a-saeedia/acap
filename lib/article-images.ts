@@ -1,4 +1,23 @@
 export function getArticleImage(title: string, categoryColor: string): string {
+  const lower = title.toLowerCase()
+
+  const categoryMap: { keywords: string[]; image: string }[] = [
+    { keywords: ['بیت‌کوین', 'bitcoin', 'بیت کوین', 'ارز دیجیتال', 'crypto', 'cryptocurrency', 'رمزارز', 'blockchain', 'بلاکچین', 'بلاک چین', 'اتریوم', 'ethereum', 'solana', 'سولانا'], image: '/blog/blog-crypto.jpg' },
+    { keywords: ['بورس', 'stock', 'سهام', 'سهم', 'بازار سرمایه', 'تالار', 'فرابورس', 'نماد'], image: '/blog/blog-stock.jpg' },
+    { keywords: ['آموزش', 'ترید', 'trading', 'trade', 'معامله', 'سیگنال', 'تحلیل', 'تحلیل تکنیکال', 'تحلیل بنیادی'], image: '/blog/blog-trading.jpg' },
+    { keywords: ['سرمایه‌گذاری', 'سرمایه گذاری', 'invest', 'investment', 'پورتفو', 'portfolio', 'مدیریت ریسک', 'ریسک', 'سبد سهام'], image: '/blog/blog-invest.jpg' },
+    { keywords: ['اقتصاد', 'economy', 'تورم', 'inflation', 'دلار', 'usd', 'forex', 'فارکس', 'طلا', 'gold', 'سکه', 'نرخ بهره', 'tether', 'usdt'], image: '/blog/blog-finance.jpg' },
+    { keywords: ['هوش مصنوعی', 'ai', 'artificial intelligence', 'یادگیری ماشین', 'machine learning', 'chatgpt', 'gpt', 'ربات', 'bot', 'automation', 'آموزش'], image: '/blog/blog-trading.jpg' },
+  ]
+
+  for (const entry of categoryMap) {
+    for (const kw of entry.keywords) {
+      if (lower.includes(kw)) {
+        return entry.image
+      }
+    }
+  }
+
   const hex = categoryColor.replace('#', '')
   const r = parseInt(hex.substring(0, 2), 16)
   const g = parseInt(hex.substring(2, 4), 16)
