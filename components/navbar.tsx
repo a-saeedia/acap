@@ -3,16 +3,17 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from './theme-provider'
-import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle } from 'lucide-react'
+import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle, Scan } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 
 const navItems: { label: string; href: string; highlight?: boolean }[] = [
   { label: 'وبلاگ', href: '/blog' },
   { label: 'آکادمی', href: '/education' },
+  { label: 'اسکنر پرتفوی', href: '/scan', highlight: true },
   { label: 'درباره ما', href: '#about' },
   { label: 'تست مالی', href: '#quiz' },
-  { label: 'A|CAP+', href: '#services', highlight: true },
+  { label: 'A|CAP+', href: '#services' },
   { label: 'سفیران', href: '#ambassador' },
   { label: 'تیم', href: '#founders' },
   { label: 'سوالات', href: '#faq' },

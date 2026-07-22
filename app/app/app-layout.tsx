@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
 import Link from 'next/link'
-import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, Gift, LogOut, Menu, X, ChevronLeft, ArrowRight } from 'lucide-react'
+import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, Gift, LogOut, Menu, X, ChevronLeft, ArrowRight, Scan } from 'lucide-react'
 
 
 const navItems = [
+  { href: '/scan', label: 'اسکنر پرتفوی', icon: Scan },
   { href: '/app', label: 'خلاصه من', icon: LayoutDashboard },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
