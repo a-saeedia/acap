@@ -8,6 +8,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
@@ -18,3 +19,6 @@ jobs:
       - run: npm install pg
       - name: Sync prices to database
         run: node .github/scripts/sync-prices.mjs
+      - name: Retry on failure
+        if: failure()
+        run: sleep 30 && node .github/scripts/sync-prices.mjs
