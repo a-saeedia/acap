@@ -1,19 +1,58 @@
+function pickImage(images: string[], seed: number): string {
+  return images[seed % images.length]
+}
+
 export function getArticleImage(title: string, categoryColor: string): string {
   const lower = title.toLowerCase()
+  const seed = title.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
 
-  const categoryMap: { keywords: string[]; image: string }[] = [
-    { keywords: ['بیت‌کوین', 'bitcoin', 'بیت کوین', 'ارز دیجیتال', 'crypto', 'cryptocurrency', 'رمزارز', 'blockchain', 'بلاکچین', 'بلاک چین', 'اتریوم', 'ethereum', 'solana', 'سولانا'], image: '/blog/blog-crypto.jpg' },
-    { keywords: ['بورس', 'stock', 'سهام', 'سهم', 'بازار سرمایه', 'تالار', 'فرابورس', 'نماد'], image: '/blog/blog-stock.jpg' },
-    { keywords: ['آموزش', 'ترید', 'trading', 'trade', 'معامله', 'سیگنال', 'تحلیل', 'تحلیل تکنیکال', 'تحلیل بنیادی'], image: '/blog/blog-trading.jpg' },
-    { keywords: ['سرمایه‌گذاری', 'سرمایه گذاری', 'invest', 'investment', 'پورتفو', 'portfolio', 'مدیریت ریسک', 'ریسک', 'سبد سهام'], image: '/blog/blog-invest.jpg' },
-    { keywords: ['اقتصاد', 'economy', 'تورم', 'inflation', 'دلار', 'usd', 'forex', 'فارکس', 'طلا', 'gold', 'سکه', 'نرخ بهره', 'tether', 'usdt'], image: '/blog/blog-finance.jpg' },
-    { keywords: ['هوش مصنوعی', 'ai', 'artificial intelligence', 'یادگیری ماشین', 'machine learning', 'chatgpt', 'gpt', 'ربات', 'bot', 'automation', 'آموزش'], image: '/blog/blog-trading.jpg' },
+  const categoryMap: { keywords: string[]; images: string[] }[] = [
+    {
+      keywords: ['بیت‌کوین', 'bitcoin', 'بیت کوین', 'ارز دیجیتال', 'crypto', 'cryptocurrency', 'رمزارز', 'blockchain', 'بلاکچین', 'بلاک چین', 'اتریوم', 'ethereum', 'solana', 'سولانا'],
+      images: ['/blog/crypto-bitcoin.jpg', '/blog/crypto-coins.jpg', '/blog/crypto-mining.jpg', '/blog/mobile-trading.jpg'],
+    },
+    {
+      keywords: ['بورس', 'stock', 'سهام', 'سهم', 'بازار سرمایه', 'تالار', 'فرابورس', 'نماد'],
+      images: ['/blog/stock-chart.jpg', '/blog/stock-graph.jpg', '/blog/market-board.jpg', '/blog/trading-screens.jpg'],
+    },
+    {
+      keywords: ['آموزش', 'ترید', 'trading', 'trade', 'معامله', 'سیگنال', 'تحلیل', 'تحلیل تکنیکال', 'تحلیل بنیادی'],
+      images: ['/blog/trading-phone.jpg', '/blog/trader-desk.jpg', '/blog/trading-screens.jpg', '/blog/mobile-trading.jpg', '/blog/education-laptop.jpg'],
+    },
+    {
+      keywords: ['سرمایه‌گذاری', 'سرمایه گذاری', 'invest', 'investment', 'پورتفو', 'portfolio', 'مدیریت ریسک', 'ریسک', 'سبد سهام'],
+      images: ['/blog/invest-portfolio.jpg', '/blog/money-stack.jpg', '/blog/growth-chart.jpg', '/blog/startup-meeting.jpg'],
+    },
+    {
+      keywords: ['اقتصاد', 'economy', 'تورم', 'inflation', 'دلار', 'usd', 'forex', 'فارکس', 'نرخ بهره', 'tether', 'usdt'],
+      images: ['/blog/forex-globe.jpg', '/blog/money-stack.jpg', '/blog/gold-bars.jpg', '/blog/market-board.jpg'],
+    },
+    {
+      keywords: ['طلا', 'gold', 'سکه', 'طلای'],
+      images: ['/blog/gold-bars.jpg', '/blog/crypto-coins.jpg', '/blog/money-stack.jpg'],
+    },
+    {
+      keywords: ['هوش مصنوعی', 'ai', 'artificial intelligence', 'یادگیری ماشین', 'machine learning', 'chatgpt', 'gpt', 'ربات', 'bot', 'automation'],
+      images: ['/blog/ai-brain.jpg', '/blog/startup-meeting.jpg', '/blog/education-laptop.jpg'],
+    },
+    {
+      keywords: ['مشاوره', 'consulting', 'راهنما', 'guide', 'آموزش', 'educational', 'دوره', 'course'],
+      images: ['/blog/education-laptop.jpg', '/blog/ai-brain.jpg', '/blog/trading-phone.jpg'],
+    },
+    {
+      keywords: ['املاک', 'real estate', 'مسکن', 'ملک', 'خانه', 'mortgage', 'رهن'],
+      images: ['/blog/real-estate.jpg', '/blog/money-stack.jpg', '/blog/growth-chart.jpg'],
+    },
+    {
+      keywords: ['بازار', 'market', 'تحلیل', 'analysis', 'پیش‌بینی', 'پیش بینی', 'forecast'],
+      images: ['/blog/market-board.jpg', '/blog/stock-graph.jpg', '/blog/trading-screens.jpg', '/blog/invest-portfolio.jpg'],
+    },
   ]
 
   for (const entry of categoryMap) {
     for (const kw of entry.keywords) {
       if (lower.includes(kw)) {
-        return entry.image
+        return pickImage(entry.images, seed)
       }
     }
   }
@@ -22,7 +61,6 @@ export function getArticleImage(title: string, categoryColor: string): string {
   const r = parseInt(hex.substring(0, 2), 16)
   const g = parseInt(hex.substring(2, 4), 16)
   const b = parseInt(hex.substring(4, 6), 16)
-  const seed = title.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
 
   const shapes = [
     `<circle cx="${15 + (seed % 35)}%" cy="${20 + (seed * 7 % 60)}%" r="${8 + (seed % 15)}" fill="rgba(${r},${g},${b},0.13)" stroke="rgba(${r},${g},${b},0.27)" stroke-width="1"/>`,
@@ -34,7 +72,6 @@ export function getArticleImage(title: string, categoryColor: string): string {
   ]
 
   const selectedShapes = shapes.filter((_, i) => seed % (i + 2) !== 0).join('')
-
   const bg1 = `rgb(${Math.max(0, r - 80)},${Math.max(0, g - 80)},${Math.max(0, b - 80)})`
   const bg2 = `rgb(${Math.max(0, r - 40)},${Math.max(0, g - 40)},${Math.max(0, b - 40)})`
 
