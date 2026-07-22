@@ -30,7 +30,41 @@ async function upsertPrices(client, entries) {
   return { up, ins }
 }
 
-// ---- Source 1: Nobitex (Iranian exchange - most relevant for local prices) ----
+// ---- Source 1: TGJU AJAX (most reliable from cloud) ----
+async function fetchTgjuAjax() {
+  const prices = {}
+  try {
+    const rev = Math.random().toString(36).substring(2, 12)
+    const res = await fetch(`https://call2.tgju.org/ajax.json?rev=${rev}`, { ...FETCH })
+    if (!res.ok) return { prices, irrRate: 0 }
+    const data = await res.json()
+    const c = data.current
+    if (!c?.price_dollar_rl?.p) return { prices, irrRate: 0 }
+
+    const irrRate = parseNum(c.price_dollar_rl.p)
+    if (irrRate < 5000000) return { prices, irrRate: 0 }
+    const symMap = {
+      price_eur: 'EUR-IRR', price_aed: 'AED-IRR', price_gbp: 'GBP-IRR',
+      price_try: 'TRY-IRR', price_chf: 'CHF-IRR', price_cny: 'CNY-IRR',
+      price_cad: 'CAD-IRR', price_aud: 'AUD-IRR',
+      geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
+      nim: 'HALF_COIN', rob: 'QUARTER_COIN', mesghal: 'MESGHAL',
+      'price_namavat': 'OIL', 'price_silver': 'SILVER', 'price_gas': 'NATURAL_GAS',
+    }
+    for (const [slug, sym] of Object.entries(symMap)) {
+      if (c[slug]?.p) {
+        prices[sym] = { price: parseNum(c[slug].p), currency: sym.endsWith('IRR') ? 'IRR' : (sym === 'OIL' || sym === 'SILVER' || sym === 'NATURAL_GAS' ? 'USD' : 'IRR') }
+      }
+    }
+    if (!prices['GOLD24'] && prices['GOLD18']) prices['GOLD24'] = { price: Math.round(prices['GOLD18'].price * 4 / 3), currency: 'IRR' }
+    if (!prices['HALF_COIN'] && prices['COIN']) prices['HALF_COIN'] = { price: Math.round(prices['COIN'].price * 0.52), currency: 'IRR' }
+    if (!prices['QUARTER_COIN'] && prices['COIN']) prices['QUARTER_COIN'] = { price: Math.round(prices['COIN'].price * 0.30), currency: 'IRR' }
+
+    return { prices, irrRate }
+  } catch { return { prices, irrRate: 0 } }
+}
+
+// ---- Source 2: Nobitex (Iranian exchange) ----
 async function fetchNobitex() {
   const prices = {}
   let irrRate = 0
@@ -192,7 +226,8 @@ async function main() {
   console.log('Price sync started...')
   const start = Date.now()
 
-  const [tgju, nobitex, commodities, gecko, stocks] = await Promise.all([
+  const [tgjuAjaxResult, tgjuHtml, nobitex, commodities, gecko, stocks] = await Promise.all([
+    fetchTgjuAjax(),
     fetchTgju(),
     fetchNobitex(),
     fetchOilSilverGas(),
@@ -200,40 +235,37 @@ async function main() {
     fetchStocks(),
   ])
 
-  // PRIORITY: Nobitex > CoinGecko (crypto) | TGJU > commodities (gold/oil/gas) | TGJU Nobitex (USD rate)
+  // PRIORITY: TGJU AJAX > TGJU HTML > Nobitex > CoinGecko
   const allPrices = {}
 
-  // 1. Gold/forex/coin from TGJU (Nobitex doesn't have these)
-  Object.assign(allPrices, tgju.prices)
+  // 1. TGJU AJAX is primary for ALL IRR prices (USD rate, gold, forex, commodities)
+  const tgjuPrimary = tgjuAjaxResult.irrRate > 0 ? tgjuAjaxResult : tgjuHtml
+  Object.assign(allPrices, tgjuPrimary.prices)
+  let irrRate = tgjuPrimary.irrRate
 
-  // 2. USD rate: Nobitex preferred (live rate), fallback TGJU
-  let irrRate = nobitex.irrRate
-  if (irrRate > 0) {
-    allPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-    allPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-  } else if (tgju.irrRate > 0) {
-    irrRate = tgju.irrRate
-    allPrices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-    allPrices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
-  }
-
-  // 3. Crypto in USD: Nobitex preferred, CoinGecko fallback
+  // 2. Nobitex for crypto USD prices (if resolvable), CoinGecko fallback
   for (const [sym, d] of Object.entries(nobitex.prices)) {
     if (d.currency === 'USD' && sym !== 'USD-IRR' && sym !== 'USDT-IRR') {
       allPrices[sym] = d
     }
   }
-  // CoinGecko fills what Nobitex missed
   for (const [sym, d] of Object.entries(gecko)) {
     if (!allPrices[sym]) {
       allPrices[sym] = d
     }
   }
 
-  // 4. Commodities (oil, silver, gas)
+  // 3. Overwrite USD-IRR with Nobitex if available (more current)
+  if (nobitex.irrRate > 0) {
+    irrRate = nobitex.irrRate
+    allPrices['USD-IRR'] = { price: nobitex.irrRate, currency: 'IRR' }
+    allPrices['USDT-IRR'] = { price: nobitex.irrRate, currency: 'IRR' }
+  }
+
+  // 4. Commodities from dedicated call
   Object.assign(allPrices, commodities)
 
-  // 5. Crypto in IRR (using Nobitex rate or TGJU rate)
+  // 5. Crypto-IRR
   if (irrRate > 0) {
     for (const [sym, d] of Object.entries(allPrices)) {
       if (d.currency === 'USD' && !sym.endsWith('-IRR') && d.price > 0) {

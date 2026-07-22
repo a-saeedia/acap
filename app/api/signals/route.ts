@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     const FALLBACK: Record<string, number> = {
       BTC: 71250, ETH: 3680, USDT: 1,
       'GOLD18': 3620000, 'GOLD24': 4500000, 'COIN': 44800000,
-      'USD-IRR': 1785000, 'EUR-IRR': 1920000, 'AED-IRR': 486000,
+      'USD-IRR': 9230000, 'EUR-IRR': 10000000, 'AED-IRR': 2510000,
       'فولاد': 26200, 'خودرو': 19800, 'شپنا': 48500, 'وبملت': 7150, 'فملی': 34500,
     }
     const prices: Record<string, number> = { ...FALLBACK, ...dbPrices }

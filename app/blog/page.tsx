@@ -239,7 +239,7 @@ export default function BlogPage() {
                   >
                     <div
                       className="h-44 bg-cover bg-center relative overflow-hidden"
-                      style={{ backgroundImage: `url(${getArticleImage(article.title, cat?.color || crimson)})` }}
+                      style={{ backgroundImage: `url(${article.image || getArticleImage(article.title, cat?.color || crimson)})` }}
                     >
                       <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-crimson-500/20 text-crimson-400 text-xs font-medium border border-crimson-500/20">
                         ویژه
@@ -344,7 +344,7 @@ export default function BlogPage() {
                     >
                       <div
                         className="h-40 bg-cover bg-center relative overflow-hidden"
-                        style={{ backgroundImage: `url(${getArticleImage(article.title, cat?.color || crimson)})` }}
+                        style={{ backgroundImage: `url(${article.image || getArticleImage(article.title, cat?.color || crimson)})` }}
                       >
                         {article.isFeatured && (
                           <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-medium border border-amber-500/20 flex items-center gap-1">

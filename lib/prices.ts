@@ -4,9 +4,9 @@ const TGJU_HTML = 'https://www.tgju.org/'
 const TSETMC_API = 'https://cdn.tsetmc.com/api'
 const NOBITEX = 'https://api.nobitex.ir'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-const FETCH_OPTS = { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': UA } }
-const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
-const FALLBACK_USD_RATE = 1709000
+const FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA } }
+const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
+const FALLBACK_USD_RATE = 9230000
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -204,10 +204,14 @@ async function fetchTgjuHTML(): Promise<{ prices: PriceMap; irrRate: number; tim
 
     const usdRow = extractRowData('price_dollar_rl')
     if (usdRow) {
-      irrRate = usdRow.price
-      prices['USD'] = { price: 1, currency: 'USD' }
-      prices['USD-IRR'] = { price: usdRow.price, currency: 'IRR', ...(usdRow.change !== null ? { change: usdRow.change } : {}) }
-      prices['USDT-IRR'] = { price: usdRow.price, currency: 'IRR', change: prices['USD-IRR']?.change }
+      if (usdRow.price < 5000000) {
+        console.warn('[prices] Rejecting TGJU HTML USD rate (too low):', usdRow.price)
+      } else {
+        irrRate = usdRow.price
+        prices['USD'] = { price: 1, currency: 'USD' }
+        prices['USD-IRR'] = { price: usdRow.price, currency: 'IRR', ...(usdRow.change !== null ? { change: usdRow.change } : {}) }
+        prices['USDT-IRR'] = { price: usdRow.price, currency: 'IRR', change: prices['USD-IRR']?.change }
+      }
     }
 
     const forexPairs: Record<string, string> = {
@@ -305,91 +309,109 @@ export async function fetchTgjuData(): Promise<{
   irrRate: number
   timestamp: string
 }> {
+  // AJAX first (works better from cloud IPs like Vercel)
+  const rev = Math.random().toString(36).substring(2, 12)
+  try {
+    const ajaxRes = await fetch(`${TGJU_AJAX}?rev=${rev}`, { cache: 'no-store', next: { revalidate: 0 }, ...TGJU_FETCH_OPTS })
+    if (ajaxRes.ok) {
+      const ajaxData = await ajaxRes.json()
+      if (ajaxData?.current) {
+        return parseTgjuAjax(ajaxData)
+      }
+    }
+  } catch {}
+
+  // HTML fallback (works from some IPs)
   const htmlResult = await fetchTgjuHTML()
   if (htmlResult.prices && Object.keys(htmlResult.prices).length > 0 && htmlResult.irrRate > 0) {
     return htmlResult
   }
 
-  const rev = Math.random().toString(36).substring(2, 12)
-  const ajaxUrls = [`${TGJU_AJAX}?rev=${rev}`]
+  // Second AJAX attempt with longer timeout
+  try {
+    const ajaxRes2 = await fetch(`${TGJU_AJAX}?rev=${Math.random().toString(36).substring(2, 12)}`, {
+      cache: 'no-store', ...FETCH_OPTS, signal: AbortSignal.timeout(10000),
+    })
+    if (ajaxRes2.ok) {
+      const ajaxData2 = await ajaxRes2.json()
+      if (ajaxData2?.current) {
+        return parseTgjuAjax(ajaxData2)
+      }
+    }
+  } catch {}
 
-  for (const url of ajaxUrls) {
-    try {
-      const res = await fetch(url, { cache: 'no-store', next: { revalidate: 0 }, ...TGJU_FETCH_OPTS })
-      if (!res.ok) continue
-      const data = await res.json()
-      if (!data?.current) continue
-      const c = data.current
-      const prices: PriceMap = {}
-      const timestamp = c.price_dollar_rl?.ts || ''
+  return { prices: {}, irrRate: 0, timestamp: '' }
+}
 
-      const rawUsd = c.price_dollar_rl?.p
-      if (!rawUsd) continue
-      const irrRate = parseTgjuPrice(rawUsd)
+function parseTgjuAjax(data: any): { prices: PriceMap; irrRate: number; timestamp: string } {
+  const c = data.current
+  const prices: PriceMap = {}
+  const timestamp = c.price_dollar_rl?.ts || ''
 
-      prices['USD'] = { price: 1, currency: 'USD' }
-      prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
-      prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+  const rawUsd = c.price_dollar_rl?.p
+  if (!rawUsd) return { prices: {}, irrRate: 0, timestamp: '' }
+  const irrRate = parseTgjuPrice(rawUsd)
+  if (irrRate < 5000000) {
+    console.warn('[prices] Rejecting TGJU AJAX USD rate (too low, likely official rate):', irrRate)
+    return { prices: {}, irrRate: 0, timestamp: '' }
+  }
 
-      const forexPairs: Record<string, string> = {
-        price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
-        price_try: 'TRY', price_chf: 'CHF', price_cny: 'CNY',
-        price_cad: 'CAD', price_aud: 'AUD', price_sgd: 'SGD',
-        price_inr: 'INR', price_sar: 'SAR', price_kwd: 'KWD',
-        price_myr: 'MYR', price_rub: 'RUB', price_azn: 'AZN',
-      }
-      for (const [slug, sym] of Object.entries(forexPairs)) {
-        if (c[slug]?.p) {
-          prices[sym] = { price: 1, currency: 'USD' }
-          prices[`${sym}-IRR`] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
-        }
-      }
+  prices['USD'] = { price: 1, currency: 'USD' }
+  prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+  prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
 
-      const goldSlugs: Record<string, string> = {
-        geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
-        nim: 'HALF_COIN', rob: 'QUARTER_COIN',
-        mesghal: 'MESGHAL',
-      }
-      for (const [slug, sym] of Object.entries(goldSlugs)) {
-        if (c[slug]?.p) {
-          prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
-        }
-      }
-
-      if (!prices['GOLD24'] && prices['GOLD18']) {
-        prices['GOLD24'] = { price: Math.round(prices['GOLD18'].price * 4 / 3), currency: 'IRR' }
-      }
-      if (!prices['HALF_COIN'] && prices['COIN']) {
-        prices['HALF_COIN'] = { price: Math.round(prices['COIN'].price * 0.52), currency: 'IRR' }
-      }
-      if (!prices['QUARTER_COIN'] && prices['COIN']) {
-        prices['QUARTER_COIN'] = { price: Math.round(prices['COIN'].price * 0.30), currency: 'IRR' }
-      }
-
-      const toleranceNameMap: Record<string, string> = {
-        geram18: 'GOLD18', geram24: 'GOLD24',
-        sekee: 'COIN', sekeb: 'COIN',
-        nim: 'HALF_COIN', rob: 'QUARTER_COIN',
-        mesghal: 'MESGHAL',
-      }
-      for (const arr of [data.tolerance_high ?? [], data.tolerance_low ?? []]) {
-        for (const item of arr) {
-          const sym = toleranceNameMap[item.name]
-          if (sym && !prices[sym] && item.p) {
-            const p = parseTgjuPrice(item.p)
-            if (p > 0) prices[sym] = { price: p, currency: 'IRR' }
-          }
-        }
-      }
-
-      return { prices, irrRate, timestamp }
-    } catch (e) {
-      console.error('[prices] fetchTgjuData AJAX error:', e)
-      continue
+  const forexPairs: Record<string, string> = {
+    price_eur: 'EUR', price_aed: 'AED', price_gbp: 'GBP',
+    price_try: 'TRY', price_chf: 'CHF', price_cny: 'CNY',
+    price_cad: 'CAD', price_aud: 'AUD', price_sgd: 'SGD',
+    price_inr: 'INR', price_sar: 'SAR', price_kwd: 'KWD',
+    price_myr: 'MYR', price_rub: 'RUB', price_azn: 'AZN',
+  }
+  for (const [slug, sym] of Object.entries(forexPairs)) {
+    if (c[slug]?.p) {
+      prices[sym] = { price: 1, currency: 'USD' }
+      prices[`${sym}-IRR`] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
     }
   }
 
-  return { prices: {}, irrRate: 0, timestamp: '' }
+  const goldSlugs: Record<string, string> = {
+    geram18: 'GOLD18', geram24: 'GOLD24', sekee: 'COIN',
+    nim: 'HALF_COIN', rob: 'QUARTER_COIN',
+    mesghal: 'MESGHAL',
+  }
+  for (const [slug, sym] of Object.entries(goldSlugs)) {
+    if (c[slug]?.p) {
+      prices[sym] = { price: parseTgjuPrice(c[slug].p), currency: 'IRR' }
+    }
+  }
+
+  if (!prices['GOLD24'] && prices['GOLD18']) {
+    prices['GOLD24'] = { price: Math.round(prices['GOLD18'].price * 4 / 3), currency: 'IRR' }
+  }
+  if (!prices['HALF_COIN'] && prices['COIN']) {
+    prices['HALF_COIN'] = { price: Math.round(prices['COIN'].price * 0.52), currency: 'IRR' }
+  }
+  if (!prices['QUARTER_COIN'] && prices['COIN']) {
+    prices['QUARTER_COIN'] = { price: Math.round(prices['COIN'].price * 0.30), currency: 'IRR' }
+  }
+
+  const toleranceNameMap: Record<string, string> = {
+    geram18: 'GOLD18', geram24: 'GOLD24',
+    sekee: 'COIN', sekeb: 'COIN',
+    nim: 'HALF_COIN', rob: 'QUARTER_COIN',
+    mesghal: 'MESGHAL',
+  }
+  for (const arr of [data.tolerance_high ?? [], data.tolerance_low ?? []]) {
+    for (const item of arr) {
+      const sym = toleranceNameMap[item.name]
+      if (sym && !prices[sym] && item.p) {
+        const p = parseTgjuPrice(item.p)
+        if (p > 0) prices[sym] = { price: p, currency: 'IRR' }
+      }
+    }
+  }
+
+  return { prices, irrRate, timestamp }
 }
 
 // ---- CoinGecko: fallback for crypto ----

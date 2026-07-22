@@ -70,10 +70,11 @@ export function DashboardClient() {
       if (d.stockPrices) for (const [k, v] of Object.entries(d.stockPrices) as [string, any][]) merged[k] = v
       setPriceData(merged)
     }).catch(() => {})
-    fetch('/api/signals', { signal: controller.signal }).then(r => r.json()).then((signals: any[]) => {
-      if (signals.length > 0) {
-        const wins = signals.filter((s: any) => (s.actualProfit ?? 0) > 0).length
-        setSignalStats({ total: signals.length, wins, winRate: Math.round((wins / signals.length) * 100) })
+    fetch('/api/signals', { signal: controller.signal }).then(r => r.json()).then((d: any) => {
+      const sigs = d?.signals || []
+      if (sigs.length > 0) {
+        const wins = sigs.filter((s: any) => (s.actualProfit ?? 0) > 0).length
+        setSignalStats({ total: sigs.length, wins, winRate: Math.round((wins / sigs.length) * 100) })
       }
     }).catch(() => {})
     return () => { clearTimeout(tid); controller.abort() }

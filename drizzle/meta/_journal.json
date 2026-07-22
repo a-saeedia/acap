@@ -43,6 +43,13 @@
       "when": 1783459258675,
       "tag": "0005_thankful_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784747843465,
+      "tag": "0006_glossy_black_panther",
+      "breakpoints": true
     }
   ]
 }

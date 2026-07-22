@@ -185,7 +185,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
         {/* Featured Image */}
         <motion.div variants={itemVariants}
           className="rounded-3xl h-64 md:h-80 bg-cover bg-center relative overflow-hidden mb-10 shadow-2xl"
-          style={{ backgroundImage: `url(${getArticleImage(article.title, catColor)})` }}
+          style={{ backgroundImage: `url(${article.image || getArticleImage(article.title, catColor)})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
           <div className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">

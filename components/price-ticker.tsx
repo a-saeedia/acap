@@ -20,6 +20,7 @@ async function fetchTgjuPrices(): Promise<PriceMap> {
       const c = data.current
       const p: PriceMap = {}
       const irrRate = parseTgjuPrice(c.price_dollar_rl.p)
+      if (irrRate < 5000000) continue
       p['USD-IRR'] = { price: irrRate, currency: 'IRR' }
       p['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
       if (c.price_eur?.p) p['EUR-IRR'] = { price: parseTgjuPrice(c.price_eur.p), currency: 'IRR' }
