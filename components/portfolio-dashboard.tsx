@@ -247,6 +247,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   const [showAdvisor, setShowAdvisor] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const [uploadText, setUploadText] = useState('')
+  const [uploadCsvFile, setUploadCsvFile] = useState<File | null>(null)
   const [uploadParsing, setUploadParsing] = useState(false)
   const [uploadResult, setUploadResult] = useState<{ symbol: string; label: string; type: string; quantity: number }[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -423,23 +424,25 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   }
 
   async function handleUploadParse() {
+    if (!uploadCsvFile) return
     setUploadParsing(true)
     setUploadResult(null)
     try {
-      const lines = uploadText.trim().split('\n').filter(Boolean)
+      const text = await uploadCsvFile.text()
+      const lines = text.split('\n').filter(Boolean)
       const items: { symbol: string; label: string; type: string; quantity: number }[] = []
-      for (const line of lines) {
-        const parts = line.trim().split(/\s+/)
+      for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split(',')
         if (parts.length < 2) continue
         const sym = parts[0].trim()
-        const qty = parseFloat(parts.slice(1).join('').replace(/[^0-9.]/g, ''))
+        const qty = parseFloat(parts.slice(1).join(',').replace(/[^0-9.]/g, ''))
         if (!sym || !qty || qty <= 0) continue
         const { type, label } = detectType(sym)
         items.push({ symbol: sym, label, type, quantity: qty })
       }
-      if (items.length === 0) { showToast('هیچ دارایی معتبری یافت نشد', 'error'); return }
+      if (items.length === 0) { showToast('هیچ دارایی معتبری در فایل یافت نشد', 'error'); return }
       setUploadResult(items)
-    } catch { showToast('خطا در پردازش', 'error') }
+    } catch { showToast('خطا در خواندن فایل', 'error') }
     setUploadParsing(false)
   }
 
@@ -659,11 +662,16 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
         )}
 
         {/* ── Upload Portfolio ── */}
-        <button onClick={() => { setShowUpload(true); setUploadText(''); setUploadResult(null) }}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-l from-emerald-600 to-green-500 text-white text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all shadow-lg shadow-emerald-600/20 mb-4"
+        <button onClick={() => { setShowUpload(true); setUploadText(''); setUploadResult(null); setUploadCsvFile(null) }}
+          className="w-full relative overflow-hidden group flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-l from-emerald-600 via-green-500 to-emerald-400 text-white text-sm font-black hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-600/30 hover:shadow-emerald-500/40 mb-4"
         >
-          <Upload className="w-4 h-4" />
-          آپلود سبد سهام (批量)
+          <div className="absolute inset-0 bg-[length:200%_200%] bg-gradient-to-r from-emerald-600 via-green-400 to-emerald-600 group-hover:animate-shimmer opacity-60" />
+          <svg className="w-5 h-5 relative z-10" viewBox="0 0 48 48" fill="none">
+            <rect x="6" y="6" width="36" height="36" rx="4" fill="#1D6F42"/>
+            <text x="24" y="30" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial">X</text>
+            <text x="30" y="14" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="Arial">CSV</text>
+          </svg>
+          <span className="relative z-10">آپلود از فایل CSV</span>
         </button>
 
         {/* ── Assets Grid ── */}
@@ -860,54 +868,92 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
         </div>
       )}
 
-      {/* Upload Portfolio Modal */}
+      {/* Upload CSV Modal */}
       {showUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); setUploadResult(null) } }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) } }}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="bg-card border border-border rounded-2xl p-5 w-full max-w-lg space-y-4"
+            className="bg-card border border-border rounded-2xl p-5 sm:p-6 w-full max-w-lg space-y-4"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-foreground">آپلود سبد سرمایه</h2>
-              <button onClick={() => { setShowUpload(false); setUploadResult(null) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2.5">
+                <svg className="w-8 h-8" viewBox="0 0 48 48" fill="none">
+                  <rect x="4" y="4" width="40" height="40" rx="6" fill="#1D6F42"/>
+                  <rect x="4" y="4" width="40" height="40" rx="6" fill="url(#excel-gradient)" fillOpacity="0.3"/>
+                  <text x="24" y="32" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold" fontFamily="Arial">X</text>
+                  <text x="30" y="14" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="Arial">CSV</text>
+                </svg>
+                <div>
+                  <h2 className="text-base font-bold text-foreground">آپلود از فایل CSV</h2>
+                  <p className="text-[11px] text-muted-foreground">ستون‌ها: <span className="font-mono text-foreground">symbol, quantity</span></p>
+                </div>
+              </div>
+              <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              در هر خط یک دارایی وارد کنید: <span className="font-mono text-foreground">نماد مقدار</span>
-            </p>
-            <div className="bg-accent/30 rounded-xl p-3 text-[11px] text-muted-foreground leading-loose font-mono" dir="ltr">
-              فولاد ۱۰۰۰<br />فملی ۵۰۰<br />BTC 0.5<br />ETH 2<br />GOLD18 ۱۰<br />USD ۱۰۰۰
-            </div>
-            <textarea value={uploadText} onChange={e => setUploadText(e.target.value)} rows={6} placeholder="فولاد 1000&#10;فملی 500&#10;BTC 0.5"
-              className="w-full px-3 py-3 rounded-xl bg-accent border border-border text-foreground text-sm font-mono outline-none resize-none ltr text-left"
-            />
+
+            {/* Drop zone */}
+            {!uploadResult && (
+              <label className={`relative flex flex-col items-center justify-center gap-3 p-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${uploadCsvFile ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-emerald-500/30 hover:bg-accent/30'}`}>
+                <input type="file" accept=".csv" className="hidden" onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f) { setUploadCsvFile(f); setUploadText(f.name) }
+                }} />
+                {!uploadCsvFile ? (
+                  <>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/10 border border-emerald-500/30 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-foreground">فایل CSV خود را انتخاب کنید</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">ستون اول: نماد، ستون دوم: مقدار</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/10 border border-emerald-500/30 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-emerald-400">{uploadText}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">برای تغییر کلیک کنید</p>
+                    </div>
+                  </>
+                )}
+              </label>
+            )}
+
             {uploadResult && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-1">
-                <p className="text-xs font-bold text-emerald-400 mb-1.5">{uploadResult.length} دارایی شناسایی شد</p>
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground pb-1.5 border-b border-emerald-500/10">
+                  <span>{uploadResult.length} دارایی شناسایی شد</span>
+                  <span className="text-emerald-400 font-bold">✓ آماده افزودن</span>
+                </div>
                 {uploadResult.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs text-foreground">
-                    <span className="font-mono">{item.symbol}</span>
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-foreground font-bold">{item.symbol}</span>
                     <span className="text-muted-foreground">{item.label}</span>
-                    <span className="font-mono">{item.quantity.toLocaleString('fa-IR')}</span>
+                    <span className="font-mono text-foreground" dir="ltr">{item.quantity.toLocaleString('en-US')}</span>
                   </div>
                 ))}
               </motion.div>
             )}
+
             <div className="flex gap-2">
               {!uploadResult ? (
-                <button onClick={handleUploadParse} disabled={!uploadText.trim() || uploadParsing}
-                  className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50"
+                <button onClick={handleUploadParse} disabled={!uploadCsvFile || uploadParsing}
+                  className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-3 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-40 shadow-lg shadow-emerald-600/20"
                 >
-                  {uploadParsing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'بررسی و شناسایی'}
+                  {uploadParsing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'خواندن و شناسایی'}
                 </button>
               ) : (
                 <button onClick={handleUploadConfirm}
-                  className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all"
+                  className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-3 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all shadow-lg shadow-emerald-600/20"
                 >
                   افزودن همه و اسکن
                 </button>
               )}
-              <button onClick={() => { setShowUpload(false); setUploadResult(null) }}
-                className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
+              <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) }}
+                className="px-5 py-3 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
               >انصراف</button>
             </div>
           </motion.div>
