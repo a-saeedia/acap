@@ -581,37 +581,51 @@ export async function fetchTsetmcPriceInfo(insCode: string): Promise<{
   } catch (e) { console.error('[prices] fetchTsetmcPriceInfo error:', e); return null }
 }
 
-export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
-  const geckoSymbols = symbols.filter(s => COINGECKO_IDS[s]).map(s => COINGECKO_IDS[s])
-  if (geckoSymbols.length === 0) return {}
-  const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd&include_24hr_change=true`
+export async function fetchNobitexMarkets(markets: string[]): Promise<PriceMap> {
+  const result: PriceMap = {}
   try {
-    const res = await fetch(url, { ...FETCH_OPTS })
+    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=${markets.join(',')}&dstCurrency=usdt,irt`, { ...FETCH_OPTS })
     const data = await res.json()
-    const result: PriceMap = {}
-    for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
-      if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD', change: data[id].usd_24h_change ?? 0 }
-    }
-    return result
-  } catch (e) { console.error('fetchCryptoPrices error:', e) }
+    if (data?.status !== 'ok') return result
 
-  // Fallback: try Nobitex (Iranian exchange) — returns Toman, multiply by 10 for Rial format
-  try {
-    const res = await fetch(`${NOBITEX}/market/stats?srcCurrency=usdt&dstCurrency=irt`, { ...FETCH_OPTS })
-    const data = await res.json()
-    if (data?.status === 'ok' && data.stats?.['usdt-irt']) {
-      const usdtIrt = parseFloat(data.stats['usdt-irt'].latest) * 10
-      if (usdtIrt > 0) {
-        const result: PriceMap = {
-          USDT: { price: 1, currency: 'USD' },
-          'USDT-IRR': { price: usdtIrt, currency: 'IRR' },
-          'USD-IRR': { price: usdtIrt, currency: 'IRR' },
-        }
-        return result
+    for (const marketKey of Object.keys(data.stats ?? {})) {
+      const [base, quote] = marketKey.split('-')
+      const market = data.stats[marketKey]
+      if (!market?.latest) continue
+      const price = parseFloat(market.latest)
+      if (price <= 0) continue
+
+      if (quote === 'usdt') {
+        result[base.toUpperCase()] = { price, currency: 'USD', change: parseFloat(market['24h_ch'] ?? '0') }
+      } else if (quote === 'irt') {
+        const rialPrice = price * 10
+        const upper = base.toUpperCase()
+        result[upper] = { price: 1, currency: 'USD' }
+        result[`${upper}-IRR`] = { price: rialPrice, currency: 'IRR', change: parseFloat(market['24h_ch'] ?? '0') }
       }
     }
-  } catch { console.error('Nobitex fallback failed') }
-  return {}
+  } catch (e) { console.error('[prices] fetchNobitexMarkets error:', e) }
+  return result
+}
+
+export async function fetchCryptoPrices(symbols: string[]): Promise<PriceMap> {
+  // Try CoinGecko first
+  const geckoSymbols = symbols.filter(s => COINGECKO_IDS[s]).map(s => COINGECKO_IDS[s])
+  if (geckoSymbols.length > 0) {
+    const url = `${COINGECKO}/simple/price?ids=${geckoSymbols.join(',')}&vs_currencies=usd&include_24hr_change=true`
+    try {
+      const res = await fetch(url, { ...FETCH_OPTS })
+      const data = await res.json()
+      const result: PriceMap = {}
+      for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
+        if (data[id]?.usd) result[symbol] = { price: data[id].usd, currency: 'USD', change: data[id].usd_24h_change ?? 0 }
+      }
+      if (Object.keys(result).length > 0) return result
+    } catch (e) { console.error('fetchCryptoPrices CoinGecko error:', e) }
+  }
+
+  // Fallback: Nobitex for USDT, BTC, ETH, TRX, SOL
+  return fetchNobitexMarkets(['usdt', 'btc', 'eth', 'trx', 'sol', 'bnb', 'xrp', 'ada', 'doge', 'shib', 'matic', 'link'])
 }
 
 export function convertUsdToIrr(usdPrice: number, irrRate: number): number {
@@ -650,7 +664,26 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
     }
   }
 
-  // DB fallback for irrRate when TGJU fails (Vercel IP blocked)
+  // Nobitex fallback for irrRate when TGJU fails (Vercel IP blocked)
+  if (irrRate === 0) {
+    try {
+      const nobitexPrices = await fetchNobitexMarkets(['usdt'])
+      const usdtIrr = nobitexPrices['USDT-IRR']?.price
+      if (usdtIrr && usdtIrr > 0) {
+        irrRate = usdtIrr
+        prices['USD-IRR'] = { price: irrRate, currency: 'IRR' }
+        prices['USDT-IRR'] = { price: irrRate, currency: 'IRR' }
+        for (const sym of Object.keys(crypto)) {
+          const usdPrice = crypto[sym]?.price
+          if (usdPrice) {
+            prices[`${sym}-IRR`] = { price: convertUsdToIrr(usdPrice, irrRate), currency: 'IRR' }
+          }
+        }
+      }
+    } catch { console.error('[prices] Nobitex IRT fallback error') }
+  }
+
+  // DB fallback for irrRate when both TGJU and Nobitex fail
   if (irrRate === 0) {
     try {
       const { pool } = await import('@/lib/db')

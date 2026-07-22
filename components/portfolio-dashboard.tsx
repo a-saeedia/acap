@@ -295,7 +295,13 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
       }
       if (!cancelled) setLoading(false)
     })()
-    return () => { cancelled = true }
+
+    // Auto-refresh prices every 5 minutes
+    const interval = setInterval(() => {
+      if (!cancelled) fetchPrices(true)
+    }, 300000)
+
+    return () => { cancelled = true; clearInterval(interval) }
   }, [isPending, fetchAll, fetchPrices])
 
   useEffect(() => {

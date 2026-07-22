@@ -218,16 +218,16 @@ export function ArticleClient({ article, category }: { article: any; category: a
         )}
 
         {/* Share */}
-        <motion.div variants={itemVariants} className="flex items-center gap-3 mb-12 p-5 rounded-2xl bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-gray-700/50">
-          <Share2 className="w-5 h-5" style={{ color: catColor }} />
-          <span className="text-sm font-medium ml-2" style={{ color: catColor }}>اشتراک‌گذاری:</span>
-          <button onClick={handleCopyLink} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-white transition-all border border-gray-700">
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-3 mb-12 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-gray-700/50">
+          <Share2 className="w-5 h-5 shrink-0" style={{ color: catColor }} />
+          <span className="text-sm font-medium shrink-0 ml-1" style={{ color: catColor }}>اشتراک‌گذاری:</span>
+          <button onClick={handleCopyLink} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-white transition-all border border-gray-700 min-h-[44px]">
             {copied ? 'کپی شد!' : 'کپی لینک'}
           </button>
-          <button onClick={handleShareTelegram} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-sm text-blue-400 hover:text-blue-300 transition-all border border-blue-500/20">
+          <button onClick={handleShareTelegram} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-sm text-blue-400 hover:text-blue-300 transition-all border border-blue-500/20 min-h-[44px]">
             <Zap className="w-3.5 h-3.5" /> تلگرام
           </button>
-          <button onClick={handleShareTwitter} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sm text-sky-400 hover:text-sky-300 transition-all border border-sky-500/20">
+          <button onClick={handleShareTwitter} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sm text-sky-400 hover:text-sky-300 transition-all border border-sky-500/20 min-h-[44px]">
             توییتر
           </button>
         </motion.div>

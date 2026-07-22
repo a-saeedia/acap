@@ -65,7 +65,7 @@ export function PriceTicker() {
       <div className="relative h-full flex items-center overflow-hidden">
         <div className="flex animate-ticker gap-10 whitespace-nowrap px-4" style={{ direction: 'ltr' }}>
           {[...items, ...items].map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] text-blue-200/80 font-medium">
+            <span key={i} className="inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] text-blue-200/80 font-medium">
               <span className="text-blue-400 font-bold">{item!.label}</span>
               <span>{item!.display}</span>
               <span className="text-blue-500/30">|</span>

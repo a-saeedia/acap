@@ -234,7 +234,7 @@ export default function BlogPage() {
                     variants={itemVariants}
                     whileHover={{ y: -4 }}
                     onClick={() => router.push(`/blog/${article.slug}`)}
-                    className="group cursor-pointer rounded-2xl bg-gray-800/50 border border-gray-700/50 hover:border-crimson-500/30 overflow-hidden transition-all duration-300 flex-shrink-0 w-[280px] sm:w-[340px]"
+                    className="group cursor-pointer rounded-2xl bg-gray-800/50 border border-gray-700/50 hover:border-crimson-500/30 overflow-hidden transition-all duration-300 flex-shrink-0 w-[260px] sm:w-[300px] lg:w-[340px]"
                     style={{ scrollSnapAlign: 'start' }}
                   >
                     <div

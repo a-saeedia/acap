@@ -432,12 +432,12 @@ export default function AdminPage() {
                             </div>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm">
-                                <thead><tr className="text-gray-400 border-b border-gray-700">{['نماد', 'نام', 'نوع', 'مقدار', 'قیمت فعلی', 'ارزش', 'قیمت خرید', 'سود/زیان'].map(h => <th key={h} className="text-right py-2 px-2 whitespace-nowrap">{h}</th>)}</tr></thead>
+                                <thead><tr className="text-gray-400 border-b border-gray-700">{['نماد', 'نام', 'نوع', 'مقدار', 'قیمت فعلی', 'ارزش', 'قیمت خرید', 'سود/زیان'].map(h =>                                     <th key={h} className={`text-right py-2 px-2 whitespace-nowrap ${['نام', 'قیمت خرید'].includes(h) ? 'hidden sm:table-cell' : ''}`}>{h}</th>)}</tr></thead>
                                 <tbody>{portfolioAssets.map(a => { const price = getPrice(a.symbol); const cv = price * a.quantity; const cb = a.purchasePrice ? a.purchasePrice * a.quantity : null; const apnl = cb !== null ? cv - cb : null; return (
                                   <tr key={a.id} className="border-b border-gray-800">
-                                    <td className="py-2 px-2 font-medium">{a.symbol}</td><td className="py-2 px-2 text-gray-400">{a.label}</td><td className="py-2 px-2 text-gray-400">{a.type}</td>
+                                    <td className="py-2 px-2 font-medium">{a.symbol}</td><td className="py-2 px-2 text-gray-400 hidden sm:table-cell">{a.label}</td><td className="py-2 px-2 text-gray-400">{a.type}</td>
                                     <td className="py-2 px-2">{a.quantity}</td><td className="py-2 px-2">{price.toLocaleString()}</td><td className="py-2 px-2">{cv.toLocaleString()}</td>
-                                    <td className="py-2 px-2">{a.purchasePrice?.toLocaleString() ?? '—'}</td>
+                                    <td className="py-2 px-2 hidden sm:table-cell">{a.purchasePrice?.toLocaleString() ?? '—'}</td>
                                     <td className={`py-2 px-2 ${apnl !== null ? (apnl >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>{apnl !== null ? `${apnl >= 0 ? '+' : ''}${apnl.toLocaleString()}` : '—'}</td>
                                   </tr>)})}</tbody>
                               </table>
@@ -756,13 +756,13 @@ function AdminContent() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'دسته', 'مدرس', 'سطح', 'قیمت', 'ثبت‌نام', 'عملیات'].map(h => <th key={h} className="text-right py-3 px-3">{h}</th>)}</tr></thead>
+              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'دسته', 'مدرس', 'سطح', 'قیمت', 'ثبت‌نام', 'عملیات'].map(h => <th key={h} className={`text-right py-3 px-3 ${['مدرس', 'سطح'].includes(h) ? 'hidden md:table-cell' : ''}`}>{h}</th>)}</tr></thead>
               <tbody>{courses.map(c => (
                 <tr key={c.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                   <td className="py-2.5 px-3 font-medium text-sm max-w-[180px] truncate">{c.title}</td>
                   <td className="py-2.5 px-3 text-gray-400 text-xs">{c.category}</td>
-                  <td className="py-2.5 px-3 text-gray-400 text-xs">{c.instructorName}</td>
-                  <td className="py-2.5 px-3"><span className={`text-xs px-2 py-0.5 rounded-full ${c.level === 'beginner' ? 'bg-emerald-500/20 text-emerald-400' : c.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>{c.level === 'beginner' ? 'مبتدی' : c.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}</span></td>
+                  <td className="py-2.5 px-3 text-gray-400 text-xs hidden md:table-cell">{c.instructorName}</td>
+                  <td className="py-2.5 px-3 hidden md:table-cell"><span className={`text-xs px-2 py-0.5 rounded-full ${c.level === 'beginner' ? 'bg-emerald-500/20 text-emerald-400' : c.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>{c.level === 'beginner' ? 'مبتدی' : c.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}</span></td>
                   <td className="py-2.5 px-3 text-xs">{c.price.toLocaleString()} تومان</td>
                   <td className="py-2.5 px-3 text-xs font-bold text-emerald-400">{c.enrollmentCount}</td>
                   <td className="py-2.5 px-3"><div className="flex gap-1"><button onClick={() => openCourseForm(c)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button><button onClick={() => handleDeleteCourse(c.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button></div></td>
@@ -781,7 +781,7 @@ function AdminContent() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'دسته', 'بازدید', 'زمان', 'تاریخ', 'عملیات'].map(h => <th key={h} className="text-right py-3 px-3">{h}</th>)}</tr></thead>
+              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'دسته', 'بازدید', 'زمان', 'تاریخ', 'عملیات'].map(h => <th key={h} className={`text-right py-3 px-3 ${h === 'زمان' ? 'hidden md:table-cell' : ''}`}>{h}</th>)}</tr></thead>
               <tbody>{articles.map(a => (
                 <tr key={a.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                   <td className="py-2.5 px-3 font-medium text-sm max-w-[200px] truncate">{a.title}</td>
@@ -983,13 +983,13 @@ function AdminSignals() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'سود هدف', 'بازده واقعی', 'قیمت انتشار', 'تاریخ', 'عملیات'].map(h => <th key={h} className="text-right py-3 px-3">{h}</th>)}</tr></thead>
+              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'سود هدف', 'بازده واقعی', 'قیمت انتشار', 'تاریخ', 'عملیات'].map(h => <th key={h} className={`text-right py-3 px-3 ${['بازده واقعی', 'قیمت انتشار'].includes(h) ? 'hidden md:table-cell' : ''}`}>{h}</th>)}</tr></thead>
               <tbody>{signals.map(s => { const actualOk = s.actualReturn !== null && s.actualReturn !== undefined; return (
                 <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                   <td className="py-2.5 px-3"><div className="font-medium text-sm">{s.title}</div><div className="flex items-center gap-1.5 mt-0.5"><span className="text-[10px] text-gray-500">{s.symbol}</span><span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span><span className="text-[10px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span></div></td>
                   <td className="py-2.5 px-3"><span className="text-sm font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</span></td>
-                  <td className="py-2.5 px-3">{actualOk ? <span className={`text-sm font-bold ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{s.actualReturn}%</span> : <button onClick={async () => { const m = await import('@/app/actions/admin'); await m.recalculateSignalReturn(s.id); await load() }} className="text-xs text-gray-500 hover:text-blue-400 underline">محاسبه</button>}</td>
-                  <td className="py-2.5 px-3 text-xs text-gray-400 font-mono">{Number(s.priceAtPublish).toLocaleString()}</td>
+                  <td className="py-2.5 px-3 hidden md:table-cell">{actualOk ? <span className={`text-sm font-bold ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{s.actualReturn}%</span> : <button onClick={async () => { const m = await import('@/app/actions/admin'); await m.recalculateSignalReturn(s.id); await load() }} className="text-xs text-gray-500 hover:text-blue-400 underline">محاسبه</button>}</td>
+                  <td className="py-2.5 px-3 text-xs text-gray-400 font-mono hidden md:table-cell">{Number(s.priceAtPublish).toLocaleString()}</td>
                   <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}{s.expiresAt ? ` → ${new Date(s.expiresAt).toLocaleDateString('fa-IR')}` : ''}</td>
                   <td className="py-2.5 px-3"><div className="flex gap-1"><button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button><button onClick={() => deleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button></div></td>
                 </tr>)})}</tbody>
