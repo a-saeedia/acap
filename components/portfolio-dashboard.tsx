@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, memo } from 'react'
+import * as XLSX from 'xlsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from '@/lib/auth-client'
 import { getMyAssets, createAsset, updateAsset, deleteAsset, deduplicateAssets } from '@/app/actions/assets'
@@ -428,14 +429,28 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
     setUploadParsing(true)
     setUploadResult(null)
     try {
-      const text = await uploadCsvFile.text()
-      const lines = text.split('\n').filter(Boolean)
+      const ext = uploadCsvFile.name.split('.').pop()?.toLowerCase()
+      let rows: string[][] = []
+
+      if (ext === 'csv') {
+        const text = await uploadCsvFile.text()
+        rows = text.split('\n').filter(Boolean).map(l => l.split(',').map(s => s.trim()))
+      } else if (ext === 'xls' || ext === 'xlsx') {
+        const buf = await uploadCsvFile.arrayBuffer()
+        const wb = XLSX.read(buf, { type: 'array' })
+        const sheet = wb.Sheets[wb.SheetNames[0]]
+        const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
+        rows = data.slice(1).filter((r: string[]) => r.length >= 2)
+      } else {
+        showToast('فرمت فایل پشتیبانی نمی‌شود (csv, xls, xlsx)', 'error')
+        setUploadParsing(false)
+        return
+      }
+
       const items: { symbol: string; label: string; type: string; quantity: number }[] = []
-      for (let i = 0; i < lines.length; i++) {
-        const parts = lines[i].split(',')
-        if (parts.length < 2) continue
-        const sym = parts[0].trim()
-        const qty = parseFloat(parts.slice(1).join(',').replace(/[^0-9.]/g, ''))
+      for (const row of rows) {
+        const sym = row[0]?.trim()
+        const qty = parseFloat(String(row[1] ?? '').replace(/[^0-9.]/g, ''))
         if (!sym || !qty || qty <= 0) continue
         const { type, label } = detectType(sym)
         items.push({ symbol: sym, label, type, quantity: qty })
@@ -884,8 +899,8 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                   <text x="30" y="14" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="Arial">CSV</text>
                 </svg>
                 <div>
-                  <h2 className="text-base font-bold text-foreground">آپلود از فایل CSV</h2>
-                  <p className="text-[11px] text-muted-foreground">ستون‌ها: <span className="font-mono text-foreground">symbol, quantity</span></p>
+                <h2 className="text-base font-bold text-foreground">آپلود از فایل (CSV / Excel)</h2>
+                <p className="text-[11px] text-muted-foreground">ستون‌ها: <span className="font-mono text-foreground">symbol, quantity</span></p>
                 </div>
               </div>
               <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
@@ -894,7 +909,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
             {/* Drop zone */}
             {!uploadResult && (
               <label className={`relative flex flex-col items-center justify-center gap-3 p-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${uploadCsvFile ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-emerald-500/30 hover:bg-accent/30'}`}>
-                <input type="file" accept=".csv" className="hidden" onChange={e => {
+                <input type="file" accept=".csv,.xls,.xlsx" className="hidden" onChange={e => {
                   const f = e.target.files?.[0]
                   if (f) { setUploadCsvFile(f); setUploadText(f.name) }
                 }} />
@@ -904,8 +919,8 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                       <svg className="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-bold text-foreground">فایل CSV خود را انتخاب کنید</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">ستون اول: نماد، ستون دوم: مقدار</p>
+                    <p className="text-sm font-bold text-foreground">فایل خود را انتخاب کنید</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">پشتیبانی از CSV و Excel — ستون اول: نماد، ستون دوم: مقدار</p>
                     </div>
                   </>
                 ) : (

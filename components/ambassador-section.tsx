@@ -10,12 +10,22 @@ const TOP_AMBASSADORS = [
   { rank: 3, name: 'علی کریمی', invites: 5, reward: '۶۰,۰۰۰,۰۰۰ تومان', badge: 'برنزی', color: '#B45309' },
 ]
 
+const PLANS = [
+  { name: '۱ ماهه', price: 950000, period: 'تومان / ماه', key: 'monthly' },
+  { name: '۳ ماهه', price: 2450000, originalPrice: 2850000, period: 'تومان', key: 'quarterly' },
+  { name: '۶ ماهه', price: 4950000, originalPrice: 6600000, period: 'تومان', key: 'semiannual' },
+  { name: '۱۲ ماهه', price: 9240000, originalPrice: 13200000, period: 'تومان', key: 'annual' },
+]
+
+const COMMISSION_PCT = 30
+
 function AmbassadorCalculator() {
-  const [referrals, setReferrals] = useState(10)
-  const [avgInvestment, setAvgInvestment] = useState(30000000)
-  const commissionPct = 20
-  const totalInvestment = referrals * avgInvestment
-  const totalEarning = Math.round(totalInvestment * commissionPct / 100)
+  const [counts, setCounts] = useState<Record<string, number>>({ monthly: 5, quarterly: 3, semiannual: 2, annual: 1 })
+
+  const updateCount = (key: string, val: number) => setCounts(prev => ({ ...prev, [key]: val }))
+
+  const totalEarning = PLANS.reduce((sum, p) => sum + (counts[p.key] || 0) * p.price * COMMISSION_PCT / 100, 0)
+  const totalReferrals = Object.values(counts).reduce((a, b) => a + b, 0)
 
   return (
     <div className="glass border border-border rounded-3xl p-6 sm:p-8">
@@ -23,61 +33,39 @@ function AmbassadorCalculator() {
         <Calculator className="w-5 h-5 text-primary" />
         <h3 className="text-foreground font-black text-lg">محاسبه درآمد سفیران</h3>
       </div>
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs text-muted-foreground">تعداد دعوت</label>
-            <span className="text-lg font-black text-foreground tabular-nums ltr">{referrals} <span className="text-xs font-medium text-muted-foreground">نفر</span></span>
-          </div>
-          <input type="range" min={0} max={100} value={referrals} onChange={e => setReferrals(Number(e.target.value))}
-            className="w-full h-2 rounded-full appearance-none cursor-pointer bg-accent/50 accent-emerald-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-emerald-400 [&::-webkit-slider-thumb]:to-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-emerald-500/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20"
-          />
-          <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
-            <span>۰</span><span>۲۵</span><span>۵۰</span><span>۷۵</span><span>۱۰۰</span>
-          </div>
-        </div>
+      <div className="space-y-5">
+        {PLANS.map(plan => {
+          const earning = Math.round((counts[plan.key] || 0) * plan.price * COMMISSION_PCT / 100)
+          return (
+            <div key={plan.key}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-foreground">{plan.name}</span>
+                  <span className="text-[10px] text-muted-foreground line-through">{plan.originalPrice?.toLocaleString('fa-IR')}</span>
+                  <span className="text-xs font-bold text-primary ltr">{plan.price.toLocaleString('fa-IR')} {plan.period}</span>
+                </div>
+                <span className="text-xs font-bold text-foreground" dir="ltr">{counts[plan.key] || 0} <span className="text-muted-foreground font-normal">نفر</span></span>
+              </div>
+              <input type="range" min={0} max={50} value={counts[plan.key] || 0} onChange={e => updateCount(plan.key, Number(e.target.value))}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-accent/50 accent-emerald-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-emerald-400 [&::-webkit-slider-thumb]:to-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20"
+              />
+              <div className="flex justify-between text-[9px] text-muted-foreground mt-0.5">
+                <span>کمیسیون {COMMISSION_PCT}٪: {earning.toLocaleString('fa-IR')} تومان</span>
+                <span>{(counts[plan.key] || 0) * plan.price} تومان فروش</span>
+              </div>
+            </div>
+          )
+        })}
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs text-muted-foreground">میانگین سرمایه‌گذاری هر نفر</label>
-            <span className="text-sm font-black text-foreground tabular-nums ltr">{avgInvestment.toLocaleString('fa-IR')} <span className="text-xs font-medium text-muted-foreground">تومان</span></span>
+        <div className="border-t border-border pt-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-muted-foreground">مجموع دعوت‌ها</span>
+            <span className="text-sm font-bold text-foreground">{totalReferrals} نفر</span>
           </div>
-          <input type="range" min={1000000} max={200000000} step={1000000} value={avgInvestment} onChange={e => setAvgInvestment(Number(e.target.value))}
-            className="w-full h-2 rounded-full appearance-none cursor-pointer bg-accent/50 accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-blue-400 [&::-webkit-slider-thumb]:to-primary [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20"
-          />
-          <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
-            <span>۱ میلیون</span><span>۵۰ میلیون</span><span>۱۰۰ میلیون</span><span>۲۰۰ میلیون</span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">درآمد تخمینی (کمیسیون {COMMISSION_PCT}٪)</span>
+            <span className="text-2xl font-black text-emerald-400 tabular-nums ltr">{totalEarning.toLocaleString('fa-IR')} <span className="text-xs font-medium text-muted-foreground">تومان</span></span>
           </div>
-        </div>
-
-        <div className="bg-accent/30 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">مجموع سرمایه‌گذاری دعوت‌شوندگان</span>
-            <span className="font-bold text-foreground tabular-nums">{totalInvestment.toLocaleString('fa-IR')} تومان</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">درصد پاداش</span>
-            <span className="font-bold text-emerald-400">{commissionPct}%</span>
-          </div>
-          <div className="border-t border-border pt-2 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">درآمد کل تخمینی</span>
-            <span className="text-lg font-black text-emerald-400 tabular-nums">{totalEarning.toLocaleString('fa-IR')} تومان</span>
-          </div>
-        </div>
-
-        <div className="bg-accent/30 rounded-xl p-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-            <span>پیشرفت به سوی سطح بعدی</span>
-            <span>{Math.min(referrals, 50)}/۵۰ نفر</span>
-          </div>
-          <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(referrals / 50 * 100, 100)}%` }}
-              className="h-full rounded-full bg-gradient-to-l from-primary to-emerald-400"
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            {referrals >= 50 ? '🎉 به حداکثر سطح رسیده‌ای!' : `${50 - Math.min(referrals, 50)} نفر دیگر تا سطح بعدی`}
-          </p>
         </div>
       </div>
     </div>
