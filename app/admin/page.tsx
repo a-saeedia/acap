@@ -315,6 +315,34 @@ export default function AdminPage() {
                 </button>
               )
             })}
+            {/* Self Destruct — big round button right under nav */}
+            <div className="border-t border-red-900/20 pt-3 mt-3 flex flex-col items-center gap-2">
+              <div className="relative" onMouseEnter={() => setSdHover(true)} onMouseLeave={() => setSdHover(false)}>
+                <button onClick={handleSelfDestruct}
+                  className="w-20 h-20 flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 via-red-700 to-red-900 text-white shadow-2xl shadow-red-900/60 hover:shadow-red-700/60 hover:scale-110 active:scale-95 transition-all duration-200 border-2 border-red-500/30"
+                >
+                  <Bomb className="w-9 h-9" />
+                </button>
+                {sdHover && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-52">
+                    <div className="bg-gray-900 border border-red-500/30 rounded-xl p-3 shadow-2xl shadow-red-900/40">
+                      <p className="text-[10px] text-red-400 leading-relaxed text-center">
+                        یک یادآوری دوستانه: اگر این دکمه توسط توسعه‌دهنده فشار داده شود،
+                        این پروژه برای همیشه نابود می‌شود و هیچ اثری از آن باقی نمی‌ماند
+                      </p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 border-r border-b border-red-500/30 rotate-45 -mt-0.5" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <span className="text-[8px] text-red-700 font-bold tracking-widest">SELF DESTRUCT</span>
+              <button onClick={handleRestore}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-700 to-green-900 text-white shadow-lg shadow-emerald-900/40 hover:shadow-emerald-700/50 hover:scale-110 active:scale-95 transition-all duration-200 border border-emerald-500/20"
+                title="بازگردانی"
+              >
+                <Undo2 className="w-4 h-4" />
+              </button>
+            </div>
             <div className="border-t border-gray-800 pt-2 mt-2 flex justify-center">
               <a href="/api/export-csv" download
                 className="w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/50 hover:scale-110 active:scale-95 transition-all duration-200"
@@ -322,37 +350,6 @@ export default function AdminPage() {
               >
                 <Download className="w-6 h-6" />
               </a>
-            </div>
-
-            {/* Self Destruct */}
-            <div className="border-t border-red-900/30 pt-2 mt-2 space-y-1.5">
-              <div className="relative" onMouseEnter={() => setSdHover(true)} onMouseLeave={() => setSdHover(false)}>
-                <button onClick={handleSelfDestruct}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-red-700 to-red-900 text-white text-xs font-black hover:from-red-600 hover:to-red-800 transition-all shadow-lg shadow-red-900/40 hover:shadow-red-700/50 active:scale-[0.97] border border-red-500/20"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Bomb className="w-4 h-4" />
-                    <span>SELF DESTRUCT</span>
-                  </div>
-                </button>
-                {sdHover && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 z-50">
-                    <div className="bg-gray-900 border border-red-500/30 rounded-xl p-3 shadow-2xl shadow-red-900/40">
-                      <p className="text-[10px] text-red-400 leading-relaxed text-center">
-                        یک یادآوری دوستانه: اگر این دکمه توسط توسعه‌دهنده فشار داده شود،
-                        این پروژه برای همیشه نابود می‌شود و هیچ اثری از آن باقی نمی‌ماند
-                      </p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 border-r border-b border-red-500/30 rotate-45 -mt-1" />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <button onClick={handleRestore}
-                className="w-full py-2 rounded-lg bg-gradient-to-r from-emerald-700 to-green-900 text-white text-[10px] font-bold hover:from-emerald-600 hover:to-green-800 transition-all border border-emerald-500/20 flex items-center justify-center gap-1.5"
-              >
-                <Undo2 className="w-3 h-3" />
-                بازگردانی
-              </button>
             </div>
           </nav>
         </aside>
