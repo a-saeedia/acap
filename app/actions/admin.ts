@@ -55,7 +55,7 @@ function sanitize(str: string, maxLen = 2000) {
   return str.replace(/[<>]/g, '').trim().slice(0, maxLen)
 }
 
-export async function sendSuggestion(userId: string, title: string, content: string, profitPercent?: number, profitMessage?: string, expiresAt?: string) {
+export async function sendSuggestion(userId: string, title: string, content: string, profitPercent?: number, profitMessage?: string, expiresAt?: string, imageUrl?: string, audioUrl?: string) {
   const admin = await requireAdmin()
   if (!userId || !title || !content) throw new Error('All fields required')
   await db.insert(suggestion).values({
@@ -67,6 +67,8 @@ export async function sendSuggestion(userId: string, title: string, content: str
     profitPercent: profitPercent && profitPercent > 0 ? profitPercent : null,
     profitMessage: profitMessage ? sanitize(profitMessage, 500) : null,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
+    imageUrl: imageUrl || null,
+    audioUrl: audioUrl || null,
   })
 }
 
@@ -185,7 +187,7 @@ export async function getPendingAcapPlusRequests() {
 }
 
 // Broadcast signal to all A|CAP+ users
-export async function broadcastSuggestion(title: string, content: string, profitPercent?: number, profitMessage?: string, expiresAt?: string) {
+export async function broadcastSuggestion(title: string, content: string, profitPercent?: number, profitMessage?: string, expiresAt?: string, imageUrl?: string, audioUrl?: string) {
   const admin = await requireAdmin()
   if (!title || !content) throw new Error('All fields required')
   const subs = await db.select().from(subscription).where(eq(subscription.acapPlus, true))
@@ -199,6 +201,8 @@ export async function broadcastSuggestion(title: string, content: string, profit
       profitPercent: profitPercent && profitPercent > 0 ? profitPercent : null,
       profitMessage: profitMessage ? sanitize(profitMessage, 500) : null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
+      imageUrl: imageUrl || null,
+      audioUrl: audioUrl || null,
     })
   }
   return subs.length

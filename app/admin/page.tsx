@@ -46,6 +46,8 @@ export default function AdminPage() {
   const [sugProfit, setSugProfit] = useState('')
   const [sugProfitMsg, setSugProfitMsg] = useState('')
   const [sugExpiresAt, setSugExpiresAt] = useState('')
+  const [sugImageUrl, setSugImageUrl] = useState('')
+  const [sugAudioUrl, setSugAudioUrl] = useState('')
   const [sugBroadcast, setSugBroadcast] = useState(false)
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -173,13 +175,13 @@ export default function AdminPage() {
       const profit = sugProfit ? parseFloat(sugProfit) : undefined
       if (sugBroadcast) {
         const { broadcastSuggestion } = await import('@/app/actions/admin')
-        const count = await broadcastSuggestion(sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined)
+        const count = await broadcastSuggestion(sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined, sugImageUrl || undefined, sugAudioUrl || undefined)
         setSugSuccess(`پیشنهاد برای ${count} کاربر A|CAP+ ارسال شد`)
       } else {
-        await sendSuggestion(userId, sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined)
+        await sendSuggestion(userId, sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined, sugImageUrl || undefined, sugAudioUrl || undefined)
         setSugSuccess('پیشنهاد با موفقیت ارسال شد'); loadHistory(userId)
       }
-      setSugTitle(''); setSugContent(''); setSugProfit(''); setSugProfitMsg(''); setSugExpiresAt(''); setSugBroadcast(false)
+      setSugTitle(''); setSugContent(''); setSugProfit(''); setSugProfitMsg(''); setSugExpiresAt(''); setSugImageUrl(''); setSugAudioUrl(''); setSugBroadcast(false)
     } catch (e) { setSugError(e instanceof Error ? e.message : 'خطا در ارسال پیشنهاد') } finally { setSugSending(false) }
   }
 
@@ -436,6 +438,8 @@ export default function AdminPage() {
                             <input value={sugProfit} onChange={e => { const v = e.target.value.replace(/[^0-9.]/g, ''); setSugProfit(v) }} placeholder="درصد سود (اختیاری)" type="text" inputMode="decimal" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                             <input value={sugProfitMsg} onChange={e => setSugProfitMsg(e.target.value)} placeholder="پیام سود" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                             <input value={sugExpiresAt} onChange={e => setSugExpiresAt(e.target.value)} placeholder="تاریخ انقضا" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
+                            <input value={sugImageUrl} onChange={e => setSugImageUrl(e.target.value)} placeholder="آدرس تصویر (اختیاری)" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
+                            <input value={sugAudioUrl} onChange={e => setSugAudioUrl(e.target.value)} placeholder="آدرس صدا (اختیاری)" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                           </div>
                           <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
                             <input type="checkbox" checked={sugBroadcast} onChange={e => setSugBroadcast(e.target.checked)} className="rounded" />

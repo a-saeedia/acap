@@ -235,80 +235,125 @@ export default function AcapPlusPage() {
         </motion.div>
       </div>
 
-      {/* Suggestion detail modal */}
+      {/* Suggestion detail modal — Telegram style */}
       {selectedSug && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center"
           onClick={() => setSelectedSug(null)}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="w-full max-w-lg glass border border-amber-500/20 rounded-3xl overflow-hidden shadow-2xl shadow-amber-500/10"
+            className="w-full sm:max-w-lg sm:rounded-3xl sm:mx-4 max-h-[90vh] flex flex-col bg-gray-900 sm:border sm:border-amber-500/20 sm:shadow-2xl sm:shadow-amber-500/10 overflow-hidden"
             onClick={e => e.stopPropagation()}
+            style={{ borderRadius: '16px 16px 0 0' }}
           >
-            {/* Header gradient */}
-            <div className="bg-gradient-to-l from-amber-500/20 via-amber-500/10 to-transparent px-6 pt-6 pb-4 border-b border-amber-500/10">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                      <Crown className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-xs text-amber-400 font-bold">پیشنهاد اختصاصی</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-foreground leading-tight">{selectedSug.title}</h2>
-                </div>
-                <button onClick={() => setSelectedSug(null)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/20 hover:bg-black/30 text-muted-foreground hover:text-foreground transition-all flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Handle bar for mobile */}
+            <div className="sm:hidden flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 rounded-full bg-gray-700" />
             </div>
 
-            {/* Body */}
-            <div className="px-6 py-5 space-y-5">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-px flex-1 bg-border" />
-                  <span className="text-xs text-muted-foreground font-medium">جزئیات پیشنهاد</span>
-                  <div className="h-px flex-1 bg-border" />
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                  <Crown className="w-3.5 h-3.5 text-white" />
                 </div>
-                <ContentRenderer text={selectedSug.content} />
+                <span className="text-xs text-amber-400 font-bold">ACAP</span>
+                <span className="text-[10px] text-gray-600">|</span>
+                <span className="text-[10px] text-gray-500">{new Date(selectedSug.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <button onClick={() => setSelectedSug(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Title bubble */}
+              <div className="flex justify-start">
+                <div className="bg-gray-800 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[90%] sm:max-w-[85%] shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0">
+                      <Crown className="w-2.5 h-2.5 text-white" />
+                    </div>
+                    <span className="text-[10px] text-amber-400/70 font-bold">پیشنهاد اختصاصی</span>
+                  </div>
+                  <h2 className="text-base sm:text-lg font-black text-white leading-snug">{selectedSug.title}</h2>
+                </div>
               </div>
 
+              {/* Content bubble */}
+              <div className="flex justify-start">
+                <div className="bg-gray-800 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[90%] sm:max-w-[85%] shadow-sm">
+                  <ContentRenderer text={selectedSug.content} />
+                </div>
+              </div>
+
+              {/* Image */}
+              {selectedSug.imageUrl && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl overflow-hidden max-w-[85%] shadow-sm border border-gray-700/50">
+                    <img src={selectedSug.imageUrl} alt="" className="w-full h-auto max-h-80 object-cover" loading="lazy" />
+                  </div>
+                </div>
+              )}
+
+              {/* Audio */}
+              {selectedSug.audioUrl && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-800 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%] shadow-sm">
+                    <audio controls className="w-full max-w-[260px] h-10" style={{ filter: 'invert(0.85) hue-rotate(180deg)' }}>
+                      <source src={selectedSug.audioUrl} />
+                    </audio>
+                  </div>
+                </div>
+              )}
+
+              {/* Profit bubble */}
               {selectedSug.profitPercent && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-emerald-400/70 font-medium">سود حاصل از پیشنهاد</p>
-                      <p className="text-emerald-400 text-lg font-black">+{selectedSug.profitPercent}%</p>
-                      {selectedSug.profitMessage && (
-                        <p className="text-emerald-400/80 text-xs mt-1">{selectedSug.profitMessage}</p>
-                      )}
+                <div className="flex justify-start">
+                  <div className="bg-emerald-900/40 border border-emerald-700/30 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%] shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-emerald-400/60 font-medium">سود حاصل از پیشنهاد</p>
+                        <p className="text-emerald-400 text-base font-black">+{selectedSug.profitPercent}%</p>
+                        {selectedSug.profitMessage && (
+                          <p className="text-emerald-400/70 text-xs mt-0.5">{selectedSug.profitMessage}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground/50 pt-2 border-t border-border">
-                <span>ارسال شده در {new Date(selectedSug.createdAt).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                {selectedSug.isRead && <span>خوانده شده</span>}
-                {!selectedSug.isRead && <span className="text-amber-400 font-bold">جدید</span>}
+              {/* Date & read receipt */}
+              <div className="flex justify-end">
+                <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                  <span>{new Date(selectedSug.createdAt).toLocaleDateString('fa-IR', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  {selectedSug.isRead ? (
+                    <span className="text-blue-400">✓✓</span>
+                  ) : (
+                    <span className="text-gray-600">✓</span>
+                  )}
+                </div>
               </div>
+            </div>
 
-              {/* Return button */}
+            {/* Bottom bar */}
+            <div className="border-t border-gray-800 px-4 py-3">
               <button
                 onClick={() => setSelectedSug(null)}
-                className="w-full mt-2 py-3 rounded-xl glass border border-border text-muted-foreground hover:text-foreground hover:border-amber-500/30 transition-all font-medium"
+                className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-all text-sm font-medium flex items-center justify-center gap-2"
               >
-                <ArrowLeft className="w-4 h-4 inline-block ml-2" />
-                بازگشت به لیست پیشنهادات
+                <ArrowLeft className="w-4 h-4" />
+                بستن
               </button>
             </div>
           </motion.div>
