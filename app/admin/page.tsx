@@ -10,6 +10,7 @@ import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, Settings, MessageSquare, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, Undo2 } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
+import { PersianDateTimePicker } from '@/components/persian-datetime-picker'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
 type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
@@ -1002,17 +1003,8 @@ function AdminSignals() {
             <div><label className="text-[10px] text-gray-500 mb-1 block">قیمت فعلی (اختیاری)</label><input value={sf.priceNow} onChange={e => setSf(p => ({ ...p, priceNow: e.target.value }))} placeholder="در صورت تغییر" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-gray-500 mb-1 block">تاریخ انتشار</label>
-              <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))}
-                placeholder="1404-04-31 14:30"
-                className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono focus:border-amber-500/50 transition-colors text-gray-300" />
-              <p className="text-[8px] text-gray-600 mt-0.5">به صورت خودکار پر شد. در صورت نیاز تغییر دهید.</p>
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 mb-1 block">تاریخ انقضا (اختیاری)</label>
-              <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} placeholder="1404-05-15 14:30" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono focus:border-amber-500/50 transition-colors" />
-            </div>
+            <PersianDateTimePicker label="تاریخ انتشار" value={sf.publishedAt} onChange={v => setSf(p => ({ ...p, publishedAt: v }))} placeholder="به صورت خودکار پر شده" />
+            <PersianDateTimePicker label="تاریخ انقضا (اختیاری)" value={sf.expiresAt} onChange={v => setSf(p => ({ ...p, expiresAt: v }))} placeholder="در صورت نیاز انتخاب کنید" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -1089,7 +1081,16 @@ function AdminSignals() {
           <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10"><div className="flex items-center justify-between"><span className="text-xs text-gray-400">مجموع درآمد A|CAP</span><span className="text-xl font-black text-emerald-400">{totalRevenue.toLocaleString()} تومان</span></div></div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">ثبت درآمد ماهانه</span>
-            <button onClick={() => openRevenueForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Plus className="w-3.5 h-3.5" /> ثبت درآمد</button>
+            <div className="flex gap-2">
+              <button onClick={async () => {
+                const m = await import('@/app/actions/admin')
+                const r = await m.populateRevenueFromSignals()
+                if (r.months > 0) alert(`${r.months} ماه درآمد از ${r.totalSignals} دوره از سیگنال‌ها محاسبه و ثبت شد`)
+                else alert('هیچ سیگنال موفقی برای محاسبه درآمد یافت نشد')
+                await load()
+              }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Signal className="w-3.5 h-3.5" /> محاسبه از سیگنال‌ها</button>
+              <button onClick={() => openRevenueForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Plus className="w-3.5 h-3.5" /> ثبت دستی</button>
+            </div>
           </div>
           {revenues.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">

@@ -4,8 +4,9 @@ import { db } from '@/lib/db'
 import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory, signal, acapRevenue, referral, userEvent, siteComment, account, session } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { eq, desc, sql } from 'drizzle-orm'
+import { eq, desc, and, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
+import { toJalaali } from 'jalaali-js'
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -432,6 +433,48 @@ export async function updateAcapRevenue(id: string, amount: number, description?
 export async function deleteAcapRevenue(id: string) {
   await requireAdmin()
   await db.delete(acapRevenue).where(eq(acapRevenue.id, id))
+}
+
+// -------- Populate revenue from signals --------
+
+export async function populateRevenueFromSignals() {
+  await requireAdmin()
+  const signalData = await db.select().from(signal)
+  const monthlyRevenue: Record<string, { amount: number; count: number }> = {}
+
+  for (const s of signalData) {
+    const profit = s.actualReturn
+    if (!profit || profit <= 0) continue
+    const d = s.publishedAt ? new Date(s.publishedAt) : new Date()
+    const j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    const key = `${j.jy}-${String(j.jm).padStart(2, '0')}`
+    if (!monthlyRevenue[key]) monthlyRevenue[key] = { amount: 0, count: 0 }
+    monthlyRevenue[key].amount += profit
+    monthlyRevenue[key].count++
+  }
+
+  let inserted = 0
+  for (const [key, data] of Object.entries(monthlyRevenue)) {
+    const [year, month] = key.split('-').map(Number)
+    const existing = await db.select().from(acapRevenue)
+      .where(and(eq(acapRevenue.year, year), eq(acapRevenue.month, month)))
+      .limit(1)
+
+    const estimatedAmount = Math.round(data.amount * 100000) // rough estimate based on profit %
+    if (existing.length > 0) {
+      await db.update(acapRevenue).set({ amount: estimatedAmount }).where(eq(acapRevenue.id, existing[0].id))
+    } else {
+      await db.insert(acapRevenue).values({
+        id: randomUUID(),
+        amount: estimatedAmount,
+        month,
+        year,
+        description: `تخمین درآمد از ${data.count} سیگنال موفق`,
+      })
+    }
+    inserted++
+  }
+  return { months: inserted, totalSignals: Object.keys(monthlyRevenue).length }
 }
 
 // -------- Public revenue API (no admin required) --------
