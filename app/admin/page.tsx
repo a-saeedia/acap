@@ -10,7 +10,6 @@ import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, Settings, MessageSquare, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield } from 'lucide-react'
 import { toJalaali } from 'jalaali-js'
 import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
-import { JalaliDatePicker } from '@/components/jalali-date-picker'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
 type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
@@ -943,13 +942,11 @@ function AdminSignals() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[10px] text-gray-500 mb-1 block">تاریخ انتشار</label>
-              <JalaliDatePicker value={sf.publishedAt.split(' ')[0] || ''} onChange={d => { const t = sf.publishedAt.split(' ')[1] || '14:30'; setSf(p => ({ ...p, publishedAt: `${d} ${t}` })) }} />
-              <input value={sf.publishedAt.split(' ')[1] || '14:30'} onChange={e => { const date = sf.publishedAt.split(' ')[0] || ''; setSf(p => ({ ...p, publishedAt: `${date} ${e.target.value}` })) }} type="time" className="w-full mt-1 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
+              <input value={sf.publishedAt} onChange={e => setSf(p => ({ ...p, publishedAt: e.target.value }))} placeholder="1402-10-25 14:30" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
             </div>
             <div>
               <label className="text-[10px] text-gray-500 mb-1 block">تاریخ انقضا (اختیاری)</label>
-              <JalaliDatePicker value={sf.expiresAt.split(' ')[0] || ''} onChange={d => { const t = sf.expiresAt.split(' ')[1] || '14:30'; setSf(p => ({ ...p, expiresAt: `${d} ${t}` })) }} />
-              <input value={sf.expiresAt.split(' ')[1] || '14:30'} onChange={e => { const date = sf.expiresAt.split(' ')[0] || ''; setSf(p => ({ ...p, expiresAt: `${date} ${e.target.value}` })) }} type="time" className="w-full mt-1 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
+              <input value={sf.expiresAt} onChange={e => setSf(p => ({ ...p, expiresAt: e.target.value }))} placeholder="1402-11-15 14:30" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none ltr text-left font-mono" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
