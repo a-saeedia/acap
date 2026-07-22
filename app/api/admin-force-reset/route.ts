@@ -5,23 +5,19 @@ import { generateId } from 'better-auth'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  return handleReset(searchParams.get('email') || '')
-}
-
 export async function POST(req: Request) {
-  const { email } = await req.json()
-  return handleReset(email)
-}
-
-async function handleReset(email: string) {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) {
-      return Response.json({ error: 'Login first, then call this' }, { status: 401 })
+      return Response.json({ error: 'Login first' }, { status: 401 })
     }
 
+    const users = await db.select({ role: user.role }).from(user).where(eq(user.id, session.user.id)).limit(1)
+    if (users[0]?.role !== 'admin') {
+      return Response.json({ error: 'Admin only' }, { status: 403 })
+    }
+
+    const { email } = await req.json()
     if (!email?.trim()) {
       return Response.json({ error: 'Email required' }, { status: 400 })
     }

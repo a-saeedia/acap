@@ -103,6 +103,7 @@ export async function getSentSuggestions(userId: string) {
 }
 
 export async function getUserAssets(userId: string) {
+  await requireAdmin()
   return db.select().from(asset).where(eq(asset.userId, userId)).orderBy(desc(asset.createdAt))
 }
 

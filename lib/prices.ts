@@ -113,8 +113,8 @@ export const DEFAULT_STOCKS = [
   // مخابرات و IT
   { symbol: 'اخابر', name: 'مخابرات ایران', sector: 'مخابرات', tsetmcSearch: 'اخابر' },
   { symbol: 'همراه', name: 'همراه اول', sector: 'مخابرات', tsetmcSearch: 'همراه' },
-  { symbol: 'وبانک', name: 'آسیاتک', sector: 'فناوری اطلاعات', tsetmcSearch: 'وبانک' },
-  { symbol: 'فناور', name: 'فناوری اطلاعات and', sector: 'فناوری اطلاعات', tsetmcSearch: 'فناور' },
+  { symbol: 'آسیاتک', name: 'آسیاتک', sector: 'فناوری اطلاعات', tsetmcSearch: 'آسیاتک' },
+  { symbol: 'فناور', name: 'فناوری اطلاعات', sector: 'فناوری اطلاعات', tsetmcSearch: 'فناور' },
 
   // سیمان
   { symbol: 'سیدکو', name: 'سیمان کردستان', sector: 'سیمان', tsetmcSearch: 'سیدکو' },
@@ -132,7 +132,7 @@ export const DEFAULT_STOCKS = [
   // بیمه
   { symbol: 'بیمه', name: 'بیمه ایران', sector: 'بیمه', tsetmcSearch: 'بیمه' },
   { symbol: 'وبیمه', name: 'بیمه البرز', sector: 'بیمه', tsetmcSearch: 'وبیمه' },
-  { symbol: 'بیمه‌', name: 'بیمه آسیا', sector: 'بیمه', tsetmcSearch: 'بیمه' },
+  { symbol: 'بیمه', name: 'بیمه ایران', sector: 'بیمه', tsetmcSearch: 'بیمه' },
 
   // حمل و نقل
   { symbol: 'حمل', name: 'حمل و نقل', sector: 'حمل و نقل', tsetmcSearch: 'حمل' },

@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, Users, FileText, ShoppingCart, Calculator, Trophy, Medal, Crown, Star, ChevronUp, Gift, DollarSign } from 'lucide-react'
 
+// Rewards based on 30% commission of max plan (annual = 9,240,000 تومان).
+// inviteCount × 9,240,000 × 30% = payout, rounded down.
 const TOP_AMBASSADORS = [
-  { rank: 1, name: 'امیرحسین رضایی', invites: 20, reward: '۲۴۰,۰۰۰,۰۰۰ تومان', badge: 'طلایی', color: '#F59E0B' },
-  { rank: 2, name: 'سارا محمدی', invites: 10, reward: '۱۲۰,۰۰۰,۰۰۰ تومان', badge: 'نقره‌ای', color: '#94A3B8' },
-  { rank: 3, name: 'علی کریمی', invites: 5, reward: '۶۰,۰۰۰,۰۰۰ تومان', badge: 'برنزی', color: '#B45309' },
+  { rank: 1, name: 'امیرحسین رضایی', invites: 20, reward: '۵۵,۰۰۰,۰۰۰ تومان', badge: 'طلایی', color: '#F59E0B' },
+  { rank: 2, name: 'سارا محمدی', invites: 10, reward: '۲۷,۰۰۰,۰۰۰ تومان', badge: 'نقره‌ای', color: '#94A3B8' },
+  { rank: 3, name: 'علی کریمی', invites: 5, reward: '۱۳,۰۰۰,۰۰۰ تومان', badge: 'برنزی', color: '#B45309' },
 ]
 
 const PLANS = [
