@@ -307,16 +307,15 @@ export function DashboardClient() {
                 </button>
               </motion.div>
 
-              {/* Signal Feed — Telegram style */}
+              {/* Signal Feed — public market signals */}
               <motion.div variants={itemVariants} className="flex-1">
                 <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col"
                   style={{ minHeight: '220px' }}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
-                      <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-xs font-black text-foreground">A|CAP Signal Bot</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-black text-foreground">سیگنال‌های بازار</span>
                     </div>
                     {signalStats && (
                       <span className="text-[10px] text-muted-foreground">
@@ -327,7 +326,7 @@ export function DashboardClient() {
                   <div className="flex-1 space-y-2 overflow-y-auto">
                     {signals.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                        <Bot className="w-6 h-6 mb-1 opacity-30" />
+                        <Zap className="w-6 h-6 mb-1 opacity-30" />
                         <p className="text-[10px]">هنوز سیگنالی نیست</p>
                       </div>
                     ) : (
@@ -341,7 +340,6 @@ export function DashboardClient() {
                           >
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <Bot className="w-3 h-3 text-emerald-400 shrink-0" />
                                 <span className="text-[11px] font-bold text-foreground truncate">{s.title}</span>
                                 <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
                                   s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
@@ -364,13 +362,6 @@ export function DashboardClient() {
                       })
                     )}
                   </div>
-                  {signals.length > 5 && (
-                    <button onClick={() => router.push('/app/personal')}
-                      className="mt-2 text-[10px] text-primary font-bold text-center hover:underline"
-                    >
-                      نمایش همه {signals.length} سیگنال
-                    </button>
-                  )}
                 </div>
               </motion.div>
             </div>
@@ -477,7 +468,7 @@ export function DashboardClient() {
                 <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
+                    { label: 'سیگنال‌های شخصی', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
                     { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
                   ].map(btn => (
