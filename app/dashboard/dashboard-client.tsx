@@ -44,7 +44,9 @@ export function DashboardClient() {
   const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
   const [signals, setSignals] = useState<any[]>([])
   const [expandedSignalId, setExpandedSignalId] = useState<string | null>(null)
+  const [selectedSignal, setSelectedSignal] = useState<any | null>(null)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [referralStats, setReferralStats] = useState<any>(null)
   const [dashboardTab, setDashboardTab] = useState<'dashboard' | 'invite'>('dashboard')
 
@@ -331,12 +333,11 @@ export function DashboardClient() {
                     ) : (
                       signals.slice(0, 5).map((s) => {
                         const isWin = s.actualProfit > 0
-                        const isExpanded = expandedSignalId === s.id
                         const sd = s.publishedAt ? new Date(s.publishedAt) : new Date()
                         return (
                           <div key={s.id}
-                            className="rounded-xl px-3 py-2 cursor-pointer transition-all border border-gray-700/30 bg-gray-800/60 hover:border-gray-600/50"
-                            onClick={() => setExpandedSignalId(isExpanded ? null : s.id)}
+                            className="rounded-xl px-3 py-2 cursor-pointer transition-all border border-gray-700/30 bg-gray-800/60 hover:border-gray-600/50 hover:bg-gray-800"
+                            onClick={() => setSelectedSignal(s)}
                           >
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1.5 min-w-0">
@@ -346,52 +347,18 @@ export function DashboardClient() {
                                   s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
                                 }`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
                               </div>
-                              <span className={`text-[10px] font-black tabular-nums shrink-0 ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
-                                {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
-                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className={`text-[10px] font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
+                                </span>
+                                <ChevronDown className="w-3 h-3 text-gray-600" />
+                              </div>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[9px] text-muted-foreground font-semibold">{s.symbol}</span>
                               <span className="text-[9px] text-muted-foreground">{String(s.type) === 'crypto' ? 'ارز دیجیتال' : String(s.type) === 'stock' ? 'سهام' : String(s.type) === 'gold' ? 'طلا' : String(s.type) === 'dollar' ? 'دلار' : 'فارکس'}</span>
                               <span className="text-[9px] text-muted-foreground/60">{sd.getHours().toString().padStart(2,'0')}:{sd.getMinutes().toString().padStart(2,'0')}</span>
                             </div>
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                  {s.description && (
-                                    <div className="mt-1.5 text-[10px] text-muted-foreground leading-relaxed space-y-1">
-                                      {s.description.split('\n').map((line: string, i: number) => {
-                                        const t = line.trim()
-                                        if (!t) return <div key={i} className="h-0.5" />
-                                        const isEmojiHeader = /^[🟡🔵🟢🔴🟣🟠⚪✅❌⚠️⏳🎯📊📈📉💰💎🔥⭐🌟✨💡📌🔔🚀🏆]/.test(t) && t.length < 80
-                                        const hasPrice = /[\d,]+(,\d{3})*(\.\d+)?\s*(تومان|ریال|دلار)/.test(t)
-                                        const hasPercent = /\d+(\.\d+)?%/.test(t)
-                                        let cls = 'text-[10px] leading-6'
-                                        if (isEmojiHeader) cls += ' text-amber-300 font-bold text-[11px]'
-                                        else if (hasPrice) cls += ' text-emerald-400'
-                                        else if (hasPercent) cls += ' text-amber-400'
-                                        return <p key={i} className={cls} style={{ direction: 'rtl', textAlign: 'right' }}>{t}</p>
-                                      })}
-                                    </div>
-                                  )}
-                                  {s.imageUrl && (
-                                    <img src={s.imageUrl} alt="" className="mt-1.5 rounded-lg w-full h-24 object-cover border border-gray-700/30" />
-                                  )}
-                                  {s.audioUrl && (
-                                    <div className="mt-1.5 flex items-center gap-1.5 bg-gray-900/50 rounded-lg px-2 py-1.5 border border-gray-700/20">
-                                      <button onClick={e => { e.stopPropagation(); setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl) }}
-                                        className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center hover:bg-emerald-500/30 transition-colors shrink-0"
-                                      >
-                                        {playingAudio === s.audioUrl ? <Pause className="w-3 h-3 text-emerald-400" /> : <Play className="w-3 h-3 text-emerald-400 mr-0.5" />}
-                                      </button>
-                                      <Mic className="w-3 h-3 text-gray-600 shrink-0" />
-                                      <span className="text-[9px] text-muted-foreground">ویس تحلیل</span>
-                                    </div>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                            <ChevronDown className={`w-2.5 h-2.5 text-muted-foreground/40 mx-auto mt-0.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
                         )
                       })
@@ -603,6 +570,188 @@ export function DashboardClient() {
         </AnimatePresence>
       </main>
       {playingAudio && <audio src={playingAudio} onEnded={() => setPlayingAudio(null)} className="hidden" />}
+
+      {/* Signal detail modal — Telegram style */}
+      <AnimatePresence>
+        {selectedSignal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center"
+            onClick={() => setSelectedSignal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="w-full sm:max-w-lg sm:rounded-3xl sm:mx-4 max-h-[90vh] flex flex-col bg-gray-900 sm:border sm:border-emerald-500/20 sm:shadow-2xl sm:shadow-emerald-500/10 overflow-hidden"
+              onClick={e => e.stopPropagation()}
+              style={{ borderRadius: '16px 16px 0 0' }}
+            >
+              {/* Handle bar for mobile */}
+              <div className="sm:hidden flex justify-center pt-2 pb-1">
+                <div className="w-10 h-1 rounded-full bg-gray-700" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+                    <Bot className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-xs text-emerald-400 font-bold">A|CAP Signal</span>
+                  <span className="text-[10px] text-gray-600">|</span>
+                  <span className="text-[10px] text-gray-500">{new Date(selectedSignal.publishedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <button onClick={() => setSelectedSignal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-all">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Signal bubble */}
+                <div className="flex justify-start">
+                  <div className="bg-gray-800 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[90%] sm:max-w-[85%] shadow-sm">
+                    {/* Sender + meta */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-2.5 h-2.5 text-emerald-400" />
+                      </div>
+                      <span className="text-[10px] text-emerald-400/80 font-bold">A|CAP Bot</span>
+                      <span className="text-[9px] text-gray-600">{selectedSignal.symbol}</span>
+                      <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold ${
+                        selectedSignal.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                      }`}>{selectedSignal.action === 'buy' ? 'BUY' : 'SELL'}</span>
+                    </div>
+
+                    {/* Title + profit */}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-sm font-bold text-white">{selectedSignal.title}</span>
+                      {selectedSignal.actualProfit !== null && selectedSignal.actualProfit !== undefined && (
+                        <span className={`text-xs font-black tabular-nums shrink-0 ${selectedSignal.actualProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {selectedSignal.actualProfit >= 0 ? '+' : ''}{selectedSignal.actualProfit.toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Type + time */}
+                    <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-1.5">
+                      <span className="bg-gray-700/50 px-1.5 py-0.5 rounded">{new Date(selectedSignal.publishedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{selectedSignal.type === 'crypto' ? 'ارز دیجیتال' : selectedSignal.type === 'stock' ? 'سهام' : selectedSignal.type === 'gold' ? 'طلا' : selectedSignal.type === 'dollar' ? 'دلار' : selectedSignal.type === 'forex' ? 'فارکس' : selectedSignal.type}</span>
+                    </div>
+
+                    {/* Description */}
+                    {selectedSignal.description && (
+                      <div className="mt-1 space-y-1">
+                        {selectedSignal.description.split('\n').map((line: string, i: number) => {
+                          const t = line.trim()
+                          if (!t) return <div key={i} className="h-1" />
+                          const isEmojiHeader = /^[🟡🔵🟢🔴🟣🟠⚪✅❌⚠️⏳🎯📊📈📉💰💎🔥⭐🌟✨💡📌🔔🚀🏆]/.test(t) && t.length < 80
+                          const hasPrice = /[\d,]+(,\d{3})*(\.\d+)?\s*(تومان|ریال|دلار)/.test(t)
+                          const hasPercent = /\d+(\.\d+)?%/.test(t)
+                          let cls = 'text-[14px] leading-8'
+                          if (isEmojiHeader) cls += ' text-amber-300 font-bold text-[16px]'
+                          else if (hasPrice) cls += ' text-emerald-400 font-medium'
+                          else if (hasPercent) cls += ' text-amber-400 font-medium'
+                          return <p key={i} className={cls} style={{ direction: 'rtl', textAlign: 'right' }}>{t}</p>
+                        })}
+                      </div>
+                    )}
+
+                    {/* Image */}
+                    {selectedSignal.imageUrl && (
+                      <div className="mt-2 rounded-xl overflow-hidden border border-gray-700/30" onClick={e => { e.stopPropagation(); setPreviewImage(selectedSignal.imageUrl) }}>
+                        <img src={selectedSignal.imageUrl} alt="" className="w-full h-auto max-h-64 object-cover hover:brightness-110 transition-all" loading="lazy" />
+                      </div>
+                    )}
+
+                    {/* Audio */}
+                    {selectedSignal.audioUrl && (
+                      <div className="mt-2 flex items-center gap-2 bg-gray-900/50 rounded-lg px-3 py-2 border border-gray-700/20" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setPlayingAudio(playingAudio === selectedSignal.audioUrl ? null : selectedSignal.audioUrl)}
+                          className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center hover:bg-emerald-500/30 transition-colors shrink-0"
+                        >
+                          {playingAudio === selectedSignal.audioUrl ? <Pause className="w-4 h-4 text-emerald-400" /> : <Play className="w-4 h-4 text-emerald-400 mr-0.5" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Mic className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                            <span className="text-[11px] text-gray-400">ویس تحلیل</span>
+                            {playingAudio === selectedSignal.audioUrl && (
+                              <div className="flex gap-0.5 items-center">
+                                {[1,2,3].map(i => (
+                                  <div key={i} className="w-0.5 h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expandable details */}
+                    <div className="mt-2 pt-2 border-t border-gray-700/30 space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-gray-500">قیمت انتشار</span>
+                        <span className="text-white font-semibold">{Number(selectedSignal.priceAtPublish).toLocaleString()}</span>
+                      </div>
+                      {selectedSignal.expectedProfit && <div className="flex justify-between text-[11px]">
+                        <span className="text-gray-500">هدف سود</span>
+                        <span className="text-emerald-400 font-bold">+{selectedSignal.expectedProfit}%</span>
+                      </div>}
+                      {selectedSignal.investorType && <div className="flex justify-between text-[11px]">
+                        <span className="text-gray-500">مناسب برای</span>
+                        <span className="text-gray-300">{selectedSignal.investorType === 'conservative' ? 'محافظه‌کار' : selectedSignal.investorType === 'balanced' ? 'متعادل' : selectedSignal.investorType === 'growth' ? 'رشدگرا' : 'تهاجمی'}</span>
+                      </div>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date + read receipt */}
+                <div className="flex justify-end">
+                  <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                    <span>{new Date(selectedSignal.publishedAt).toLocaleDateString('fa-IR', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    {selectedSignal.actualProfit !== null && selectedSignal.actualProfit !== undefined ? (
+                      <span className="text-blue-400">✓✓</span>
+                    ) : (
+                      <span className="text-gray-600">✓</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom bar */}
+              <div className="border-t border-gray-800 px-4 py-3">
+                <button onClick={() => setSelectedSignal(null)}
+                  className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-all text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  بستن
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image preview modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setPreviewImage(null)}
+          >
+            <button onClick={() => setPreviewImage(null)} className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors z-10">
+              <X className="w-5 h-5" />
+            </button>
+            <motion.img initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+              src={previewImage} alt="" className="max-w-full max-h-[90vh] rounded-2xl" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
