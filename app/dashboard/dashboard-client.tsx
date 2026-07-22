@@ -365,7 +365,7 @@ export function DashboardClient() {
                     )}
                   </div>
                   {signals.length > 5 && (
-                    <button onClick={() => router.push('/app/signals')}
+                    <button onClick={() => router.push('/app/personal')}
                       className="mt-2 text-[10px] text-primary font-bold text-center hover:underline"
                     >
                       نمایش همه {signals.length} سیگنال
@@ -477,7 +477,7 @@ export function DashboardClient() {
                 <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/signals?tab=revenue' : '/acap-plus'), color: 'text-amber-400' },
+                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
                     { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
                   ].map(btn => (

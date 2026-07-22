@@ -127,7 +127,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                     تیکت
                   </button>
                   <button
-                    onClick={() => router.push('/app/signals')}
+                    onClick={() => router.push('/app/personal')}
                     className="flex items-center gap-1.5 glass border border-amber-500/30 hover:border-amber-500/60 rounded-xl px-3 py-1.5 text-sm text-amber-400 transition-all"
                   >
                     <Crown className="w-4 h-4" />
@@ -198,7 +198,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                   <>
                     {isAdmin && <button onClick={() => router.push('/admin')} className="btn-primary py-3 rounded-xl font-bold bg-red-600/20 text-red-400 border border-red-500/30">پنل مدیریت</button>}
                     <button onClick={() => router.push('/tickets')} className="btn-primary py-3 rounded-xl font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">تیکت‌ها</button>
-                    <button onClick={() => router.push('/app/signals')} className="btn-primary py-3 rounded-xl font-bold bg-amber-600/20 text-amber-400 border border-amber-500/30">A|CAP+</button>
+                    <button onClick={() => router.push('/app/personal')} className="btn-primary py-3 rounded-xl font-bold bg-amber-600/20 text-amber-400 border border-amber-500/30">A|CAP+</button>
                     <button onClick={() => router.push('/dashboard')} className="btn-primary py-3 rounded-xl font-bold">
                       داشبورد من
                     </button>

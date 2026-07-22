@@ -387,7 +387,7 @@ export default function MergedDashboard() {
                     <h3 className="text-sm font-bold text-white mb-3">دسترسی سریع</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/signals' : '/acap-plus'), color: 'text-amber-400' },
+                        { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
                         { label: 'قیمت‌ها', icon: TrendingUp, action: () => router.push('/app/prices'), color: 'text-emerald-400' },
                         { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                         { label: 'آکادمی', icon: Shield, action: () => router.push('/app/academy'), color: 'text-purple-400' },
