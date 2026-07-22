@@ -7,7 +7,7 @@ import { signOut, useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import { getMyAssets } from '@/app/actions/assets'
 import {
-  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft, Gift
+  User, Shield, Target, Trophy, Calendar, Phone, Crown, HelpCircle, X, Loader2, BarChart3, LogOut, Home, TrendingUp, Zap, TrendingDown, ChevronLeft, Wallet, BookOpen, GraduationCap, ArrowLeft, Gift, Bot, MessageSquare, ChevronDown, Play, Pause
 } from 'lucide-react'
 import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { getMyReferralStats } from '@/app/actions/referral'
@@ -42,6 +42,9 @@ export function DashboardClient() {
   const [tutorialStep, setTutorialStep] = useState<number | null>(null)
   const [priceData, setPriceData] = useState<Record<string, {price: number; currency: string; change: number}>>({})
   const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
+  const [signals, setSignals] = useState<any[]>([])
+  const [expandedSignalId, setExpandedSignalId] = useState<string | null>(null)
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const [referralStats, setReferralStats] = useState<any>(null)
   const [dashboardTab, setDashboardTab] = useState<'dashboard' | 'invite'>('dashboard')
 
@@ -72,6 +75,7 @@ export function DashboardClient() {
     }).catch(() => {})
     fetch('/api/signals', { signal: controller.signal }).then(r => r.json()).then((d: any) => {
       const sigs = d?.signals || []
+      setSignals(sigs)
       if (sigs.length > 0) {
         const wins = sigs.filter((s: any) => (s.actualProfit ?? 0) > 0).length
         setSignalStats({ total: sigs.length, wins, winRate: Math.round((wins / sigs.length) * 100) })
@@ -301,31 +305,90 @@ export function DashboardClient() {
                 </button>
               </motion.div>
 
-              {/* A|CAP Revenue mini square */}
+              {/* Signal Feed — Telegram style */}
               <motion.div variants={itemVariants} className="flex-1">
-                <button onClick={() => router.push('/app/signals?tab=revenue')}
-                  className="w-full relative overflow-hidden rounded-2xl p-4 text-right group cursor-pointer border-0 h-full"
-                  style={{
-                    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
-                    boxShadow: '0 4px 20px rgba(124,58,237,0.2)',
-                  }}
+                <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col"
+                  style={{ minHeight: '220px' }}
                 >
-                  <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 60%)' }} />
-                  <div className="relative flex flex-col h-full">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-7 h-7 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                        <Zap className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <span className="text-sm font-black text-white">درآمد A|CAP</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-xs font-black text-foreground">سیگنال‌ها</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-auto">
-                      <span className="text-xs font-bold text-white/80 bg-white/10 rounded-lg px-2 py-0.5">
-                        {signalStats ? `${signalStats.winRate}%` : '...'}
+                    {signalStats && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {signalStats.winRate}% موفقیت
                       </span>
-                      <span className="text-[10px] text-white/60">موفقیت</span>
-                    </div>
+                    )}
                   </div>
-                </button>
+                  <div className="flex-1 space-y-2 overflow-y-auto">
+                    {signals.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                        <Bot className="w-6 h-6 mb-1 opacity-30" />
+                        <p className="text-[10px]">هنوز سیگنالی نیست</p>
+                      </div>
+                    ) : (
+                      signals.slice(0, 5).map((s) => {
+                        const color = ({ crypto: '#F7931A', stock: '#10B981', gold: '#FFD700', forex: '#3B82F6', dollar: '#34D399' } as any)[s.type] || '#666'
+                        const isWin = s.actualProfit > 0
+                        const isExpanded = expandedSignalId === s.id
+                        const sd = s.publishedAt ? new Date(s.publishedAt) : new Date()
+                        return (
+                          <div key={s.id}
+                            className="rounded-xl px-3 py-2 cursor-pointer transition-all border"
+                            style={{
+                              backgroundColor: `${color}08`,
+                              borderColor: isExpanded ? `${color}25` : 'transparent',
+                              borderRight: `2.5px solid ${color}`,
+                            }}
+                            onClick={() => setExpandedSignalId(isExpanded ? null : s.id)}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Bot className="w-3 h-3 shrink-0" style={{ color }} />
+                                <span className="text-[11px] font-bold text-foreground truncate">{s.title}</span>
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                                  s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                }`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
+                              </div>
+                              <span className={`text-[10px] font-black tabular-nums shrink-0 ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[9px] text-muted-foreground font-semibold">{s.symbol}</span>
+                              <span className="text-[9px] text-muted-foreground">{String(s.type) === 'crypto' ? 'ارز دیجیتال' : String(s.type) === 'stock' ? 'سهام' : String(s.type) === 'gold' ? 'طلا' : String(s.type) === 'dollar' ? 'دلار' : 'فارکس'}</span>
+                              <span className="text-[9px] text-muted-foreground/60">{sd.getHours().toString().padStart(2,'0')}:{sd.getMinutes().toString().padStart(2,'0')}</span>
+                            </div>
+                            {s.description && isExpanded && (
+                              <p className="mt-1.5 text-[10px] text-muted-foreground leading-relaxed">{s.description}</p>
+                            )}
+                            {s.imageUrl && isExpanded && (
+                              <img src={s.imageUrl} alt="" className="mt-1.5 rounded-lg w-full h-24 object-cover" />
+                            )}
+                            {s.audioUrl && isExpanded && (
+                              <div className="mt-1.5 flex items-center gap-1.5">
+                                <button onClick={e => { e.stopPropagation(); setPlayingAudio(playingAudio === s.audioUrl ? null : s.audioUrl) }}
+                                  className="p-1 rounded-lg" style={{ backgroundColor: `${color}15` }}>
+                                  {playingAudio === s.audioUrl ? <Pause className="w-3 h-3" style={{ color }} /> : <Play className="w-3 h-3" style={{ color }} />}
+                                </button>
+                                <span className="text-[9px] text-muted-foreground">ویس تحلیل</span>
+                              </div>
+                            )}
+                            <ChevronDown className={`w-2.5 h-2.5 text-muted-foreground/40 mx-auto mt-0.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                  {signals.length > 5 && (
+                    <button onClick={() => router.push('/app/signals')}
+                      className="mt-2 text-[10px] text-primary font-bold text-center hover:underline"
+                    >
+                      نمایش همه {signals.length} سیگنال
+                    </button>
+                  )}
+                </div>
               </motion.div>
             </div>
           </div>
@@ -523,6 +586,7 @@ export function DashboardClient() {
           )}
         </AnimatePresence>
       </main>
+      {playingAudio && <audio src={playingAudio} onEnded={() => setPlayingAudio(null)} className="hidden" />}
     </div>
   )
 }
