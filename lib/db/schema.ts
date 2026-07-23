@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, integer, bigint, jsonb, real, uuid } from 'drizzle-orm/pg-core'
+import { pgTable, text, boolean, timestamp, integer, bigint, jsonb, doublePrecision, real, uuid } from 'drizzle-orm/pg-core'
 
 // Better Auth required tables
 export const user = pgTable('user', {
@@ -191,10 +191,10 @@ export const signal = pgTable('signal', {
   description: text('description'),
   action: text('action').notNull(),
   investorType: text('investorType'),
-  expectedProfit: real('expectedProfit'),
-  actualReturn: real('actualReturn'),
-  priceAtPublish: real('priceAtPublish').notNull(),
-  priceNow: real('priceNow'),
+  expectedProfit: doublePrecision('expectedProfit'),
+  actualReturn: doublePrecision('actualReturn'),
+  priceAtPublish: doublePrecision('priceAtPublish').notNull(),
+  priceNow: doublePrecision('priceNow'),
   imageUrl: text('imageUrl'),
   audioUrl: text('audioUrl'),
   expiresAt: timestamp('expiresAt'),

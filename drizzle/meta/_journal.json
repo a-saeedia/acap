@@ -50,6 +50,13 @@
       "when": 1784747843465,
       "tag": "0006_glossy_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784810481227,
+      "tag": "0007_fix_signal_precision",
+      "breakpoints": true
     }
   ]
 }
