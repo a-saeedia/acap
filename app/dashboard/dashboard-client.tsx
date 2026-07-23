@@ -353,22 +353,25 @@ export function DashboardClient() {
                     </div>
                     {/* Monthly revenue bars */}
                     <div className="bg-gray-800/40 rounded-lg p-1.5">
-                      <div className="text-[8px] text-gray-500 mb-1">بازده ماهانه</div>
-                      <div className="flex items-end gap-1 h-12">
+                      <div className="text-[8px] text-gray-500 mb-1">بازده ماهانه A|CAP</div>
+                      <div className="flex items-end gap-1.5" style={{ height: '40px' }}>
                         {revenueMonths.length > 0 ? (
                           [...revenueMonths].sort((a, b) => (b.year - a.year) || (b.month - a.month)).slice(0, 6).reverse().map((r: any) => {
-                            const maxAmt = Math.max(...revenueMonths.map((x: any) => x.amount), 1)
-                            const pct = (r.amount / maxAmt) * 100
                             const persianMonths = ['فر', 'ار', 'خ', 'ت', 'م', 'ش', 'مه', 'آب', 'آ', 'د', 'ب', 'اس']
+                            const maxAmt = Math.max(...revenueMonths.map((x: any) => x.amount), 1)
+                            const barPct = (r.amount / maxAmt)
+                            const barH = Math.max(Math.round(barPct * 36), r.amount > 0 ? 4 : 0)
+                            const displayVal = r.amount > 100000 ? (r.amount / 1000000).toFixed(0) + 'M' : r.amount.toFixed(1) + '%'
                             return (
                               <div key={`${r.year}-${r.month}`} className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
-                                <div className="w-full bg-emerald-500/60 rounded-t" style={{ height: `${Math.max(pct, 4)}%` }} title={`${r.amount}%`} />
-                                <span className="text-[6px] text-gray-600">{persianMonths[r.month - 1] || r.month}</span>
+                                <span className="text-[7px] font-bold text-emerald-400">{displayVal}</span>
+                                <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t" style={{ height: `${barH}px` }} />
+                                <span className="text-[6px] text-gray-500">{persianMonths[r.month - 1] || r.month}</span>
                               </div>
                             )
                           })
                         ) : (
-                          <div className="flex items-center justify-center w-full h-full text-[9px] text-gray-600">داده‌ای نیست</div>
+                          <div className="flex items-center justify-center w-full h-full text-[9px] text-gray-600">داده‌ای نیست — ابتدا سیگنال ایجاد کنید</div>
                         )}
                       </div>
                     </div>
