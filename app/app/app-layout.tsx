@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-gray-950 text-white flex max-md:flex-col overflow-x-hidden" dir="rtl">
       {/* Sidebar */}
       <aside className={`w-64 bg-gray-900/95 border-l border-gray-800 hidden md:flex flex-col fixed h-full z-30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex items-center justify-between p-4 pb-0">
@@ -84,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 px-4 h-14 flex items-center justify-between">
+      <div className="md:hidden h-14 shrink-0 bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 px-4 flex items-center justify-between">
         <button onClick={() => setMobileOpen(!mobileOpen)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-800 transition-colors">
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -96,7 +96,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
         <nav className={`absolute top-0 bottom-0 right-0 w-72 bg-gray-900 border-l border-gray-800 overflow-y-auto transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-          <div className="pt-16 px-4 pb-4">
+            <div className="pt-14 px-4 pb-4">
             <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-gray-800/50">
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                 {session.user.name.charAt(0)}
@@ -133,7 +133,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content */}
-      <main className={`flex-1 pt-16 md:pt-0 min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:mr-64' : 'md:mr-0'}`}>
+      <main className={`flex-1 md:min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:mr-64' : 'md:mr-0'}`}>
         <div className="max-w-6xl mx-auto p-4 md:p-8">
           {pathname !== '/app' && pathname !== '/app/assets' && (
             <button onClick={() => router.push('/app')}

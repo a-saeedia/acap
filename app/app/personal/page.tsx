@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, X, Crown, Mic, ArrowLeft, Calendar } from 'lucide-react'
+import { Play, Pause, X, Crown, Mic, Calendar } from 'lucide-react'
 
 function formatTime(d: Date) {
   return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
@@ -42,41 +42,36 @@ function SignalBubble({ item, onClick, isSuggestion }: { item: any; onClick: () 
   }
 
   return (
-    <button onClick={onClick} className={`w-full text-right bg-[#1c1f2e] hover:bg-[#222636] border border-[#2a2d3a] border-r-4 ${leftColor} rounded-xl p-3 transition-all group active:scale-[0.99]`}>
-      <div className="flex items-start gap-2.5">
-        <div className="w-9 h-9 rounded-full bg-white/5 shrink-0 flex items-center justify-center border border-white/5 overflow-hidden">
+    <button onClick={onClick} className={`w-full text-right bg-[#1c1f2e] hover:bg-[#222636] border border-[#2a2d3a] border-r-4 ${leftColor} rounded-xl transition-all group active:scale-[0.99] p-2.5 md:p-3`}>
+      <div className="flex items-start gap-2 md:gap-2.5">
+        <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-white/5 shrink-0 flex items-center justify-center border border-white/5 overflow-hidden">
           {item.imageUrl ? (
             <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
           ) : (
-            <Crown className={`w-4 h-4 ${col.icon}`} />
+            <Crown className={`w-3.5 h-3.5 md:w-4 md:h-4 ${col.icon}`} />
           )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[13px] font-bold text-white truncate">{item.title}</span>
+            <span className="text-xs md:text-[13px] font-bold text-white truncate">{item.title}</span>
             {!isSuggestion && (
-              <span className={`text-[8px] px-1.5 py-0.5 rounded-full shrink-0 ${
+              <span className={`text-[7px] md:text-[8px] px-1.5 py-0.5 rounded-full shrink-0 ${
                 item.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
               }`}>{item.action === 'buy' ? 'BUY' : 'SELL'}</span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            {!isSuggestion && <span className="text-[9px] text-gray-500">{item.symbol}</span>}
-            <span className="text-[9px] text-gray-600">{col.label}</span>
-            <span className="text-[8px] text-gray-600">{formatTime(date)}</span>
-          </div>
-          {(item.content || item.description) && (
-            <p className="text-[11px] text-gray-400 mt-1.5 line-clamp-2 leading-5">
-              {(item.content || item.description || '').substring(0, 100)}
-            </p>
-          )}
           {profit !== null && profit !== undefined && profit > 0 && (
-            <div className="flex items-center gap-1 mt-1.5">
-              <span className="text-[9px] text-emerald-400 font-bold">+{Number(profit).toFixed(1)}%</span>
-              <span className="text-[7px] text-gray-600">{profitLabel}</span>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[8px] md:text-[9px] text-emerald-400 font-bold">+{Number(profit).toFixed(1)}%</span>
+              <span className="text-[6px] md:text-[7px] text-gray-600">{profitLabel}</span>
             </div>
           )}
         </div>
+      </div>
+      <div className="flex items-center gap-2 md:gap-2 mt-1 pr-9 md:pr-0">
+        {!isSuggestion && <span className="text-[8px] md:text-[9px] text-gray-500">{item.symbol}</span>}
+        <span className="text-[8px] md:text-[9px] text-gray-600">{col.label}</span>
+        <span className="text-[7px] md:text-[8px] text-gray-600 mr-auto">{formatTime(date)}</span>
       </div>
     </button>
   )
@@ -109,62 +104,63 @@ export default function PersonalPage() {
   const groupEntries = Object.entries(grouped)
 
   return (
-    <div className="min-h-screen bg-[#0b0e17] flex flex-col" dir="rtl">
-      <header className="shrink-0 bg-[#1c1f2e]/95 backdrop-blur-xl border-b border-[#2a2d3a] px-4 py-3 flex items-center justify-between z-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2AABEE] to-[#1a7fc4] flex items-center justify-center shadow-lg shadow-[#2AABEE]/20">
-            <Crown className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-white leading-tight">سیگنال‌ها</h1>
-            <p className="text-[9px] text-gray-500">{sigTab === 'suggestions' ? suggestions.length : signals.length} پیام</p>
-          </div>
+    <>
+      {/* Tab bar */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h1 className="text-sm md:text-base font-black text-white leading-tight">سیگنال‌ها</h1>
+          <span className="text-[8px] md:text-[9px] text-gray-500">{sigTab === 'suggestions' ? suggestions.length : signals.length} پیام</span>
         </div>
-        <div className="flex gap-1">
-          <button onClick={() => setSigTab('suggestions')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${sigTab === 'suggestions' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>اختصاصی</button>
-          <button onClick={() => setSigTab('signals')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${sigTab === 'signals' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>عمومی</button>
+        <div className="flex gap-0.5">
+          <button onClick={() => setSigTab('suggestions')} className={`px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all ${sigTab === 'suggestions' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>اختصاصی</button>
+          <button onClick={() => setSigTab('signals')} className={`px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all ${sigTab === 'signals' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>عمومی</button>
         </div>
-      </header>
+      </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+      {/* Content */}
+      <div className="space-y-1.5 md:space-y-2.5">
         {loading ? (
-          <div className="flex items-center justify-center h-full py-20">
+          <div className="flex items-center justify-center py-16">
             <div className="w-5 h-5 border-2 border-[#2AABEE] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : sigTab === 'signals' ? (
           signals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 py-20">
-              <Crown className="w-10 h-10 mb-3 opacity-20" />
-              <p className="text-sm">هنوز سیگنال عمومی ثبت نشده</p>
+            <div className="flex flex-col items-center justify-center text-gray-500 py-16">
+              <Crown className="w-8 h-8 mb-2 opacity-20" />
+              <p className="text-xs md:text-sm">هنوز سیگنال عمومی ثبت نشده</p>
             </div>
           ) : (
-            signals.map((s: any) => (
-              <SignalBubble key={s.id} item={s} onClick={() => setSelected({ ...s, content: s.description, profitPercent: s.actualReturn })} />
-            ))
-          )
-        ) : sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 py-20">
-            <Crown className="w-10 h-10 mb-3 opacity-20" />
-            <p className="text-sm">هنوز سیگنالی ثبت نشده</p>
-          </div>
-        ) : (
-          groupEntries.map(([month, items]: [string, any[]]) => (
-            <div key={month}>
-              <div className="flex items-center gap-2 mb-2.5 mt-1">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1c1f2e] border border-[#2a2d3a]">
-                  <Calendar className="w-3 h-3 text-[#2AABEE]" />
-                  <span className="text-[10px] font-bold text-white">{month}</span>
-                </div>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
-              </div>
-              {items.map((item: any) => (
-                <div key={item.id} className="mb-1.5">
-                  <SignalBubble item={item} onClick={() => setSelected(item)} isSuggestion />
-                </div>
+            <div className="space-y-1 md:space-y-2">
+              {signals.map((s: any) => (
+                <SignalBubble key={s.id} item={s} onClick={() => setSelected({ ...s, content: s.description, profitPercent: s.actualReturn })} />
               ))}
             </div>
-          ))
+          )
+        ) : sorted.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-gray-500 py-16">
+            <Crown className="w-8 h-8 mb-2 opacity-20" />
+            <p className="text-xs md:text-sm">هنوز سیگنالی ثبت نشده</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {groupEntries.map(([month, items]: [string, any[]]) => (
+              <div key={month}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1c1f2e] border border-[#2a2d3a]">
+                    <Calendar className="w-2.5 h-2.5 text-[#2AABEE]" />
+                    <span className="text-[8px] md:text-[10px] font-bold text-white">{month}</span>
+                  </div>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
+                </div>
+                <div className="space-y-1">
+                  {items.map((item: any) => (
+                    <SignalBubble key={item.id} item={item} onClick={() => setSelected(item)} isSuggestion />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -261,7 +257,7 @@ export default function PersonalPage() {
                 <button onClick={() => { setSelected(null); setPlayingAudio(null) }}
                   className="w-full py-2.5 rounded-xl bg-white/[0.04] border border-[#2a2d3a] text-gray-400 hover:text-white hover:border-[#2AABEE]/30 transition-all text-[12px] font-medium"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 inline-block ml-1.5" /> بستن
+                  بستن
                 </button>
               </div>
             </motion.div>
@@ -270,6 +266,6 @@ export default function PersonalPage() {
       </AnimatePresence>
 
       {playingAudio && <audio src={playingAudio} onEnded={() => setPlayingAudio(null)} className="hidden" />}
-    </div>
+    </>
   )
 }
