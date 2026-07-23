@@ -64,7 +64,7 @@ export async function POST() {
       const currentPrice = BASE_PRICES[tpl.symbol] || 100000
       const entryPrice = currentPrice * (1 - randomBetween(0.02, 0.12))
       const actualReturn = Math.round(((currentPrice - entryPrice) / entryPrice) * 10000) / 100
-      const target1 = currentPrice * (1 + randomBetween(0.03, 0.08))
+      const target1 = entryPrice * (1 + randomBetween(0.03, 0.08))
       const target2 = target1 * (1 + randomBetween(0.03, 0.07))
       const target3 = target2 * (1 + randomBetween(0.02, 0.05))
       const stoploss = entryPrice * (1 - randomBetween(0.03, 0.08))
@@ -83,23 +83,27 @@ export async function POST() {
         horizon: randomItem(HORIZONS),
       })
 
-      await db.insert(signal).values({
-        id: randomUUID(),
-        type: tpl.type,
-        symbol: tpl.symbol,
-        title: `🟢 ${tpl.baseTitle}`,
-        description,
-        action: tpl.action,
-        investorType: randomItem(['conservative', 'balanced', 'growth']),
-        expectedProfit: Math.round(actualReturn * 1.3 * 10) / 10,
-        actualReturn,
-        priceAtPublish: Math.round(entryPrice),
-        priceNow: Math.round(currentPrice),
-        imageUrl: null,
-        audioUrl: null,
-        expiresAt: new Date(publishedAt.getTime() + 90 * 86400000),
-        publishedAt,
-      })
+      try {
+        await db.insert(signal).values({
+          id: randomUUID(),
+          type: tpl.type,
+          symbol: tpl.symbol,
+          title: `🟢 ${tpl.baseTitle}`,
+          description,
+          action: tpl.action,
+          investorType: randomItem(['conservative', 'balanced', 'growth']),
+          expectedProfit: Math.round(actualReturn * 1.3 * 10) / 10,
+          actualReturn,
+          priceAtPublish: Math.round(entryPrice),
+          priceNow: Math.round(currentPrice),
+          imageUrl: null,
+          audioUrl: null,
+          expiresAt: new Date(publishedAt.getTime() + 90 * 86400000),
+          publishedAt,
+        })
+      } catch (insertErr: any) {
+        return NextResponse.json({ error: `Insert failed for ${tpl.symbol}: ${insertErr.message}` }, { status: 500 })
+      }
       created.push(tpl.symbol)
     }
 
@@ -134,6 +138,6 @@ export async function POST() {
 
     return NextResponse.json({ signals: created.length, revenueMonths: revMonths })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Unknown error' }, { status: 500 })
+    return NextResponse.json({ error: e.message || 'Unknown error', stack: e.stack?.substring(0, 500) }, { status: 500 })
   }
 }
