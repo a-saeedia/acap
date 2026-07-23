@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, populateSignals, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, populateSignals, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion, getSignals, getAcapRevenue, createSignal, updateSignal, deleteSignal, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, recalculateSignalReturn, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
@@ -681,9 +681,9 @@ function AdminContent() {
 
   const loadData = useCallback(async () => {
     const [arts, crs, enrolls, articleCats] = await Promise.all([
-      import('@/app/actions/admin').then(m => m.getAdminArticles()),
-      import('@/app/actions/admin').then(m => m.getAdminCourses()),
-      import('@/app/actions/admin').then(m => m.getAdminEnrollments()),
+      getAdminArticles(),
+      getAdminCourses(),
+      getAdminEnrollments(),
       import('@/app/actions/academy').then(m => m.getArticleCategories()).catch(() => []),
     ])
     setArticles(arts); setCourses(crs); setEnrollments(enrolls); setCats(articleCats)
@@ -871,7 +871,7 @@ function AdminPlusRequests() {
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState<string | null>(null)
-  const load = useCallback(async () => { setRequests(await (await import('@/app/actions/admin')).getPendingAcapPlusRequests()) }, [])
+  const load = useCallback(async () => { setRequests(await getPendingAcapPlusRequests()) }, [])
   useEffect(() => { load().finally(() => setLoading(false)) }, [load])
 
   if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
@@ -886,11 +886,11 @@ function AdminPlusRequests() {
             {r.subscription?.requestedAt && <p className="text-xs text-gray-500 mt-1">درخواست در {new Date(r.subscription.requestedAt).toLocaleDateString('fa-IR')}</p>}
           </div>
           <div className="flex gap-2 shrink-0">
-            <button onClick={async () => { setApproving(r.id); try { await (await import('@/app/actions/admin')).approveAcapPlusRequest(r.id, true, 3); await load() } catch(e) { console.error(e) }; setApproving(null) }} disabled={approving === r.id}
+            <button onClick={async () => { setApproving(r.id); try { await approveAcapPlusRequest(r.id, true, 3); await load() } catch(e) { console.error(e) }; setApproving(null) }} disabled={approving === r.id}
               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors disabled:opacity-50">{approving === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'تأیید + آزمایشی ۳ روزه'}</button>
-            <button onClick={async () => { setApproving(r.id); try { await (await import('@/app/actions/admin')).approveAcapPlusRequest(r.id, true); await load() } catch(e) { console.error(e) }; setApproving(null) }} disabled={approving === r.id}
+            <button onClick={async () => { setApproving(r.id); try { await approveAcapPlusRequest(r.id, true); await load() } catch(e) { console.error(e) }; setApproving(null) }} disabled={approving === r.id}
               className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors disabled:opacity-50">تأیید کامل</button>
-            <button onClick={async () => { if (!confirm('رد درخواست؟')) return; await (await import('@/app/actions/admin')).approveAcapPlusRequest(r.id, false); await load() }}
+            <button onClick={async () => { if (!confirm('رد درخواست؟')) return; await approveAcapPlusRequest(r.id, false); await load() }}
               className="px-3 py-1.5 bg-red-600/50 hover:bg-red-600 rounded-lg text-xs font-bold transition-colors">رد</button>
           </div>
         </div>
@@ -916,8 +916,7 @@ function AdminSignals() {
   const [revenueSaving, setRevenueSaving] = useState(false)
 
   const load = useCallback(async () => {
-    const m = await import('@/app/actions/admin')
-    const [sigs, revs] = await Promise.all([m.getSignals(), m.getAcapRevenue()])
+    const [sigs, revs] = await Promise.all([getSignals(), getAcapRevenue()])
     setSignals(sigs); setRevenues(revs)
   }, [])
 
@@ -939,26 +938,25 @@ function AdminSignals() {
     if (!sf.symbol || !sf.title || !sf.priceAtPublish) return
     setSignalSaving(true)
     try {
-      const m = await import('@/app/actions/admin')
       const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
-      if (signalFormMode === 'create') await m.createSignal(data); else if (editSignalId) await m.updateSignal(editSignalId, data)
+      if (signalFormMode === 'create') await createSignal(data); else if (editSignalId) await updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
     } catch (e) { console.error(e) }; setSignalSaving(false)
   }
 
-  async function deleteSignal(id: string) { if (!confirm('حذف سیگنال؟')) return; await (await import('@/app/actions/admin')).deleteSignal(id); await load() }
+  async function handleDeleteSignal(id: string) { if (!confirm('حذف سیگنال؟')) return; await deleteSignal(id); await load() }
 
   async function saveRevenue() {
     if (!rf.amount) return
     setRevenueSaving(true)
     try {
-      const m = await import('@/app/actions/admin'); const amount = parseFloat(rf.amount); const month = parseInt(rf.month); const year = parseInt(rf.year)
-      if (revenueFormMode === 'create') await m.addAcapRevenue(amount, month, year, rf.description || undefined); else if (editRevenueId) await m.updateAcapRevenue(editRevenueId, amount, rf.description || undefined, month, year)
+      const amount = parseFloat(rf.amount); const month = parseInt(rf.month); const year = parseInt(rf.year)
+      if (revenueFormMode === 'create') await addAcapRevenue(amount, month, year, rf.description || undefined); else if (editRevenueId) await updateAcapRevenue(editRevenueId, amount, rf.description || undefined, month, year)
       setShowRevenueForm(false); await load()
     } catch (e) { console.error(e) }; setRevenueSaving(false)
   }
 
-  async function deleteRevenue(id: string) { if (!confirm('حذف درآمد؟')) return; await (await import('@/app/actions/admin')).deleteAcapRevenue(id); await load() }
+  async function deleteRevenue(id: string) { if (!confirm('حذف درآمد؟')) return; await deleteAcapRevenue(id); await load() }
 
   const totalRevenue = revenues.reduce((sum: number, r: any) => sum + r.amount, 0)
   const persianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
@@ -1073,10 +1071,10 @@ function AdminSignals() {
                 <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
                   <td className="py-2.5 px-3"><div className="font-medium text-sm">{s.title}</div><div className="flex items-center gap-1.5 mt-0.5"><span className="text-[10px] text-gray-500">{s.symbol}</span><span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span><span className="text-[10px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span></div></td>
                   <td className="py-2.5 px-3"><span className="text-sm font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</span></td>
-                  <td className="py-2.5 px-3 hidden md:table-cell">{actualOk ? <span className={`text-sm font-bold ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{s.actualReturn}%</span> : <button onClick={async () => { const m = await import('@/app/actions/admin'); await m.recalculateSignalReturn(s.id); await load() }} className="text-xs text-gray-500 hover:text-blue-400 underline">محاسبه</button>}</td>
+                  <td className="py-2.5 px-3 hidden md:table-cell">{actualOk ? <span className={`text-sm font-bold ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{s.actualReturn}%</span> : <button onClick={async () => { await recalculateSignalReturn(s.id); await load() }} className="text-xs text-gray-500 hover:text-blue-400 underline">محاسبه</button>}</td>
                   <td className="py-2.5 px-3 text-xs text-gray-400 font-mono hidden md:table-cell">{Number(s.priceAtPublish).toLocaleString()}</td>
                   <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}{s.expiresAt ? ` → ${new Date(s.expiresAt).toLocaleDateString('fa-IR')}` : ''}</td>
-                  <td className="py-2.5 px-3"><div className="flex gap-1"><button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button><button onClick={() => deleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button></div></td>
+                  <td className="py-2.5 px-3"><div className="flex gap-1"><button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button><button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button></div></td>
                 </tr>)})}</tbody>
             </table>
           </div>
