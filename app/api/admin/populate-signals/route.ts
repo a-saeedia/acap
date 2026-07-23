@@ -50,8 +50,13 @@ function fillTemplate(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '—')
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    const url = new URL(req.url)
+    if (url.searchParams.get('debug')) {
+      const { rows } = await pool.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'signal' ORDER BY ordinal_position`)
+      return NextResponse.json({ columns: rows })
+    }
     await pool.query('DELETE FROM acap_revenue')
     await pool.query('DELETE FROM signal')
 
