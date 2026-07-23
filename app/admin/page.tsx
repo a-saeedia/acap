@@ -1052,10 +1052,12 @@ function AdminSignals() {
             <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
             <div className="flex gap-2">
               <button onClick={async () => {
-                if (!confirm('همه سیگنال‌ها و درآمدهای قبلی پاک شده و با داده‌های واقعی بازار جایگزین می‌شن. ادامه میدی؟')) return
+                if (!confirm('همه سیگنال‌ها و درآمدهای قبلی پاک می‌شن و سیگنال‌های جدید با قیمت بازار ساخته می‌شه. ادامه میدی؟')) return
                 try {
-                  const r = await populateSignals()
-                  alert(`${r.signals} سیگنال با قیمت‌های لحظه‌ای بازار ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
+                  const res = await fetch('/api/admin/populate-signals', { method: 'POST' })
+                  const r = await res.json()
+                  if (r.error) { alert('خطا: ' + r.error); return }
+                  alert(`${r.signals} سیگنال ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
                   await load()
                 } catch (e: any) {
                   alert('خطا: ' + (e?.message || 'نامشخص'))
