@@ -423,8 +423,10 @@ export default function AdminPage() {
                             <input value={sugProfit} onChange={e => { const v = e.target.value.replace(/[^0-9.]/g, ''); setSugProfit(v) }} placeholder="درصد سود (اختیاری)" type="text" inputMode="decimal" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                             <input value={sugProfitMsg} onChange={e => setSugProfitMsg(e.target.value)} placeholder="پیام سود" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                             <input value={sugExpiresAt} onChange={e => setSugExpiresAt(e.target.value)} placeholder="تاریخ انقضا" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
-                            <input value={sugImageUrl} onChange={e => setSugImageUrl(e.target.value)} placeholder="آدرس تصویر (اختیاری)" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
-                            <input value={sugAudioUrl} onChange={e => setSugAudioUrl(e.target.value)} placeholder="آدرس صدا (اختیاری)" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
+                            </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                            <UploadBtn label="تصویر (اختیاری)" accept="image/*" currentUrl={sugImageUrl} onUpload={setSugImageUrl} />
+                            <UploadBtn label="ویس / صدا (اختیاری)" accept="audio/*" currentUrl={sugAudioUrl} onUpload={setSugAudioUrl} />
                           </div>
                           <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
                             <input type="checkbox" checked={sugBroadcast} onChange={e => setSugBroadcast(e.target.checked)} className="rounded" />
@@ -899,6 +901,36 @@ function AdminPlusRequests() {
   )
 }
 
+function UploadBtn({ label, onUpload, accept, currentUrl }: { label: string; onUpload: (url: string) => void; accept?: string; currentUrl?: string }) {
+  const [uploading, setUploading] = useState(false)
+  return (
+    <div>
+      <label className="text-[10px] text-gray-500 mb-1 block">{label}</label>
+      <div className="flex gap-2 items-center">
+        <label className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 cursor-pointer hover:border-blue-500/50 transition-colors text-sm text-gray-400 hover:text-white">
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          <span className="text-xs">{uploading ? 'در حال آپلود...' : 'انتخاب فایل'}</span>
+          <input type="file" accept={accept || 'image/*'} className="hidden" onChange={async (e) => {
+            const file = e.target.files?.[0]; if (!file) return
+            setUploading(true)
+            try {
+              const fd = new FormData(); fd.append('file', file)
+              const res = await fetch('/api/upload', { method: 'POST', body: fd })
+              const r = await res.json()
+              if (r.url) onUpload(r.url)
+            } catch {} finally { setUploading(false) }
+          }} />
+        </label>
+        {currentUrl && <button onClick={() => onUpload('')} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>}
+      </div>
+      {currentUrl && currentUrl.startsWith('data:') && (
+        currentUrl.startsWith('data:image') ? <img src={currentUrl} alt="" className="w-full h-20 object-cover rounded-lg mt-1 border border-gray-700" /> :
+        <audio src={currentUrl} controls className="w-full h-8 mt-1" />
+      )}
+    </div>
+  )
+}
+
 function AdminSignals() {
   const [signals, setSignals] = useState<any[]>([])
   const [revenues, setRevenues] = useState<any[]>([])
@@ -988,17 +1020,9 @@ function AdminSignals() {
             <PersianDateTimePicker label="تاریخ انتشار" value={sf.publishedAt} onChange={v => setSf(p => ({ ...p, publishedAt: v }))} placeholder="به صورت خودکار پر شده" />
             <PersianDateTimePicker label="تاریخ انقضا (اختیاری)" value={sf.expiresAt} onChange={v => setSf(p => ({ ...p, expiresAt: v }))} placeholder="در صورت نیاز انتخاب کنید" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-gray-500 mb-1 block">تصویر سیگنال (آدرس)</label>
-              <input value={sf.imageUrl} onChange={e => setSf(p => ({ ...p, imageUrl: e.target.value }))} placeholder="https://example.com/image.jpg" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors ltr" dir="ltr" />
-              {sf.imageUrl && <img src={sf.imageUrl} alt="" className="w-full h-20 object-cover rounded-lg mt-1 border border-gray-700" onError={e => (e.target as HTMLImageElement).style.display = 'none'} />}
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 mb-1 block">ویس / صدا (آدرس)</label>
-              <input value={sf.audioUrl} onChange={e => setSf(p => ({ ...p, audioUrl: e.target.value }))} placeholder="https://example.com/voice.mp3" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors ltr" dir="ltr" />
-              {sf.audioUrl && <audio src={sf.audioUrl} controls className="w-full h-8 mt-1" />}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UploadBtn label="تصویر سیگنال" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
+            <UploadBtn label="ویس / صدا" accept="audio/*" currentUrl={sf.audioUrl} onUpload={v => setSf(p => ({ ...p, audioUrl: v }))} />
           </div>
           <button onClick={saveSignal} disabled={signalSaving}
             className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
@@ -1014,7 +1038,7 @@ function AdminSignals() {
       <div className="bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-700/50 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-2 border-b border-gray-800"><h3 className="text-base font-bold">{revenueFormMode === 'create' ? 'افزودن' : 'ویرایش'} درآمد A|CAP</h3><button onClick={() => setShowRevenueForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
         <div className="space-y-3">
-          <div><label className="text-[10px] text-gray-500 mb-1 block">مبلغ (تومان)</label><input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مثلاً 15000000" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">درصد بازده</label><input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مثلاً ۱۲.۵" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           <div className="grid grid-cols-2 gap-2">
             <div><label className="text-[10px] text-gray-500 mb-1 block">ماه</label><select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors">{persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}</select></div>
             <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
@@ -1066,21 +1090,56 @@ function AdminSignals() {
               <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="text-gray-400 border-b border-gray-700 bg-gray-800/50">{['عنوان', 'سود هدف', 'بازده واقعی', 'قیمت انتشار', 'تاریخ', 'عملیات'].map(h => <th key={h} className={`text-right py-3 px-3 ${['بازده واقعی', 'قیمت انتشار'].includes(h) ? 'hidden md:table-cell' : ''}`}>{h}</th>)}</tr></thead>
-              <tbody>{signals.map(s => { const actualOk = s.actualReturn !== null && s.actualReturn !== undefined; return (
-                <tr key={s.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                  <td className="py-2.5 px-3"><div className="font-medium text-sm">{s.title}</div><div className="flex items-center gap-1.5 mt-0.5"><span className="text-[10px] text-gray-500">{s.symbol}</span><span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span><span className="text-[10px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span></div></td>
-                  <td className="py-2.5 px-3"><span className="text-sm font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</span></td>
-                  <td className="py-2.5 px-3 hidden md:table-cell">{actualOk ? <span className={`text-sm font-bold ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{s.actualReturn}%</span> : <button onClick={async () => { await recalculateSignalReturn(s.id); await load() }} className="text-xs text-gray-500 hover:text-blue-400 underline">محاسبه</button>}</td>
-                  <td className="py-2.5 px-3 text-xs text-gray-400 font-mono hidden md:table-cell">{Number(s.priceAtPublish).toLocaleString()}</td>
-                  <td className="py-2.5 px-3 text-xs text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}{s.expiresAt ? ` → ${new Date(s.expiresAt).toLocaleDateString('fa-IR')}` : ''}</td>
-                  <td className="py-2.5 px-3"><div className="flex gap-1"><button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button><button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button></div></td>
-                </tr>)})}</tbody>
-            </table>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {signals.length === 0 ? (
+              <p className="text-center py-8 text-gray-500 col-span-full">سیگنالی یافت نشد</p>
+            ) : signals.map(s => {
+              const actualOk = s.actualReturn !== null && s.actualReturn !== undefined
+              const isWin = actualOk && s.actualReturn >= 0
+              const catColor = s.type === 'crypto' ? 'from-orange-500/30 to-orange-900/30 border-orange-500/30'
+                : s.type === 'stock' ? 'from-cyan-500/30 to-cyan-900/30 border-cyan-500/30'
+                : s.type === 'gold' ? 'from-yellow-500/30 to-yellow-900/30 border-yellow-500/30'
+                : s.type === 'dollar' ? 'from-emerald-500/30 to-emerald-900/30 border-emerald-500/30'
+                : 'from-blue-500/30 to-blue-900/30 border-blue-500/30'
+              return (
+                <div key={s.id} className={`bg-gradient-to-br ${catColor} rounded-xl p-4 border shadow-lg shadow-black/10 hover:shadow-lg hover:shadow-black/20 transition-all group`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
+                        <span className={`text-[8px] px-1.5 py-0.5 rounded-full shrink-0 ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-gray-400 font-semibold">{s.symbol}</span>
+                        <span className="text-[9px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                      <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-black/20 rounded-lg p-2 text-center">
+                      <div className="text-[8px] text-gray-500">سود هدف</div>
+                      <div className="text-xs font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</div>
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2 text-center">
+                      <div className="text-[8px] text-gray-500">بازده واقعی</div>
+                      <div className={`text-xs font-bold ${actualOk ? (isWin ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>
+                        {actualOk ? `${isWin ? '+' : ''}${s.actualReturn}%` : <button onClick={async () => { await recalculateSignalReturn(s.id); await load() }} className="underline text-[9px]">محاسبه</button>}
+                      </div>
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2 text-center">
+                      <div className="text-[8px] text-gray-500">تاریخ</div>
+                      <div className="text-[10px] text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}</div>
+                    </div>
+                  </div>
+                  {s.description && <p className="text-[10px] text-gray-400 mt-2 line-clamp-2">{s.description}</p>}
+                </div>
+              )
+            })}
           </div>
-          {signals.length === 0 && <p className="text-center py-8 text-gray-500">سیگنالی یافت نشد</p>}
         </div>
       )}
       {signalTab === 'revenue' && (

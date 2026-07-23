@@ -31,14 +31,19 @@ const allMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر',
 
 export default function PersonalPage() {
   const [suggestions, setSuggestions] = useState<any[]>([])
+  const [signals, setSignals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<any | null>(null)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
+  const [sigTab, setSigTab] = useState<'suggestions' | 'signals'>('suggestions')
 
   useEffect(() => {
-    import('@/app/actions/admin').then(m =>
-      m.getUserSuggestions().then(setSuggestions).catch(() => {})
-    ).finally(() => setLoading(false))
+    Promise.all([
+      import('@/app/actions/admin').then(m =>
+        m.getUserSuggestions().then(setSuggestions).catch(() => {})
+      ),
+      fetch('/api/signals').then(r => r.json()).then(d => setSignals(d.signals || [])).catch(() => {}),
+    ]).finally(() => setLoading(false))
   }, [])
 
   const sorted = [...suggestions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -62,12 +67,12 @@ export default function PersonalPage() {
           </div>
           <div>
             <h1 className="text-sm font-black text-white leading-tight">سیگنال‌های شخصی</h1>
-            <p className="text-[9px] text-gray-500">{suggestions.length} سیگنال</p>
+            <p className="text-[9px] text-gray-500">{sigTab === 'suggestions' ? suggestions.length : signals.length} سیگنال</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-3.5 h-3.5 text-[#2AABEE]" />
-          <span className="text-[9px] text-gray-500">{new Intl.DateTimeFormat('fa-IR', { month: 'long', year: 'numeric' }).format(new Date())}</span>
+        <div className="flex gap-1">
+          <button onClick={() => setSigTab('suggestions')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${sigTab === 'suggestions' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>اختصاصی</button>
+          <button onClick={() => setSigTab('signals')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${sigTab === 'signals' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>عمومی</button>
         </div>
       </header>
 
@@ -76,6 +81,46 @@ export default function PersonalPage() {
           <div className="flex items-center justify-center h-full py-20">
             <div className="w-5 h-5 border-2 border-[#2AABEE] border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : sigTab === 'signals' ? (
+          signals.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 py-20">
+              <Crown className="w-10 h-10 mb-3 opacity-20" />
+              <p className="text-sm">هنوز سیگنال عمومی ثبت نشده</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+              {signals.map((s: any) => {
+                const ct = String(s.type || '')
+                const [bg1, bg2, border, iconColor] = (
+                  ct === 'crypto' ? ['from-orange-500/50', 'to-orange-900/50', 'border-orange-500/40', 'text-orange-400'] :
+                  ct === 'gold' ? ['from-yellow-500/50', 'to-yellow-900/50', 'border-yellow-500/40', 'text-yellow-400'] :
+                  ct === 'dollar' ? ['from-emerald-500/50', 'to-emerald-900/50', 'border-emerald-500/40', 'text-emerald-400'] :
+                  ct === 'stock' ? ['from-cyan-500/50', 'to-cyan-900/50', 'border-cyan-500/40', 'text-cyan-400'] :
+                  ['from-pink-500/50', 'to-pink-900/50', 'border-pink-500/40', 'text-pink-400']
+                )
+                return (
+                  <button key={s.id} onClick={() => setSelected(s)}
+                    className={`rounded-2xl border ${border} p-3 flex flex-col items-center justify-center text-center hover:scale-[1.03] hover:shadow-xl transition-all group aspect-square relative overflow-hidden`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${bg1} ${bg2} opacity-90`} />
+                    <div className="absolute inset-0 bg-[#0b0e17]/40" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    <div className="relative z-10 flex flex-col items-center w-full h-full">
+                      <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-2 group-hover:bg-white/20 group-hover:scale-110 transition-all">
+                        <Crown className={`w-4 h-4 ${iconColor}`} />
+                      </div>
+                      <span className="text-[11px] font-bold text-white leading-tight line-clamp-2 mb-1 max-w-full px-0.5 break-words">{s.title}</span>
+                      <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
+                      {s.actualReturn !== null && s.actualReturn !== undefined && (
+                        <span className={`text-[10px] font-black mt-1 ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{Number(s.actualReturn).toFixed(1)}%</span>
+                      )}
+                      <span className="text-[7px] text-white/40 mt-auto">{s.publishedAt ? formatTime(new Date(s.publishedAt)) : ''}</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 py-20">
             <Crown className="w-10 h-10 mb-3 opacity-20" />
@@ -85,7 +130,6 @@ export default function PersonalPage() {
           <div className="space-y-5">
             {groupEntries.map(([month, items]: [string, any[]]) => (
               <div key={month}>
-                {/* Month separator */}
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1c1f2e] border border-[#2a2d3a]">
@@ -94,8 +138,6 @@ export default function PersonalPage() {
                   </div>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
                 </div>
-
-                {/* Square grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
                   {items.map((item: any) => {
                     const [bg1, bg2, border, iconColor] = getGradient(item.title + ' ' + (item.content || ''))
@@ -103,14 +145,10 @@ export default function PersonalPage() {
                       <button key={item.id} onClick={() => setSelected(item)}
                         className={`rounded-2xl border ${border} p-3 flex flex-col items-center justify-center text-center hover:scale-[1.03] hover:shadow-xl transition-all group aspect-square relative overflow-hidden`}
                       >
-                        {/* Gradient background */}
                         <div className={`absolute inset-0 bg-gradient-to-br ${bg1} ${bg2} opacity-90`} />
                         <div className="absolute inset-0 bg-[#0b0e17]/40" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-                        {/* Content */}
                         <div className="relative z-10 flex flex-col items-center w-full h-full">
-                          {/* Top row: read status */}
                           <div className="self-end mb-auto">
                             {item.isRead ? (
                               <span className="text-blue-400/60 text-[7px]">✓✓</span>
@@ -118,8 +156,6 @@ export default function PersonalPage() {
                               <span className={`${iconColor} text-[9px]`}>●</span>
                             )}
                           </div>
-
-                          {/* Icon */}
                           <div className={`w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-2 group-hover:bg-white/20 group-hover:scale-110 transition-all`}>
                             {item.imageUrl ? (
                               <img src={item.imageUrl} alt="" className="w-full h-full rounded-full object-cover" />
@@ -127,16 +163,10 @@ export default function PersonalPage() {
                               <Crown className={`w-4 h-4 ${iconColor}`} />
                             )}
                           </div>
-
-                          {/* Title */}
                           <span className="text-[11px] font-bold text-white leading-tight line-clamp-2 mb-1 max-w-full px-0.5 break-words">{item.title}</span>
-
-                          {/* Profit */}
                           {item.profitPercent && (
                             <span className="text-[10px] font-black text-emerald-400 drop-shadow-sm">+{Number(item.profitPercent).toFixed(1)}%</span>
                           )}
-
-                          {/* Date */}
                           <span className="text-[7px] text-white/40 mt-auto">{formatTime(new Date(item.createdAt))}</span>
                         </div>
                       </button>
