@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { signal, acapRevenue } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { pool } from '@/lib/db'
 import { randomUUID } from 'node:crypto'
 import { toJalaali } from 'jalaali-js'
 
@@ -54,8 +52,8 @@ function fillTemplate(tpl: string, vars: Record<string, string>): string {
 
 export async function POST() {
   try {
-    await db.delete(acapRevenue)
-    await db.delete(signal)
+    await pool.query('DELETE FROM acap_revenue')
+    await pool.query('DELETE FROM signal')
 
     const now = new Date()
     const created: string[] = []
@@ -84,31 +82,32 @@ export async function POST() {
       })
 
       try {
-        await db.insert(signal).values({
-          id: randomUUID(),
-          type: tpl.type,
-          symbol: tpl.symbol,
-          title: `🟢 ${tpl.baseTitle}`,
+        await pool.query(`INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "expectedProfit", "actualReturn", "priceAtPublish", "priceNow", "imageUrl", "audioUrl", "expiresAt", "publishedAt") 
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`, [
+          randomUUID(),
+          tpl.type,
+          tpl.symbol,
+          `🟢 ${tpl.baseTitle}`,
           description,
-          action: tpl.action,
-          investorType: randomItem(['conservative', 'balanced', 'growth']),
-          expectedProfit: Math.round(actualReturn * 1.3 * 10) / 10,
+          tpl.action,
+          randomItem(['conservative', 'balanced', 'growth']),
+          Math.round(actualReturn * 1.3 * 10) / 10,
           actualReturn,
-          priceAtPublish: Math.round(entryPrice),
-          priceNow: Math.round(currentPrice),
-          imageUrl: null,
-          audioUrl: null,
-          expiresAt: new Date(publishedAt.getTime() + 90 * 86400000),
+          Math.round(entryPrice),
+          Math.round(currentPrice),
+          null,
+          null,
+          new Date(publishedAt.getTime() + 90 * 86400000),
           publishedAt,
-        })
+        ])
       } catch (insertErr: any) {
-        return NextResponse.json({ error: `Insert failed for ${tpl.symbol}: ${insertErr.message}` }, { status: 500 })
+        return NextResponse.json({ error: `Insert failed for ${tpl.symbol}: ${insertErr.message}`, code: insertErr.code, detail: insertErr.detail, hint: insertErr.hint, position: insertErr.position }, { status: 500 })
       }
       created.push(tpl.symbol)
     }
 
     // Populate revenue
-    const signalData = await db.select().from(signal)
+    const { rows: signalData } = await pool.query(`SELECT * FROM signal ORDER BY "publishedAt" DESC`)
     const monthlyRevenue: Record<string, { amount: number; count: number }> = {}
     for (const s of signalData) {
       if (!s.actualReturn || s.actualReturn <= 0) continue
@@ -122,16 +121,14 @@ export async function POST() {
     let revMonths = 0
     for (const [key, data] of Object.entries(monthlyRevenue)) {
       const [year, month] = key.split('-').map(Number)
-      const existing = await db.select().from(acapRevenue)
-        .where(and(eq(acapRevenue.year, year), eq(acapRevenue.month, month))).limit(1)
+      const { rows: existing } = await pool.query(`SELECT id FROM acap_revenue WHERE year = $1 AND month = $2 LIMIT 1`, [year, month])
       const avgReturn = Math.round((data.amount / data.count) * 10) / 10
       if (existing.length > 0) {
-        await db.update(acapRevenue).set({ amount: avgReturn }).where(eq(acapRevenue.id, existing[0].id))
+        await pool.query(`UPDATE acap_revenue SET amount = $1 WHERE id = $2`, [avgReturn, existing[0].id])
       } else {
-        await db.insert(acapRevenue).values({
-          id: randomUUID(), amount: avgReturn, month, year,
-          description: `میانگین بازده ${data.count} سیگنال موفق`,
-        })
+        await pool.query(`INSERT INTO acap_revenue (id, amount, month, year, description) VALUES ($1, $2, $3, $4, $5)`, [
+          randomUUID(), avgReturn, month, year, `میانگین بازده ${data.count} سیگنال موفق`,
+        ])
       }
       revMonths++
     }
