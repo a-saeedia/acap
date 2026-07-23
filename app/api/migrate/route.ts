@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
     await pool.query(`ALTER TABLE signal ALTER COLUMN "priceNow" TYPE double precision`)
     await pool.query(`ALTER TABLE signal ALTER COLUMN "expectedProfit" TYPE double precision`)
     await pool.query(`ALTER TABLE signal ALTER COLUMN "actualReturn" TYPE double precision`)
+    // Migration 0008: add visibility and targetUserIds
+    await pool.query(`ALTER TABLE signal ADD COLUMN IF NOT EXISTS "visibility" text NOT NULL DEFAULT 'public'`)
+    await pool.query(`ALTER TABLE signal ADD COLUMN IF NOT EXISTS "targetUserIds" jsonb`)
 
     return NextResponse.json({ success: true, message: 'All migrations applied' })
   } catch (e: any) {

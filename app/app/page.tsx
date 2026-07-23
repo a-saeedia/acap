@@ -10,7 +10,8 @@ import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { PortfolioAdvisor } from '@/components/portfolio-advisor'
 import {
   Wallet, TrendingUp, Crown, Brain, Shield,
-  X, BarChart3, Loader2, HelpCircle, User
+  X, BarChart3, Loader2, HelpCircle, User, Gift, ArrowLeft,
+  Bot, MessageSquare, Play, Pause, Mic, LogOut, Home
 } from 'lucide-react'
 import { formatToman, toPersianDigits } from '@/lib/utils'
 import { getAssetPriceIr } from '@/lib/price-utils'

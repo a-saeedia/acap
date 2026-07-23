@@ -328,6 +328,7 @@ export async function createSignal(data: {
   action: string; investorType?: string; expectedProfit?: number
   actualReturn?: number; priceAtPublish: number; priceNow?: number
   imageUrl?: string; audioUrl?: string
+  visibility?: string; targetUserIds?: string[]
   expiresAt?: string; publishedAt?: string
 }) {
   await requireAdmin()
@@ -345,6 +346,8 @@ export async function createSignal(data: {
     priceNow: data.priceNow || null,
     imageUrl: data.imageUrl || null,
     audioUrl: data.audioUrl || null,
+    visibility: data.visibility || 'public',
+    targetUserIds: data.targetUserIds || null,
     expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
     publishedAt: data.publishedAt ? new Date(data.publishedAt) : new Date(),
   })
@@ -355,6 +358,7 @@ export async function updateSignal(id: string, data: {
   action?: string; investorType?: string; expectedProfit?: number
   actualReturn?: number; priceAtPublish?: number; priceNow?: number
   imageUrl?: string | null; audioUrl?: string | null
+  visibility?: string; targetUserIds?: string[] | null
   expiresAt?: string | null; publishedAt?: string | null
 }) {
   await requireAdmin()
@@ -371,6 +375,8 @@ export async function updateSignal(id: string, data: {
   if (data.priceNow !== undefined) updateData.priceNow = data.priceNow
   if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl
   if (data.audioUrl !== undefined) updateData.audioUrl = data.audioUrl
+  if (data.visibility !== undefined) updateData.visibility = data.visibility
+  if (data.targetUserIds !== undefined) updateData.targetUserIds = data.targetUserIds
   if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
   if (data.publishedAt !== undefined) updateData.publishedAt = data.publishedAt ? new Date(data.publishedAt) : null
   await db.update(signal).set(updateData).where(eq(signal.id, id))

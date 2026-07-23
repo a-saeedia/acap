@@ -204,7 +204,7 @@ const AssetCard = memo(function AssetCard({ asset, value, cost, pnl, diff, cfg, 
         {value > 0 ? formatCurrency(value) : '—'}
       </div>
       <button onClick={(e) => { e.stopPropagation(); onDelete() }}
-        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+        className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
       >
         <X className="w-3 h-3" />
       </button>
@@ -231,6 +231,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   const [uploadCsvFile, setUploadCsvFile] = useState<File | null>(null)
   const [uploadParsing, setUploadParsing] = useState(false)
   const [uploadResult, setUploadResult] = useState<{ symbol: string; label: string; type: string; quantity: number; price: number }[] | null>(null)
+  const [uploadReplace, setUploadReplace] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AssetForm>(INITIAL_FORM)
   const [stockSearch, setStockSearch] = useState('')
@@ -410,16 +411,41 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
     return { type: 'stock', label: name }
   }
 
-  function detectHeaderCols(headers: string[]): { symIdx: number; qtyIdx: number } {
-    const symPatterns = /^(نماد|symbol|stocksymbol|symbole)$/i
-    const qtyPatterns = /^(تعداد|مقدار|quantity|amount|qty|count|shares)$/i
-    let symIdx = 0, qtyIdx = 1
+  function detectHeaderCols(headers: string[], sampleRows?: string[][]): { symIdx: number; qtyIdx: number; priceIdx: number } {
+    const symPatterns = /^(نماد|symbol|stocksymbol|symbole|name)$/i
+    const qtyPatterns = /^(تعداد|مقدار|quantity|amount|qty|count|shares|حجم|میزان)$/i
+    const pricePatterns = /^(قیمت|price|cost|قیمت خرید|قیمت فعلی)$/i
+    const codePatterns = /^(کد|code|id|inscode|instrumentcode|instrument_code|شناسه)$/i
+    let symIdx = 0, qtyIdx = -1, priceIdx = -1
     for (let i = 0; i < headers.length; i++) {
       const h = headers[i].trim()
       if (symPatterns.test(h)) symIdx = i
       if (qtyPatterns.test(h)) qtyIdx = i
+      if (pricePatterns.test(h)) priceIdx = i
+      if (codePatterns.test(h) && qtyIdx === -1 && symIdx !== i) qtyIdx = -2
     }
-    return { symIdx, qtyIdx }
+    if (qtyIdx < 0 && sampleRows && sampleRows.length > 0) {
+      const colCount = Math.max(...sampleRows.map(r => r.length))
+      let bestCol = -1, bestScore = -1
+      for (let c = 0; c < colCount; c++) {
+        if (c === symIdx) continue
+        const vals = sampleRows.slice(0, 20).map(r => parseFloat(String(r[c] ?? '').replace(/[^0-9.]/g, ''))).filter(v => !isNaN(v) && v > 0)
+        if (vals.length < 3) continue
+        const avg = vals.reduce((s, v) => s + v, 0) / vals.length
+        const samePrefix = vals.every(v => Math.round(v / 1000) === Math.round(vals[0] / 1000))
+        const allCodeLike = vals.every(v => v >= 10000000 && v <= 99999999)
+        const magRange = Math.max(...vals) / Math.min(...vals)
+        let score = 0
+        if (allCodeLike && samePrefix) score -= 10
+        if (magRange > 5) score += 3
+        if (avg < 1000000) score += 1
+        if (vals.some(v => v < 1000) && vals.some(v => v > 10000)) score += 2
+        if (score > bestScore) { bestScore = score; bestCol = c }
+      }
+      qtyIdx = bestCol >= 0 ? bestCol : Math.min(symIdx + 2, colCount - 1)
+    }
+    if (qtyIdx < 0 || qtyIdx === -2) qtyIdx = Math.min(symIdx + 2, headers.length - 1)
+    return { symIdx, qtyIdx, priceIdx }
   }
 
   async function handleUploadParse() {
@@ -445,8 +471,27 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
         return
       }
 
-      const { symIdx, qtyIdx } = rows.length > 0 ? detectHeaderCols(rows[0]) : { symIdx: 0, qtyIdx: 1 }
-      const dataRows = rows.slice(1).filter(r => r[symIdx]?.trim())
+      const hasHeader = rows.length > 0 && rows[0].some(c => /[^\d.,\s-]/i.test(String(c)))
+      const { symIdx, qtyIdx } = hasHeader && rows.length > 0
+        ? detectHeaderCols(rows[0], rows.slice(1))
+        : { symIdx: 0, qtyIdx: -1 }
+      const dataRows = hasHeader ? rows.slice(1).filter(r => r[symIdx]?.trim()) : rows.filter(r => r[symIdx]?.trim())
+
+      if (qtyIdx < 0 && dataRows.length > 0) {
+        const fallback = detectHeaderCols([], dataRows)
+        if (fallback.qtyIdx >= 0) {
+          const { symIdx: si, qtyIdx: qi } = fallback
+          const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
+          for (const row of dataRows) {
+            const sym = row[si]?.trim()
+            const qty = parseFloat(String(row[qi] ?? '').replace(/[^0-9.]/g, ''))
+            if (!sym || !qty || qty <= 0) continue
+            const { type, label } = detectType(sym)
+            items.push({ symbol: sym, label, type, quantity: qty, price: 0 })
+          }
+          if (items.length > 0) { setUploadResult(items); setUploadParsing(false); return }
+        }
+      }
 
       const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
       for (const row of dataRows) {
@@ -464,6 +509,14 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
 
   async function handleUploadConfirm() {
     if (!uploadResult || uploadResult.length === 0) return
+    if (uploadReplace) {
+      const existing = await getMyAssets()
+      for (const a of existing) {
+        if (uploadResult.some(item => item.symbol.toUpperCase() === a.symbol.toUpperCase())) {
+          try { await deleteAsset(a.id) } catch {}
+        }
+      }
+    }
     let count = 0
     for (const item of uploadResult) {
       try {
@@ -477,7 +530,8 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
     setShowUpload(false)
     setUploadText('')
     setUploadResult(null)
-    showToast(`${count} از ${uploadResult.length} دارایی با موفقیت اضافه شد`)
+    setUploadReplace(false)
+    showToast(`${count} از ${uploadResult.length} دارایی با موفقیت ${uploadReplace ? 'جایگزین' : 'اضافه'} شد`)
     if (count > 0) setShowAdvisor(true)
   }
 
@@ -568,18 +622,18 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => fetchPrices(true)} disabled={priceLoading}
-              className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4 text-muted-foreground" />
+              <RefreshCw className="w-4 h-4" />
             </button>
             <button onClick={() => setShowCashModal(true)}
-              className="w-9 h-9 rounded-xl bg-cyan-600 flex items-center justify-center text-white hover:bg-cyan-500 transition-colors"
+              className="w-10 h-10 rounded-xl bg-cyan-600 flex items-center justify-center text-white hover:bg-cyan-500 transition-colors"
               title="افزودن وجه نقد"
             >
               <Wallet className="w-4 h-4" />
             </button>
             <button onClick={openAdd}
-              className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"
+              className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -701,7 +755,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
           {assets.length === 0 ? (
             <div className="bg-card border border-border rounded-2xl p-8 text-center">
               <p className="text-muted-foreground text-sm mb-3">سبد شما خالی است</p>
-              <button onClick={openAdd} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
+              <button onClick={openAdd} className="px-5 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
                 + افزودن دارایی
               </button>
             </div>
@@ -838,12 +892,12 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
             {/* Buttons */}
             <div className="flex gap-2 pt-1">
               <button onClick={handleSubmit} disabled={submitting}
-                className="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="flex-1 bg-primary text-white py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : editingId ? 'ویرایش' : 'افزودن'}
               </button>
               <button onClick={() => setShowModal(false)}
-                className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
+                className="px-5 py-3 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
               >انصراف</button>
             </div>
           </div>
@@ -873,12 +927,12 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                 } catch { showToast('خطا در ثبت وجه نقد', 'error') }
                 setCashSubmitting(false)
               }} disabled={cashSubmitting || !cashAmount}
-                className="flex-1 bg-cyan-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-cyan-500 transition-colors disabled:opacity-50"
+                className="flex-1 bg-cyan-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-cyan-500 transition-colors disabled:opacity-50"
               >
                 {cashSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ثبت وجه نقد'}
               </button>
               <button onClick={() => setShowCashModal(false)}
-                className="px-5 py-2.5 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
+                className="px-5 py-3 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
               >انصراف</button>
             </div>
           </motion.div>
@@ -887,7 +941,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
 
       {/* Upload CSV Modal */}
       {showUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) } }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null); setUploadReplace(false) } }}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-card border border-border rounded-2xl p-5 sm:p-6 w-full max-w-lg space-y-4"
             onClick={e => e.stopPropagation()}
@@ -905,7 +959,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                 <p className="text-[11px] text-muted-foreground">ستون‌ها: <span className="font-mono text-foreground">symbol, quantity</span></p>
                 </div>
               </div>
-              <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null); setUploadReplace(false) }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
 
             {/* Drop zone */}
@@ -955,6 +1009,13 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
               </motion.div>
             )}
 
+            {uploadResult && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                <input type="checkbox" checked={uploadReplace} onChange={e => setUploadReplace(e.target.checked)} className="rounded" />
+                جایگزینی مقادیر موجود (حذف و ثبت مجدد)
+              </label>
+            )}
+
             <div className="flex gap-2">
               {!uploadResult ? (
                 <button onClick={handleUploadParse} disabled={!uploadCsvFile || uploadParsing}
@@ -966,10 +1027,10 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                 <button onClick={handleUploadConfirm}
                   className="flex-1 bg-gradient-to-l from-emerald-600 to-green-500 text-white py-3 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all shadow-lg shadow-emerald-600/20"
                 >
-                  افزودن همه و اسکن
+                  {uploadReplace ? 'جایگزینی همه و اسکن' : 'افزودن همه و اسکن'}
                 </button>
               )}
-              <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null) }}
+              <button onClick={() => { setShowUpload(false); setUploadResult(null); setUploadCsvFile(null); setUploadReplace(false) }}
                 className="px-5 py-3 rounded-xl bg-accent text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
               >انصراف</button>
             </div>

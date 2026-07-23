@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, populateSignals, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion, getSignals, getAcapRevenue, createSignal, updateSignal, deleteSignal, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, recalculateSignalReturn, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion, getSignals, getAcapRevenue, createSignal, updateSignal, deleteSignal, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, recalculateSignalReturn, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
@@ -266,7 +266,7 @@ export default function AdminPage() {
             <span className="text-[10px] text-gray-500 bg-gray-800/60 px-2 py-0.5 rounded-full mr-2 border border-gray-700/30">مدیریت</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl text-xs font-bold transition-all border border-gray-700/30 hover:border-gray-600/50">
+            <button onClick={() => router.push('/app')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl text-xs font-bold transition-all border border-gray-700/30 hover:border-gray-600/50">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">بازگشت به داشبورد</span>
             </button>
@@ -435,8 +435,8 @@ export default function AdminPage() {
                           </label>
                           {sugError && <p className="text-red-400 text-xs">{sugError}</p>}
                           {sugSuccess && <p className="text-emerald-400 text-xs">{sugSuccess}</p>}
-                          <button onClick={() => handleSuggestion(selectedUser.id)} disabled={sugSending}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors">
+          <button onClick={() => handleSuggestion(selectedUser.id)} disabled={sugSending}
+            className="w-full sm:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors">
                             {sugSending ? 'در حال ارسال...' : 'ارسال پیشنهاد'}
                           </button>
                         </div>
@@ -910,9 +910,11 @@ function AdminSignals() {
   const [showSignalForm, setShowSignalForm] = useState(false)
   const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
   const [editSignalId, setEditSignalId] = useState<string | null>(null)
-  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: '' })
+  const [userList, setUserList] = useState<{id: string; name: string; email: string}[]>([])
+  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [] as string[], expiresAt: '', publishedAt: '' })
   const [signalSaving, setSignalSaving] = useState(false)
   const [signalError, setSignalError] = useState('')
+  const [signalErrorField, setSignalErrorField] = useState<string | null>(null)
   const [showRevenueForm, setShowRevenueForm] = useState(false)
   const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
   const [editRevenueId, setEditRevenueId] = useState<string | null>(null)
@@ -928,8 +930,9 @@ function AdminSignals() {
   useEffect(() => { load().catch(() => {}).finally(() => setLoading(false)) }, [load])
 
   function openSignalForm(s?: any) {
-    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
-    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: gregorianISOToPersianDatetime(new Date().toISOString()) }) }
+    getUsers().then(u => setUserList(u.map((x: any) => ({ id: x.id, name: x.name, email: x.email })))).catch(() => {})
+    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', visibility: s.visibility || 'public', targetUserIds: s.targetUserIds || [], expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
+    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [], expiresAt: '', publishedAt: gregorianISOToPersianDatetime(new Date().toISOString()) }) }
     setShowSignalForm(true)
   }
 
@@ -940,13 +943,13 @@ function AdminSignals() {
   }
 
   async function saveSignal() {
-    setSignalError('')
-    if (!sf.title) { setSignalError('عنوان سیگنال را وارد کنید'); return }
-    if (!sf.symbol) { setSignalError('نماد را وارد کنید'); return }
+    setSignalError(''); setSignalErrorField(null)
+    if (!sf.title) { setSignalError('عنوان سیگنال را وارد کنید'); setSignalErrorField('title'); return }
+    if (!sf.symbol) { setSignalError('نماد را وارد کنید'); setSignalErrorField('symbol'); return }
     setSignalSaving(true)
     try {
       const priceVal = sf.priceAtPublish ? parseFloat(sf.priceAtPublish) : 0
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
+      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, visibility: sf.visibility, targetUserIds: sf.visibility === 'private' ? sf.targetUserIds : undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
       if (signalFormMode === 'create') await createSignal(data); else if (editSignalId) await updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
     } catch (e) { setSignalError(e instanceof Error ? e.message : 'خطا در انتشار سیگنال') }; setSignalSaving(false)
@@ -978,9 +981,9 @@ function AdminSignals() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div><label className="text-[10px] text-gray-500 mb-1 block">نوع دارایی</label><select value={sf.type} onChange={e => setSf(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="crypto">ارز دیجیتال</option><option value="stock">سهام</option><option value="gold">طلا</option><option value="forex">فارکس</option><option value="dollar">دلار</option></select></div>
-            <div><label className="text-[10px] text-gray-500 mb-1 block">نماد</label><input value={sf.symbol} onChange={e => setSf(p => ({ ...p, symbol: e.target.value }))} placeholder="مثلاً BTC" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors ltr" dir="ltr" /></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">نماد</label><input value={sf.symbol} onChange={e => { setSf(p => ({ ...p, symbol: e.target.value })); setSignalErrorField(p => p === 'symbol' ? null : p) }} placeholder="مثلاً BTC" className={`w-full px-3 py-2.5 rounded-xl bg-gray-800 border text-sm outline-none transition-colors ltr ${signalErrorField === 'symbol' ? 'border-red-500/60' : 'border-gray-700 focus:border-amber-500/50'}`} dir="ltr" /></div>
           </div>
-          <div><label className="text-[10px] text-gray-500 mb-1 block">عنوان سیگنال</label><input value={sf.title} onChange={e => setSf(p => ({ ...p, title: e.target.value }))} placeholder="مثلاً خرید بیت‌کوین در حمایت" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">عنوان سیگنال</label><input value={sf.title} onChange={e => { setSf(p => ({ ...p, title: e.target.value })); setSignalErrorField(p => p === 'title' ? null : p) }} placeholder="مثلاً خرید بیت‌کوین در حمایت" className={`w-full px-3 py-2.5 rounded-xl bg-gray-800 border text-sm outline-none transition-colors ${signalErrorField === 'title' ? 'border-red-500/60' : 'border-gray-700 focus:border-amber-500/50'}`} /></div>
           <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات</label><textarea value={sf.description} onChange={e => setSf(p => ({ ...p, description: e.target.value }))} placeholder="تحلیل و دلیل سیگنال" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
           <div className="grid grid-cols-2 gap-2">
             <div><label className="text-[10px] text-gray-500 mb-1 block">نوع معامله</label><select value={sf.action} onChange={e => setSf(p => ({ ...p, action: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="buy">خرید</option><option value="sell">فروش</option></select></div>
@@ -998,13 +1001,38 @@ function AdminSignals() {
             <PersianDateTimePicker label="تاریخ انتشار" value={sf.publishedAt} onChange={v => setSf(p => ({ ...p, publishedAt: v }))} placeholder="به صورت خودکار پر شده" />
             <PersianDateTimePicker label="تاریخ انقضا (اختیاری)" value={sf.expiresAt} onChange={v => setSf(p => ({ ...p, expiresAt: v }))} placeholder="در صورت نیاز انتخاب کنید" />
           </div>
+          <div>
+            <label className="text-[10px] text-gray-500 mb-1 block">دسترسی</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSf(p => ({ ...p, visibility: 'public', targetUserIds: [] }))}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.visibility === 'public' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
+              <button onClick={() => setSf(p => ({ ...p, visibility: 'private' }))}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.visibility === 'private' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>خصوصی</button>
+            </div>
+            {sf.visibility === 'private' && (
+              <div className="mt-2">
+                <label className="text-[10px] text-gray-500 mb-1 block">انتخاب کاربران</label>
+                <div className="max-h-32 overflow-y-auto space-y-1 bg-gray-800/60 rounded-lg p-2 border border-gray-700">
+                  {userList.map(u => {
+                    const sel = sf.targetUserIds.includes(u.id)
+                    return (
+                      <label key={u.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-700/50 cursor-pointer">
+                        <input type="checkbox" checked={sel} onChange={() => setSf(p => ({ ...p, targetUserIds: sel ? p.targetUserIds.filter(id => id !== u.id) : [...p.targetUserIds, u.id] }))} className="accent-amber-500" />
+                        <span className="text-[11px] text-gray-300">{u.name} <span className="text-gray-600">({u.email})</span></span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UploadBtn label="تصویر سیگنال" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
             <UploadBtn label="ویس / صدا" accept="audio/*" currentUrl={sf.audioUrl} onUpload={v => setSf(p => ({ ...p, audioUrl: v }))} />
           </div>
-          {signalError && <p className="text-red-400 text-xs">{signalError}</p>}
+          {signalError && <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2"><X className="w-3.5 h-3.5 text-red-400 shrink-0" /><p className="text-red-400 text-xs font-bold">{signalError}</p></div>}
           <button onClick={saveSignal} disabled={signalSaving}
-            className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
+            className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-3 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
             {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : signalFormMode === 'create' ? 'انتشار سیگنال' : 'ذخیره تغییرات'}
           </button>
         </div>
@@ -1023,8 +1051,8 @@ function AdminSignals() {
             <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           </div>
           <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات (اختیاری)</label><textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="منبع درآمد" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
-          {revenueError && <p className="text-red-400 text-xs">{revenueError}</p>}
-          <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : <><Plus className="w-4 h-4 inline-block ml-1" />{revenueFormMode === 'create' ? 'ثبت درآمد' : 'ذخیره'}</>}</button>
+          {revenueError && <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2"><X className="w-3.5 h-3.5 text-red-400 shrink-0" /><p className="text-red-400 text-xs font-bold">{revenueError}</p></div>}
+          <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white py-3 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : <><Plus className="w-4 h-4 inline-block ml-1" />{revenueFormMode === 'create' ? 'ثبت درآمد' : 'ذخیره'}</>}</button>
         </div>
       </div>
     </div>
@@ -1046,7 +1074,7 @@ function AdminSignals() {
           } catch (e: any) {
             alert('خطا: ' + (e?.message || 'نامشخص'))
           }
-        }} className="px-4 py-2 rounded-lg text-sm whitespace-nowrap bg-gradient-to-l from-emerald-600 to-green-500 text-white font-bold shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-green-400 transition-all">
+        }} className="px-4 py-2.5 rounded-lg text-sm whitespace-nowrap bg-gradient-to-l from-emerald-600 to-green-500 text-white font-bold shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-green-400 transition-all">
           به‌روزرسانی قیمت‌ها
         </button>
       </div>
@@ -1055,18 +1083,7 @@ function AdminSignals() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
             <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
             <div className="flex gap-2">
-              <button onClick={async () => {
-                if (!confirm('همه سیگنال‌ها و درآمدهای قبلی پاک می‌شن و سیگنال‌های جدید با قیمت بازار ساخته می‌شه. ادامه میدی؟')) return
-                try {
-                  const res = await fetch('/api/admin/populate-signals', { method: 'POST' })
-                  const r = await res.json()
-                  if (r.error) { alert('خطا: ' + r.error); return }
-                  alert(`${r.signals} سیگنال ایجاد شد\n${r.revenueMonths} ماه درآمد محاسبه شد`)
-                  await load()
-                } catch (e: any) {
-                  alert('خطا: ' + (e?.message || 'نامشخص'))
-                }
-              }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><TrendingUp className="w-3.5 h-3.5" /> ایجاد سیگنال‌های واقعی</button>
+              
               <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
             </div>
           </div>

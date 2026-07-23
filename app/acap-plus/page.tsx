@@ -151,7 +151,7 @@ export default function AcapPlusPage() {
                 </a>
               </>
             )}
-            <button onClick={() => router.push('/dashboard')} className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground transition-colors py-2">
+            <button onClick={() => router.push('/app')} className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground transition-colors py-2">
               <ArrowLeft className="w-4 h-4" />بازگشت به داشبورد
             </button>
           </div>
@@ -175,7 +175,7 @@ export default function AcapPlusPage() {
       {/* Fixed header */}
       <header className="shrink-0 bg-gray-900/95 backdrop-blur-xl border-b border-gray-800 px-4 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')} className="w-8 h-8 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white transition-all">
+          <button onClick={() => router.push('/app')} className="w-8 h-8 rounded-lg hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white transition-all">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
@@ -333,7 +333,7 @@ export default function AcapPlusPage() {
           <div className="flex-1 bg-gray-800 rounded-xl px-4 py-2.5 text-gray-500 text-sm text-right border border-gray-700/50">
             {suggestions.length > 0 ? '💬 برای ثبت نظر با ادمین تماس بگیرید' : 'هنوز پیشنهادی نیست'}
           </div>
-          <button className="w-10 h-10 rounded-xl bg-amber-600/20 flex items-center justify-center text-amber-400 hover:bg-amber-600/30 transition-colors">
+          <button className="w-11 h-11 rounded-xl bg-amber-600/20 flex items-center justify-center text-amber-400 hover:bg-amber-600/30 transition-colors">
             <Send className="w-4 h-4" />
           </button>
         </div>

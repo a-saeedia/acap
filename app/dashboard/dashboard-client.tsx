@@ -29,6 +29,153 @@ function formatDate(d: Date) {
   return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(d))
 }
 
+export function RevenueTab({ signals, signalStats, revenueFilter, setRevenueFilter, revenueFilteredMonths, setSelectedSignal }: {
+  signals: any[]; signalStats: any; revenueFilter: string; setRevenueFilter: (v: any) => void
+  revenueFilteredMonths: any[]; setSelectedSignal: (v: any) => void
+}) {
+  const persianMonthsFull = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+  const persianMonthsShort = ['فر', 'ار', 'خ', 'ت', 'م', 'ش', 'مه', 'آب', 'آ', 'د', 'ب', 'اس']
+
+  return (
+    <div className="glass border border-border rounded-2xl p-4 sm:p-5">
+      {/* Header + filter tabs */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-600/20">
+            <Zap className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-sm sm:text-base font-black text-foreground">A|CAP Revenue</span>
+          {signalStats && (
+            <span className="text-[10px] text-muted-foreground bg-gray-800/60 rounded-lg px-2 py-0.5">{signalStats.winRate}% موفقیت</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 bg-gray-800/60 rounded-xl p-0.5 overflow-x-auto">
+          {([['1', 'ماه'], ['3', '۳ ماه'], ['6', '۶ ماه'], ['net', 'خالص']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setRevenueFilter(key)}
+              className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+                revenueFilter === key ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats row + revenue bars */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-3 gap-2">
+          {signals.length > 0 && (() => {
+            const total = signals.length
+            const wins = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length
+            const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined)
+            const avgR = withR.length > 0 ? withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length : 0
+            const bestR = withR.length > 0 ? Math.max(...withR.map((s: any) => s.actualReturn ?? 0)) : 0
+            const netRev = revenueFilteredMonths.length > 0 ? revenueFilteredMonths.reduce((s: number, r: any) => s + r.amount, 0) : 0
+            return (<>
+              <div className="bg-gray-800/40 rounded-xl p-2.5 text-center">
+                <div className="text-[9px] sm:text-[10px] text-gray-500 mb-0.5">برد</div>
+                <div className="text-sm sm:text-base font-black text-emerald-400">{wins}/{total}</div>
+              </div>
+              <div className="bg-gray-800/40 rounded-xl p-2.5 text-center">
+                <div className="text-[9px] sm:text-[10px] text-gray-500 mb-0.5">میانگین</div>
+                <div className={`text-sm sm:text-base font-black ${avgR >= 0 ? 'text-amber-400' : 'text-red-400'}`}>{avgR >= 0 ? '+' : ''}{avgR.toFixed(1)}%</div>
+              </div>
+              <div className="bg-gray-800/40 rounded-xl p-2.5 text-center">
+                <div className="text-[9px] sm:text-[10px] text-gray-500 mb-0.5">بهترین</div>
+                <div className="text-sm sm:text-base font-black text-emerald-400">+{bestR.toFixed(1)}%</div>
+              </div>
+              {revenueFilter === 'net' && (
+                <div className="bg-gray-800/40 rounded-xl p-2.5 text-center col-span-3">
+                  <div className="text-[9px] sm:text-[10px] text-gray-500 mb-0.5">خالص بازده</div>
+                  <div className={`text-base sm:text-lg font-black ${netRev >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{netRev >= 0 ? '+' : ''}{netRev.toFixed(1)}%</div>
+                </div>
+              )}
+            </>)
+          })()}
+        </div>
+        <div className="bg-gray-800/40 rounded-xl p-3">
+          <div className="text-[9px] sm:text-[10px] text-gray-500 mb-2">
+            {revenueFilter === 'net' ? 'بازده خالص' : `بازده ${revenueFilter === '1' ? 'ماه جاری' : revenueFilter === '3' ? 'سه ماه اخیر' : 'شش ماه اخیر'}`}
+          </div>
+          <div className="flex items-end gap-2" style={{ height: '80px' }}>
+            {revenueFilter === 'net' ? (
+              (() => {
+                const netRev = revenueFilteredMonths.length > 0 ? revenueFilteredMonths.reduce((s: number, r: any) => s + r.amount, 0) : 0
+                const maxAmt = Math.abs(netRev) || 1
+                const barH = Math.max(Math.round((netRev / maxAmt) * 70), netRev > 0 ? 4 : 0)
+                const isPos = netRev >= 0
+                return (
+                  <div className="flex flex-col items-center gap-1 w-full">
+                    <span className={`text-base sm:text-lg font-black ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>{isPos ? '+' : ''}{netRev.toFixed(1)}%</span>
+                    <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t" style={{ height: `${Math.max(barH, 8)}px` }} />
+                  </div>
+                )
+              })()
+            ) : (
+              revenueFilteredMonths.length > 0 ? (
+                [...revenueFilteredMonths].sort((a, b) => (b.year - a.year) || (b.month - a.month)).reverse().map((r: any) => {
+                  const maxAmt = Math.max(...revenueFilteredMonths.map((x: any) => x.amount), 1)
+                  const barPct = (r.amount / maxAmt)
+                  const barH = Math.max(Math.round(barPct * 70), r.amount > 0 ? 4 : 0)
+                  const isPos = r.amount >= 0
+                  return (
+                    <div key={`${r.year}-${r.month}`} className="flex flex-col items-center gap-1 flex-1 min-w-0">
+                      <span className={`text-[9px] sm:text-[10px] font-bold tabular-nums ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>{isPos ? '+' : ''}{r.amount.toFixed(1)}%</span>
+                      <div className={`w-full rounded-t ${isPos ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : 'bg-gradient-to-t from-red-600 to-red-400'}`} style={{ height: `${barH}px` }} />
+                      <span className="text-[7px] sm:text-[8px] text-gray-500">{persianMonthsShort[r.month - 1] || r.month}</span>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="flex items-center justify-center w-full h-full text-[10px] sm:text-xs text-gray-600">داده‌ای نیست</div>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Signal feed */}
+      <div className="space-y-2">
+        {signals.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            <Zap className="w-8 h-8 mb-2 opacity-30" />
+            <p className="text-xs sm:text-sm">هنوز سیگنالی نیست</p>
+          </div>
+        ) : (
+          signals.slice(0, revenueFilter === 'net' ? 20 : 6).map((s: any) => {
+            const isWin = (s.actualProfit ?? 0) > 0
+            const sd = s.publishedAt ? new Date(s.publishedAt) : new Date()
+            return (
+              <div key={s.id}
+                className="rounded-xl px-3 py-2.5 cursor-pointer transition-all border border-gray-700/30 bg-gray-800/60 hover:border-gray-600/50 hover:bg-gray-800"
+                onClick={() => setSelectedSignal(s)}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[12px] sm:text-sm font-bold text-foreground truncate">{s.title}</span>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                      s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                    }`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[9px] sm:text-[10px] text-muted-foreground/60 ltr" dir="ltr">{sd.toLocaleDateString('fa-IR')}</span>
+                    <span className={`text-[10px] sm:text-[11px] font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-semibold">{s.symbol}</span>
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground">{String(s.type) === 'crypto' ? 'ارز دیجیتال' : String(s.type) === 'stock' ? 'سهام' : String(s.type) === 'gold' ? 'طلا' : String(s.type) === 'dollar' ? 'دلار' : 'فارکس'}</span>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function DashboardClient() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
@@ -49,7 +196,9 @@ export function DashboardClient() {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [referralStats, setReferralStats] = useState<any>(null)
-  const [dashboardTab, setDashboardTab] = useState<'dashboard' | 'invite'>('dashboard')
+  const [dashboardTab, setDashboardTab] = useState<'dashboard' | 'revenue' | 'invite'>('dashboard')
+  const [revenueFilter, setRevenueFilter] = useState<'1' | '3' | '6' | 'net'>('3')
+  const [revenueFilteredMonths, setRevenueFilteredMonths] = useState<any[]>([])
 
   useEffect(() => {
     if (isPending) return
@@ -65,6 +214,23 @@ export function DashboardClient() {
     }).catch(() => setLoading(false))
   }, [session, isPending, router])
 
+  const fetchSignals = async (signal?: AbortSignal) => {
+    try {
+      const monthsParam = revenueFilter === 'net' ? '' : `?months=${revenueFilter}`
+      const userIdParam = session?.user?.id ? `&userId=${session.user.id}` : ''
+      const url = '/api/signals' + monthsParam + userIdParam
+      const d = await fetch(url, { signal }).then(r => r.json())
+      const sigs = d?.signals || []
+      setSignals(sigs)
+      setRevenueMonths(d?.revenue || [])
+      setRevenueFilteredMonths(d?.revenue || [])
+      if (sigs.length > 0) {
+        const wins = sigs.filter((s: any) => (s.actualProfit ?? 0) > 0).length
+        setSignalStats({ total: sigs.length, wins, winRate: Math.round((wins / sigs.length) * 100) })
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     if (!dashData) return
     getMyAssets().then(a => setAssetsCount(a.length)).catch(() => {})
@@ -76,17 +242,16 @@ export function DashboardClient() {
       if (d.stockPrices) for (const [k, v] of Object.entries(d.stockPrices) as [string, any][]) merged[k] = v
       setPriceData(merged)
     }).catch(() => {})
-    fetch('/api/signals', { signal: controller.signal }).then(r => r.json()).then((d: any) => {
-      const sigs = d?.signals || []
-      setSignals(sigs)
-      setRevenueMonths(d?.revenue || [])
-      if (sigs.length > 0) {
-        const wins = sigs.filter((s: any) => (s.actualProfit ?? 0) > 0).length
-        setSignalStats({ total: sigs.length, wins, winRate: Math.round((wins / sigs.length) * 100) })
-      }
-    }).catch(() => {})
+    fetchSignals(controller.signal)
     return () => { clearTimeout(tid); controller.abort() }
   }, [dashData])
+
+  useEffect(() => {
+    if (!dashData) return
+    const controller = new AbortController()
+    fetchSignals(controller.signal)
+    return () => controller.abort()
+  }, [revenueFilter, dashData])
 
   useEffect(() => {
     if (!dashData) return
@@ -227,17 +392,22 @@ export function DashboardClient() {
           )}
 
           {/* Tab bar */}
-          <motion.div variants={itemVariants} className="flex items-center gap-1 mb-4 bg-accent/50 rounded-2xl p-1 w-fit">
-            <button onClick={() => setDashboardTab('dashboard')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+          <motion.div variants={itemVariants} className="flex items-center gap-1 mb-4 bg-accent/50 rounded-2xl p-1 w-fit overflow-x-auto">
+            <button onClick={() => setDashboardTab('dashboard')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${dashboardTab === 'dashboard' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
               داشبورد
             </button>
-            <button onClick={() => setDashboardTab('invite')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dashboardTab === 'invite' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+            <button onClick={() => setDashboardTab('revenue')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${dashboardTab === 'revenue' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Zap className="w-3 h-3 inline-block ml-1" />A|CAP Revenue
+            </button>
+            <button onClick={() => setDashboardTab('invite')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${dashboardTab === 'invite' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
               🎁 دعوت از دوستان
             </button>
           </motion.div>
 
           {dashboardTab === 'invite' ? (
             <InvitationTab />
+          ) : dashboardTab === 'revenue' ? (
+            <RevenueTab signals={signals} signalStats={signalStats} revenueFilter={revenueFilter} setRevenueFilter={setRevenueFilter} revenueFilteredMonths={revenueFilteredMonths} setSelectedSignal={setSelectedSignal} />
           ) : (
           <>
           {/* Mosaic — Portfolio (big) + Prices / A|CAP Revenue (mini squares) */}
@@ -273,7 +443,7 @@ export function DashboardClient() {
               </button>
             </motion.div>
 
-            {/* Right column: mini squares stacked */}
+            {/* Right column: stacked Prices + mini revenue summary */}
             <div className="flex flex-col gap-3">
               {/* Prices mini square */}
               <motion.div variants={itemVariants} className="flex-1">
@@ -308,113 +478,15 @@ export function DashboardClient() {
                   </div>
                 </button>
               </motion.div>
-
-              {/* A|CAP Revenue — stats + monthly returns + signal feed */}
+              {/* Mini revenue summary (preserves right-column layout) */}
               <motion.div variants={itemVariants} className="flex-1">
-                <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col"
-                  style={{ minHeight: '240px' }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-xs font-black text-foreground">A|CAP Revenue</span>
-                    </div>
-                    {signalStats && (
-                      <span className="text-[10px] text-muted-foreground">
-                        {signalStats.winRate}% موفقیت
-                      </span>
-                    )}
-                  </div>
-                  {/* Stats row + Monthly revenue bars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-                    {/* Win/Avg/Best mini stats */}
-                    <div className="grid grid-cols-3 gap-1">
-                      {signals.length > 0 && (() => {
-                        const total = signals.length
-                        const wins = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length
-                        const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined)
-                        const avgR = withR.length > 0 ? withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length : 0
-                        const bestR = withR.length > 0 ? Math.max(...withR.map((s: any) => s.actualReturn ?? 0)) : 0
-                        return (<>
-                          <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
-                            <div className="text-[8px] text-gray-500">برد</div>
-                            <div className="text-xs font-black text-emerald-400">{wins}/{total}</div>
-                          </div>
-                          <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
-                            <div className="text-[8px] text-gray-500">میانگین</div>
-                            <div className={`text-xs font-black ${avgR >= 0 ? 'text-amber-400' : 'text-red-400'}`}>{avgR >= 0 ? '+' : ''}{avgR.toFixed(1)}%</div>
-                          </div>
-                          <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
-                            <div className="text-[8px] text-gray-500">بهترین</div>
-                            <div className="text-xs font-black text-emerald-400">+{bestR.toFixed(1)}%</div>
-                          </div>
-                        </>)
-                      })()}
-                    </div>
-                    {/* Monthly revenue bars */}
-                    <div className="bg-gray-800/40 rounded-lg p-1.5">
-                      <div className="text-[8px] text-gray-500 mb-1">بازده ماهانه A|CAP</div>
-                      <div className="flex items-end gap-1.5" style={{ height: '40px' }}>
-                        {revenueMonths.length > 0 ? (
-                          [...revenueMonths].sort((a, b) => (b.year - a.year) || (b.month - a.month)).slice(0, 6).reverse().map((r: any) => {
-                            const persianMonths = ['فر', 'ار', 'خ', 'ت', 'م', 'ش', 'مه', 'آب', 'آ', 'د', 'ب', 'اس']
-                            const maxAmt = Math.max(...revenueMonths.map((x: any) => x.amount), 1)
-                            const barPct = (r.amount / maxAmt)
-                            const barH = Math.max(Math.round(barPct * 36), r.amount > 0 ? 4 : 0)
-                            const displayVal = r.amount > 100000 ? (r.amount / 1000000).toFixed(0) + 'M' : r.amount.toFixed(1) + '%'
-                            return (
-                              <div key={`${r.year}-${r.month}`} className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
-                                <span className="text-[7px] font-bold text-emerald-400">{displayVal}</span>
-                                <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t" style={{ height: `${barH}px` }} />
-                                <span className="text-[6px] text-gray-500">{persianMonths[r.month - 1] || r.month}</span>
-                              </div>
-                            )
-                          })
-                        ) : (
-                          <div className="flex items-center justify-center w-full h-full text-[9px] text-gray-600">داده‌ای نیست — ابتدا سیگنال ایجاد کنید</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-2 overflow-y-auto">
-                    {signals.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                        <Zap className="w-6 h-6 mb-1 opacity-30" />
-                        <p className="text-[10px]">هنوز سیگنالی نیست</p>
-                      </div>
-                    ) : (
-                      signals.slice(0, 5).map((s) => {
-                        const isWin = s.actualProfit > 0
-                        const sd = s.publishedAt ? new Date(s.publishedAt) : new Date()
-                        return (
-                          <div key={s.id}
-                            className="rounded-xl px-3 py-2 cursor-pointer transition-all border border-gray-700/30 bg-gray-800/60 hover:border-gray-600/50 hover:bg-gray-800"
-                            onClick={() => setSelectedSignal(s)}
-                          >
-                            <div className="flex items-center justify-between gap-1">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-[11px] font-bold text-foreground truncate">{s.title}</span>
-                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
-                                  s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                                }`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span className={`text-[10px] font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
-                                  {s.actualProfit !== null && s.actualProfit !== undefined ? `${isWin ? '+' : ''}${s.actualProfit.toFixed(1)}%` : '—'}
-                                </span>
-                                <ChevronDown className="w-3 h-3 text-gray-600" />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[9px] text-muted-foreground font-semibold">{s.symbol}</span>
-                              <span className="text-[9px] text-muted-foreground">{String(s.type) === 'crypto' ? 'ارز دیجیتال' : String(s.type) === 'stock' ? 'سهام' : String(s.type) === 'gold' ? 'طلا' : String(s.type) === 'dollar' ? 'دلار' : 'فارکس'}</span>
-                              <span className="text-[9px] text-muted-foreground/60">{sd.getHours().toString().padStart(2,'0')}:{sd.getMinutes().toString().padStart(2,'0')}</span>
-                            </div>
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
+                <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col items-center justify-center min-h-[120px]">
+                  <Zap className="w-4 h-4 text-amber-400 mb-1" />
+                  <span className="text-[10px] text-muted-foreground">A|CAP Revenue</span>
+                  <span className="text-lg font-black text-amber-400">
+                    {revenueMonths.length > 0 ? '+' : ''}{revenueMonths.reduce((s: number, r: any) => s + r.amount, 0).toFixed(1)}%
+                  </span>
+                  <span className="text-[8px] text-gray-500">{revenueMonths.length} ماه</span>
                 </div>
               </motion.div>
             </div>

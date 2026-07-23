@@ -57,7 +57,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
       return
     }
     reset(); onClose()
-    router.push('/dashboard')
+    router.push('/app')
   }
 
   const handleSignUp = async () => {
@@ -80,7 +80,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
       try { await applyReferralCode(referralCode.trim()) } catch (e) { console.error('applyReferralCode:', e) }
     }
     reset(); onClose()
-    router.push('/dashboard')
+    router.push('/app')
   }
 
   const handleForgotPassword = async () => {

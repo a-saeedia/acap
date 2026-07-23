@@ -9,6 +9,7 @@ import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpe
 
 const navItems = [
   { href: '/app', label: 'خلاصه من', icon: LayoutDashboard },
+  { href: '/app/revenue', label: 'A|CAP Revenue', icon: Zap },
   { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
   { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
   { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },

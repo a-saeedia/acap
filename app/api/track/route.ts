@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 
 export async function POST(request: Request) {
   try {
-    const { event, path, metadata } = await request.json()
+    const { event, path, metadata, userId } = await request.json()
     if (!event) {
       return Response.json({ error: 'event is required' }, { status: 400 })
     }
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     await pool.query(
       `INSERT INTO user_event (id, "userId", event, path, metadata, ip, "userAgent", "createdAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-      [randomUUID(), null, event, path || '', metadata ? JSON.stringify(metadata) : null, ip, userAgent]
+      [randomUUID(), userId || null, event, path || '', metadata ? JSON.stringify(metadata) : null, ip, userAgent]
     )
 
     return Response.json({ ok: true })

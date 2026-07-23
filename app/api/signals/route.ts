@@ -20,6 +20,7 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url)
     const timeMonths = parseInt(url.searchParams.get('months') || '0')
+    const userId = url.searchParams.get('userId') || ''
 
     const priceRows = await pool.query(
       `SELECT DISTINCT ON (symbol) symbol, price FROM asset_price WHERE price > 0 ORDER BY symbol, "updatedAt" DESC`
@@ -38,17 +39,27 @@ export async function GET(req: Request) {
     const prices: Record<string, number> = { ...FALLBACK, ...dbPrices }
 
     let signals
+    const params: any[] = []
+    let queryStr: string
     if (timeMonths > 0) {
       const cutoff = new Date(Date.now() - timeMonths * 30 * 24 * 60 * 60 * 1000)
-      const { rows } = await pool.query(
-        'SELECT * FROM signal WHERE "publishedAt" >= $1 ORDER BY "publishedAt" DESC',
-        [cutoff]
-      )
-      signals = rows
+      params.push(cutoff)
+      if (userId) {
+        queryStr = `SELECT * FROM signal WHERE "publishedAt" >= $1 AND ("visibility" IS NULL OR "visibility" = 'public' OR ("visibility" = 'private' AND "targetUserIds" @> $2::jsonb)) ORDER BY "publishedAt" DESC`
+        params.push(JSON.stringify([userId]))
+      } else {
+        queryStr = `SELECT * FROM signal WHERE "publishedAt" >= $1 AND ("visibility" IS NULL OR "visibility" = 'public') ORDER BY "publishedAt" DESC`
+      }
     } else {
-      const { rows } = await pool.query('SELECT * FROM signal ORDER BY "publishedAt" DESC')
-      signals = rows
+      if (userId) {
+        queryStr = `SELECT * FROM signal WHERE ("visibility" IS NULL OR "visibility" = 'public' OR ("visibility" = 'private' AND "targetUserIds" @> $1::jsonb)) ORDER BY "publishedAt" DESC`
+        params.push(JSON.stringify([userId]))
+      } else {
+        queryStr = `SELECT * FROM signal WHERE ("visibility" IS NULL OR "visibility" = 'public') ORDER BY "publishedAt" DESC`
+      }
     }
+    const { rows } = await pool.query(queryStr, params)
+    signals = rows
 
     const enriched = signals.map((s: any) => {
       const currentPrice = prices[s.symbol] ?? s.priceAtPublish

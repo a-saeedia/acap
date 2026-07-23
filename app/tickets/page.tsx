@@ -81,7 +81,7 @@ export default function TicketsPage() {
             onKeyDown={e => e.key === 'Enter' && handleCreate()}
           />
           <button onClick={handleCreate} disabled={sending || !subject.trim()}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-sm font-bold transition-colors"
+            className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-sm font-bold transition-colors"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             ایجاد تیکت
@@ -147,7 +147,7 @@ export default function TicketsPage() {
                     onKeyDown={e => e.key === 'Enter' && handleReply()}
                   />
                   <button onClick={handleReply} disabled={sending || !newMsg.trim()}
-                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-sm font-bold transition-colors"
+                    className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-sm font-bold transition-colors"
                   >
                     {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     ارسال

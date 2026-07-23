@@ -197,6 +197,8 @@ export const signal = pgTable('signal', {
   priceNow: doublePrecision('priceNow'),
   imageUrl: text('imageUrl'),
   audioUrl: text('audioUrl'),
+  visibility: text('visibility').notNull().default('public'),
+  targetUserIds: jsonb('targetUserIds'),
   expiresAt: timestamp('expiresAt'),
   publishedAt: timestamp('publishedAt').notNull().defaultNow(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
