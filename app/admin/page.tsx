@@ -941,11 +941,13 @@ function AdminSignals() {
   const [editSignalId, setEditSignalId] = useState<string | null>(null)
   const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', expiresAt: '', publishedAt: '' })
   const [signalSaving, setSignalSaving] = useState(false)
+  const [signalError, setSignalError] = useState('')
   const [showRevenueForm, setShowRevenueForm] = useState(false)
   const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
   const [editRevenueId, setEditRevenueId] = useState<string | null>(null)
   const [rf, setRf] = useState(() => { const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); return { amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '' } })
   const [revenueSaving, setRevenueSaving] = useState(false)
+  const [revenueError, setRevenueError] = useState('')
 
   const load = useCallback(async () => {
     const [sigs, revs] = await Promise.all([getSignals(), getAcapRevenue()])
@@ -967,25 +969,30 @@ function AdminSignals() {
   }
 
   async function saveSignal() {
-    if (!sf.symbol || !sf.title || !sf.priceAtPublish) return
+    setSignalError('')
+    if (!sf.title) { setSignalError('عنوان سیگنال را وارد کنید'); return }
+    if (!sf.symbol) { setSignalError('نماد را وارد کنید'); return }
     setSignalSaving(true)
     try {
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: parseFloat(sf.priceAtPublish), priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
+      const priceVal = sf.priceAtPublish ? parseFloat(sf.priceAtPublish) : 0
+      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
       if (signalFormMode === 'create') await createSignal(data); else if (editSignalId) await updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
-    } catch (e) { console.error(e) }; setSignalSaving(false)
+    } catch (e) { setSignalError(e instanceof Error ? e.message : 'خطا در انتشار سیگنال') }; setSignalSaving(false)
   }
 
   async function handleDeleteSignal(id: string) { if (!confirm('حذف سیگنال؟')) return; await deleteSignal(id); await load() }
 
   async function saveRevenue() {
-    if (!rf.amount) return
+    setRevenueError('')
+    if (!rf.amount) { setRevenueError('درصد بازده را وارد کنید'); return }
+    if (isNaN(parseFloat(rf.amount))) { setRevenueError('مقدار درصد نامعتبر است'); return }
     setRevenueSaving(true)
     try {
       const amount = parseFloat(rf.amount); const month = parseInt(rf.month); const year = parseInt(rf.year)
       if (revenueFormMode === 'create') await addAcapRevenue(amount, month, year, rf.description || undefined); else if (editRevenueId) await updateAcapRevenue(editRevenueId, amount, rf.description || undefined, month, year)
       setShowRevenueForm(false); await load()
-    } catch (e) { console.error(e) }; setRevenueSaving(false)
+    } catch (e) { setRevenueError(e instanceof Error ? e.message : 'خطا در ثبت درآمد') }; setRevenueSaving(false)
   }
 
   async function deleteRevenue(id: string) { if (!confirm('حذف درآمد؟')) return; await deleteAcapRevenue(id); await load() }
@@ -1024,6 +1031,7 @@ function AdminSignals() {
             <UploadBtn label="تصویر سیگنال" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
             <UploadBtn label="ویس / صدا" accept="audio/*" currentUrl={sf.audioUrl} onUpload={v => setSf(p => ({ ...p, audioUrl: v }))} />
           </div>
+          {signalError && <p className="text-red-400 text-xs">{signalError}</p>}
           <button onClick={saveSignal} disabled={signalSaving}
             className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
             {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : signalFormMode === 'create' ? 'انتشار سیگنال' : 'ذخیره تغییرات'}
@@ -1044,6 +1052,7 @@ function AdminSignals() {
             <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           </div>
           <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات (اختیاری)</label><textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="منبع درآمد" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
+          {revenueError && <p className="text-red-400 text-xs">{revenueError}</p>}
           <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : <><Plus className="w-4 h-4 inline-block ml-1" />{revenueFormMode === 'create' ? 'ثبت درآمد' : 'ذخیره'}</>}</button>
         </div>
       </div>

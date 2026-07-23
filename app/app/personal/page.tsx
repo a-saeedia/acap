@@ -8,26 +8,79 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function getGradient(title: string) {
-  const t = title.toLowerCase()
-  if (/\b(btc|bitcoin|بیت)\b/.test(t)) return ['from-orange-500/50', 'to-orange-900/50', 'border-orange-500/40', 'text-orange-400']
-  if (/\b(eth|ethereum|اتریوم)\b/.test(t)) return ['from-indigo-500/50', 'to-indigo-900/50', 'border-indigo-500/40', 'text-indigo-400']
-  if (/\b(sol|solana|سولانا)\b/.test(t)) return ['from-purple-500/50', 'to-purple-900/50', 'border-purple-500/40', 'text-purple-400']
-  if (/\b(bnb|binance|بایننس)\b/.test(t)) return ['from-amber-500/50', 'to-amber-900/50', 'border-amber-500/40', 'text-amber-400']
-  if (/\b(gold|طلا|سکه)\b/.test(t)) return ['from-yellow-500/50', 'to-yellow-900/50', 'border-yellow-500/40', 'text-yellow-400']
-  if (/\b(دلار|usd|dollar|تتر|usdt)\b/.test(t)) return ['from-emerald-500/50', 'to-emerald-900/50', 'border-emerald-500/40', 'text-emerald-400']
-  if (/\b(یورو|eur|euro)\b/.test(t)) return ['from-blue-500/50', 'to-blue-900/50', 'border-blue-500/40', 'text-blue-400']
-  if (/\b(فولاد|فملی|خودرو|بورس|stock|سهام|شپنا|وبملت)\b/.test(t)) return ['from-cyan-500/50', 'to-cyan-900/50', 'border-cyan-500/40', 'text-cyan-400']
-  if (/\b(ارز|crypto|دیجیتال)\b/.test(t)) return ['from-rose-500/50', 'to-rose-900/50', 'border-rose-500/40', 'text-rose-400']
-  return ['from-pink-500/50', 'to-pink-900/50', 'border-pink-500/40', 'text-pink-400']
+function getSignalColor(type: string) {
+  const ct = String(type || '').toLowerCase()
+  if (ct === 'crypto') return { bg: 'from-orange-600/20 via-orange-600/5 to-transparent', border: 'border-r-orange-500', icon: 'text-orange-400', label: 'ارز دیجیتال' }
+  if (ct === 'gold') return { bg: 'from-yellow-600/20 via-yellow-600/5 to-transparent', border: 'border-r-yellow-500', icon: 'text-yellow-400', label: 'طلا' }
+  if (ct === 'dollar') return { bg: 'from-emerald-600/20 via-emerald-600/5 to-transparent', border: 'border-r-emerald-500', icon: 'text-emerald-400', label: 'دلار' }
+  if (ct === 'stock') return { bg: 'from-cyan-600/20 via-cyan-600/5 to-transparent', border: 'border-r-cyan-500', icon: 'text-cyan-400', label: 'بورس' }
+  if (ct === 'forex') return { bg: 'from-blue-600/20 via-blue-600/5 to-transparent', border: 'border-r-blue-500', icon: 'text-blue-400', label: 'فارکس' }
+  return { bg: 'from-pink-600/20 via-pink-600/5 to-transparent', border: 'border-r-pink-500', icon: 'text-pink-400', label: 'سایر' }
 }
 
 function monthKey(d: Date) {
-  const j = new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long' }).format(d)
-  return j
+  return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long' }).format(d)
 }
 
-const allMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+function SignalBubble({ item, onClick, isSuggestion }: { item: any; onClick: () => void; isSuggestion?: boolean }) {
+  const isSignal = !isSuggestion
+  const type = isSignal ? String(item.type || '') : ''
+  const col = getSignalColor(isSuggestion ? '' : type)
+  const profit = isSuggestion ? item.profitPercent : item.actualReturn
+  const profitLabel = isSuggestion ? 'سود پیشنهادی' : 'بازده واقعی'
+  const date = new Date(isSuggestion ? item.createdAt : item.publishedAt || item.createdAt)
+
+  let leftColor = col.border
+  if (isSuggestion) {
+    const t = ((item.title || '') + ' ' + (item.content || '')).toLowerCase()
+    if (/\b(btc|bitcoin|بیت)\b/.test(t)) leftColor = 'border-r-orange-500'
+    else if (/\b(eth|ethereum|اتریوم)\b/.test(t)) leftColor = 'border-r-indigo-500'
+    else if (/\b(gold|طلا|سکه)\b/.test(t)) leftColor = 'border-r-yellow-500'
+    else if (/\b(دلار|usd|dollar|تتر)\b/.test(t)) leftColor = 'border-r-emerald-500'
+    else if (/\b(بورس|stock|سهام|فولاد|فملی|خودرو)\b/.test(t)) leftColor = 'border-r-cyan-500'
+    else leftColor = 'border-r-pink-500'
+  }
+
+  return (
+    <button onClick={onClick} className={`w-full text-right bg-[#1c1f2e] hover:bg-[#222636] border border-[#2a2d3a] border-r-4 ${leftColor} rounded-xl p-3 transition-all group active:scale-[0.99]`}>
+      <div className="flex items-start gap-2.5">
+        <div className="w-9 h-9 rounded-full bg-white/5 shrink-0 flex items-center justify-center border border-white/5 overflow-hidden">
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Crown className={`w-4 h-4 ${col.icon}`} />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[13px] font-bold text-white truncate">{item.title}</span>
+            {!isSuggestion && (
+              <span className={`text-[8px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                item.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+              }`}>{item.action === 'buy' ? 'BUY' : 'SELL'}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            {!isSuggestion && <span className="text-[9px] text-gray-500">{item.symbol}</span>}
+            <span className="text-[9px] text-gray-600">{col.label}</span>
+            <span className="text-[8px] text-gray-600">{formatTime(date)}</span>
+          </div>
+          {(item.content || item.description) && (
+            <p className="text-[11px] text-gray-400 mt-1.5 line-clamp-2 leading-5">
+              {(item.content || item.description || '').substring(0, 100)}
+            </p>
+          )}
+          {profit !== null && profit !== undefined && profit > 0 && (
+            <div className="flex items-center gap-1 mt-1.5">
+              <span className="text-[9px] text-emerald-400 font-bold">+{Number(profit).toFixed(1)}%</span>
+              <span className="text-[7px] text-gray-600">{profitLabel}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  )
+}
 
 export default function PersonalPage() {
   const [suggestions, setSuggestions] = useState<any[]>([])
@@ -47,27 +100,24 @@ export default function PersonalPage() {
   }, [])
 
   const sorted = [...suggestions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
   const grouped = sorted.reduce((acc: Record<string, any[]>, s: any) => {
     const k = monthKey(new Date(s.createdAt))
     if (!acc[k]) acc[k] = []
     acc[k].push(s)
     return acc
   }, {})
-
   const groupEntries = Object.entries(grouped)
 
   return (
     <div className="min-h-screen bg-[#0b0e17] flex flex-col" dir="rtl">
-      {/* Header */}
       <header className="shrink-0 bg-[#1c1f2e]/95 backdrop-blur-xl border-b border-[#2a2d3a] px-4 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2AABEE] to-[#1a7fc4] flex items-center justify-center shadow-lg shadow-[#2AABEE]/20">
             <Crown className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-black text-white leading-tight">سیگنال‌های شخصی</h1>
-            <p className="text-[9px] text-gray-500">{sigTab === 'suggestions' ? suggestions.length : signals.length} سیگنال</p>
+            <h1 className="text-sm font-black text-white leading-tight">سیگنال‌ها</h1>
+            <p className="text-[9px] text-gray-500">{sigTab === 'suggestions' ? suggestions.length : signals.length} پیام</p>
           </div>
         </div>
         <div className="flex gap-1">
@@ -76,7 +126,7 @@ export default function PersonalPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
         {loading ? (
           <div className="flex items-center justify-center h-full py-20">
             <div className="w-5 h-5 border-2 border-[#2AABEE] border-t-transparent rounded-full animate-spin" />
@@ -88,38 +138,9 @@ export default function PersonalPage() {
               <p className="text-sm">هنوز سیگنال عمومی ثبت نشده</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-              {signals.map((s: any) => {
-                const ct = String(s.type || '')
-                const [bg1, bg2, border, iconColor] = (
-                  ct === 'crypto' ? ['from-orange-500/50', 'to-orange-900/50', 'border-orange-500/40', 'text-orange-400'] :
-                  ct === 'gold' ? ['from-yellow-500/50', 'to-yellow-900/50', 'border-yellow-500/40', 'text-yellow-400'] :
-                  ct === 'dollar' ? ['from-emerald-500/50', 'to-emerald-900/50', 'border-emerald-500/40', 'text-emerald-400'] :
-                  ct === 'stock' ? ['from-cyan-500/50', 'to-cyan-900/50', 'border-cyan-500/40', 'text-cyan-400'] :
-                  ['from-pink-500/50', 'to-pink-900/50', 'border-pink-500/40', 'text-pink-400']
-                )
-                return (
-                  <button key={s.id} onClick={() => setSelected(s)}
-                    className={`rounded-2xl border ${border} p-3 flex flex-col items-center justify-center text-center hover:scale-[1.03] hover:shadow-xl transition-all group aspect-square relative overflow-hidden`}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${bg1} ${bg2} opacity-90`} />
-                    <div className="absolute inset-0 bg-[#0b0e17]/40" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                    <div className="relative z-10 flex flex-col items-center w-full h-full">
-                      <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-2 group-hover:bg-white/20 group-hover:scale-110 transition-all">
-                        <Crown className={`w-4 h-4 ${iconColor}`} />
-                      </div>
-                      <span className="text-[11px] font-bold text-white leading-tight line-clamp-2 mb-1 max-w-full px-0.5 break-words">{s.title}</span>
-                      <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
-                      {s.actualReturn !== null && s.actualReturn !== undefined && (
-                        <span className={`text-[10px] font-black mt-1 ${s.actualReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{s.actualReturn >= 0 ? '+' : ''}{Number(s.actualReturn).toFixed(1)}%</span>
-                      )}
-                      <span className="text-[7px] text-white/40 mt-auto">{s.publishedAt ? formatTime(new Date(s.publishedAt)) : ''}</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+            signals.map((s: any) => (
+              <SignalBubble key={s.id} item={s} onClick={() => setSelected({ ...s, content: s.description, profitPercent: s.actualReturn })} />
+            ))
           )
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 py-20">
@@ -127,59 +148,26 @@ export default function PersonalPage() {
             <p className="text-sm">هنوز سیگنالی ثبت نشده</p>
           </div>
         ) : (
-          <div className="space-y-5">
-            {groupEntries.map(([month, items]: [string, any[]]) => (
-              <div key={month}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1c1f2e] border border-[#2a2d3a]">
-                    <Calendar className="w-3 h-3 text-[#2AABEE]" />
-                    <span className="text-[10px] font-bold text-white">{month}</span>
-                  </div>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
+          groupEntries.map(([month, items]: [string, any[]]) => (
+            <div key={month}>
+              <div className="flex items-center gap-2 mb-2.5 mt-1">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1c1f2e] border border-[#2a2d3a]">
+                  <Calendar className="w-3 h-3 text-[#2AABEE]" />
+                  <span className="text-[10px] font-bold text-white">{month}</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-                  {items.map((item: any) => {
-                    const [bg1, bg2, border, iconColor] = getGradient(item.title + ' ' + (item.content || ''))
-                    return (
-                      <button key={item.id} onClick={() => setSelected(item)}
-                        className={`rounded-2xl border ${border} p-3 flex flex-col items-center justify-center text-center hover:scale-[1.03] hover:shadow-xl transition-all group aspect-square relative overflow-hidden`}
-                      >
-                        <div className={`absolute inset-0 bg-gradient-to-br ${bg1} ${bg2} opacity-90`} />
-                        <div className="absolute inset-0 bg-[#0b0e17]/40" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                        <div className="relative z-10 flex flex-col items-center w-full h-full">
-                          <div className="self-end mb-auto">
-                            {item.isRead ? (
-                              <span className="text-blue-400/60 text-[7px]">✓✓</span>
-                            ) : (
-                              <span className={`${iconColor} text-[9px]`}>●</span>
-                            )}
-                          </div>
-                          <div className={`w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-2 group-hover:bg-white/20 group-hover:scale-110 transition-all`}>
-                            {item.imageUrl ? (
-                              <img src={item.imageUrl} alt="" className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              <Crown className={`w-4 h-4 ${iconColor}`} />
-                            )}
-                          </div>
-                          <span className="text-[11px] font-bold text-white leading-tight line-clamp-2 mb-1 max-w-full px-0.5 break-words">{item.title}</span>
-                          {item.profitPercent && (
-                            <span className="text-[10px] font-black text-emerald-400 drop-shadow-sm">+{Number(item.profitPercent).toFixed(1)}%</span>
-                          )}
-                          <span className="text-[7px] text-white/40 mt-auto">{formatTime(new Date(item.createdAt))}</span>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2a2d3a] to-transparent" />
               </div>
-            ))}
-          </div>
+              {items.map((item: any) => (
+                <div key={item.id} className="mb-1.5">
+                  <SignalBubble item={item} onClick={() => setSelected(item)} isSuggestion />
+                </div>
+              ))}
+            </div>
+          ))
         )}
       </div>
 
-      {/* Detail Modal */}
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -198,8 +186,8 @@ export default function PersonalPage() {
                   <div className="min-w-0">
                     <h2 className="text-[14px] font-bold text-white truncate">{selected.title}</h2>
                     <div className="flex items-center gap-2 text-[8px] text-gray-500">
-                      <span>{formatTime(new Date(selected.createdAt))}</span>
-                      <span>{new Date(selected.createdAt).toLocaleDateString('fa-IR')}</span>
+                      <span>{formatTime(new Date(selected.createdAt || selected.publishedAt))}</span>
+                      <span>{new Date(selected.createdAt || selected.publishedAt).toLocaleDateString('fa-IR')}</span>
                     </div>
                   </div>
                 </div>
@@ -211,7 +199,7 @@ export default function PersonalPage() {
               <div className="px-4 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
                 {selected.profitPercent && (
                   <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-3.5 text-center">
-                    <div className="text-[9px] text-gray-500 mb-0.5">سود پیشنهادی</div>
+                    <div className="text-[9px] text-gray-500 mb-0.5">سود</div>
                     <div className="text-xl font-black text-emerald-400">+{Number(selected.profitPercent).toFixed(1)}%</div>
                   </div>
                 )}
@@ -222,18 +210,16 @@ export default function PersonalPage() {
                   </div>
                 )}
 
-                {selected.content && (
+                {(selected.content || selected.description) && (
                   <div className="text-[13px] text-gray-300 leading-7 whitespace-pre-wrap" style={{ direction: 'rtl', textAlign: 'right' }}>
-                    {selected.content.split('\n').map((line: string, i: number) => {
+                    {(selected.content || selected.description).split('\n').map((line: string, i: number) => {
                       const t = line.trim()
                       if (!t) return <div key={i} className="h-1.5" />
                       const isHeader = /^[🟡🔵🟢🔴🟣🟠⚪✅❌⚠️⏳🎯📊📈📉💰💎🔥⭐🌟✨💡📌🔔🚀🏆🎯]/.test(t)
-                      const hasPrice = /[\d,]+(,\d{3})*(\.\d+)?\s*(تومان|ریال|دلار)/.test(t)
-                      const hasPercent = /\d+(\.\d+)?%/.test(t)
                       let cls = 'leading-7'
                       if (isHeader) cls += ' text-amber-300 font-bold text-[14px]'
-                      else if (hasPrice) cls += ' text-emerald-400 font-medium'
-                      else if (hasPercent) cls += ' text-amber-400 font-medium'
+                      else if (/[\d,]+(,\d{3})*(\.\d+)?\s*(تومان|ریال|دلار)/.test(t)) cls += ' text-emerald-400 font-medium'
+                      else if (/\d+(\.\d+)?%/.test(t)) cls += ' text-amber-400 font-medium'
                       return <p key={i} className={cls}>{t}</p>
                     })}
                   </div>
