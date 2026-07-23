@@ -43,6 +43,7 @@ export function DashboardClient() {
   const [priceData, setPriceData] = useState<Record<string, {price: number; currency: string; change: number}>>({})
   const [signalStats, setSignalStats] = useState<{total: number; wins: number; winRate: number} | null>(null)
   const [signals, setSignals] = useState<any[]>([])
+  const [revenueMonths, setRevenueMonths] = useState<any[]>([])
   const [expandedSignalId, setExpandedSignalId] = useState<string | null>(null)
   const [selectedSignal, setSelectedSignal] = useState<any | null>(null)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
@@ -78,6 +79,7 @@ export function DashboardClient() {
     fetch('/api/signals', { signal: controller.signal }).then(r => r.json()).then((d: any) => {
       const sigs = d?.signals || []
       setSignals(sigs)
+      setRevenueMonths(d?.revenue || [])
       if (sigs.length > 0) {
         const wins = sigs.filter((s: any) => (s.actualProfit ?? 0) > 0).length
         setSignalStats({ total: sigs.length, wins, winRate: Math.round((wins / sigs.length) * 100) })
@@ -307,10 +309,10 @@ export function DashboardClient() {
                 </button>
               </motion.div>
 
-              {/* A|CAP Revenue — stats + signal feed */}
+              {/* A|CAP Revenue — stats + monthly returns + signal feed */}
               <motion.div variants={itemVariants} className="flex-1">
                 <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col"
-                  style={{ minHeight: '220px' }}
+                  style={{ minHeight: '240px' }}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
@@ -323,30 +325,54 @@ export function DashboardClient() {
                       </span>
                     )}
                   </div>
-                  {/* Stats row */}
-                  {signals.length > 0 && (() => {
-                    const total = signals.length
-                    const wins = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length
-                    const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined)
-                    const avgR = withR.length > 0 ? withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length : 0
-                    const bestR = withR.length > 0 ? Math.max(...withR.map((s: any) => s.actualReturn ?? 0)) : 0
-                    return (
-                      <div className="grid grid-cols-3 gap-1 mb-2">
-                        <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
-                          <div className="text-[8px] text-gray-500">برد</div>
-                          <div className="text-xs font-black text-emerald-400">{wins}/{total}</div>
-                        </div>
-                        <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
-                          <div className="text-[8px] text-gray-500">میانگین</div>
-                          <div className={`text-xs font-black ${avgR >= 0 ? 'text-amber-400' : 'text-red-400'}`}>{avgR >= 0 ? '+' : ''}{avgR.toFixed(1)}%</div>
-                        </div>
-                        <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
-                          <div className="text-[8px] text-gray-500">بهترین</div>
-                          <div className="text-xs font-black text-emerald-400">+{bestR.toFixed(1)}%</div>
-                        </div>
+                  {/* Stats row + Monthly revenue bars */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                    {/* Win/Avg/Best mini stats */}
+                    <div className="grid grid-cols-3 gap-1">
+                      {signals.length > 0 && (() => {
+                        const total = signals.length
+                        const wins = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length
+                        const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined)
+                        const avgR = withR.length > 0 ? withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length : 0
+                        const bestR = withR.length > 0 ? Math.max(...withR.map((s: any) => s.actualReturn ?? 0)) : 0
+                        return (<>
+                          <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
+                            <div className="text-[8px] text-gray-500">برد</div>
+                            <div className="text-xs font-black text-emerald-400">{wins}/{total}</div>
+                          </div>
+                          <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
+                            <div className="text-[8px] text-gray-500">میانگین</div>
+                            <div className={`text-xs font-black ${avgR >= 0 ? 'text-amber-400' : 'text-red-400'}`}>{avgR >= 0 ? '+' : ''}{avgR.toFixed(1)}%</div>
+                          </div>
+                          <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
+                            <div className="text-[8px] text-gray-500">بهترین</div>
+                            <div className="text-xs font-black text-emerald-400">+{bestR.toFixed(1)}%</div>
+                          </div>
+                        </>)
+                      })()}
+                    </div>
+                    {/* Monthly revenue bars */}
+                    <div className="bg-gray-800/40 rounded-lg p-1.5">
+                      <div className="text-[8px] text-gray-500 mb-1">بازده ماهانه</div>
+                      <div className="flex items-end gap-1 h-12">
+                        {revenueMonths.length > 0 ? (
+                          [...revenueMonths].sort((a, b) => (b.year - a.year) || (b.month - a.month)).slice(0, 6).reverse().map((r: any) => {
+                            const maxAmt = Math.max(...revenueMonths.map((x: any) => x.amount), 1)
+                            const pct = (r.amount / maxAmt) * 100
+                            const persianMonths = ['فر', 'ار', 'خ', 'ت', 'م', 'ش', 'مه', 'آب', 'آ', 'د', 'ب', 'اس']
+                            return (
+                              <div key={`${r.year}-${r.month}`} className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
+                                <div className="w-full bg-emerald-500/60 rounded-t" style={{ height: `${Math.max(pct, 4)}%` }} title={`${r.amount}%`} />
+                                <span className="text-[6px] text-gray-600">{persianMonths[r.month - 1] || r.month}</span>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <div className="flex items-center justify-center w-full h-full text-[9px] text-gray-600">داده‌ای نیست</div>
+                        )}
                       </div>
-                    )
-                  })()}
+                    </div>
+                  </div>
                   <div className="flex-1 space-y-2 overflow-y-auto">
                     {signals.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
