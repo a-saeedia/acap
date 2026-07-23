@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, populateSignals, recalculateAllSignals, populateRevenueFromSignals } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, populateSignals, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
@@ -159,7 +159,6 @@ export default function AdminPage() {
     try {
       const profit = sugProfit ? parseFloat(sugProfit) : undefined
       if (sugBroadcast) {
-        const { broadcastSuggestion } = await import('@/app/actions/admin')
         const count = await broadcastSuggestion(sugTitle, sugContent, profit, sugProfitMsg || undefined, sugExpiresAt || undefined, sugImageUrl || undefined, sugAudioUrl || undefined)
         setSugSuccess(`پیشنهاد برای ${count} کاربر A|CAP+ ارسال شد`)
       } else {

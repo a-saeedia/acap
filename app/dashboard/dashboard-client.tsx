@@ -307,7 +307,7 @@ export function DashboardClient() {
                 </button>
               </motion.div>
 
-              {/* Signal Feed — public market signals */}
+              {/* A|CAP Revenue — Telegram style */}
               <motion.div variants={itemVariants} className="flex-1">
                 <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col"
                   style={{ minHeight: '220px' }}
@@ -315,7 +315,7 @@ export function DashboardClient() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-xs font-black text-foreground">سیگنال‌های بازار</span>
+                      <span className="text-xs font-black text-foreground">A|CAP Revenue</span>
                     </div>
                     {signalStats && (
                       <span className="text-[10px] text-muted-foreground">
@@ -468,7 +468,7 @@ export function DashboardClient() {
                 <h3 className="font-black text-sm text-foreground mb-3">اقدامات سریع</h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: 'سیگنال‌های شخصی', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
+                    { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
                     { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
                     { label: 'تست مجدد', icon: Trophy, action: () => router.push('/#quiz'), color: '' },
                   ].map(btn => (
