@@ -307,7 +307,7 @@ export function DashboardClient() {
                 </button>
               </motion.div>
 
-              {/* A|CAP Revenue — Telegram style */}
+              {/* A|CAP Revenue — stats + signal feed */}
               <motion.div variants={itemVariants} className="flex-1">
                 <div className="glass border border-border rounded-2xl p-3 h-full flex flex-col"
                   style={{ minHeight: '220px' }}
@@ -323,6 +323,30 @@ export function DashboardClient() {
                       </span>
                     )}
                   </div>
+                  {/* Stats row */}
+                  {signals.length > 0 && (() => {
+                    const total = signals.length
+                    const wins = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length
+                    const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined)
+                    const avgR = withR.length > 0 ? withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length : 0
+                    const bestR = withR.length > 0 ? Math.max(...withR.map((s: any) => s.actualReturn ?? 0)) : 0
+                    return (
+                      <div className="grid grid-cols-3 gap-1 mb-2">
+                        <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
+                          <div className="text-[8px] text-gray-500">برد</div>
+                          <div className="text-xs font-black text-emerald-400">{wins}/{total}</div>
+                        </div>
+                        <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
+                          <div className="text-[8px] text-gray-500">میانگین</div>
+                          <div className={`text-xs font-black ${avgR >= 0 ? 'text-amber-400' : 'text-red-400'}`}>{avgR >= 0 ? '+' : ''}{avgR.toFixed(1)}%</div>
+                        </div>
+                        <div className="bg-gray-800/40 rounded-lg p-1.5 text-center">
+                          <div className="text-[8px] text-gray-500">بهترین</div>
+                          <div className="text-xs font-black text-emerald-400">+{bestR.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <div className="flex-1 space-y-2 overflow-y-auto">
                     {signals.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
