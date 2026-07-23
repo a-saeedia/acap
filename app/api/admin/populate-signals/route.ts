@@ -82,7 +82,7 @@ export async function POST() {
       })
 
       try {
-        await pool.query(`INSERT INTO signal (id, type, symbol, title, description, action, "investorType", "expectedProfit", "actualReturn", "priceAtPublish", "priceNow", "imageUrl", "audioUrl", "expiresAt", "publishedAt") 
+        await pool.query(`INSERT INTO signal (id, type, symbol, title, description, action, investortype, expectedprofit, actualreturn, priceatpublish, pricenow, imageurl, audiourl, expiresat, publishedat) 
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`, [
           randomUUID(),
           tpl.type,
@@ -107,7 +107,7 @@ export async function POST() {
     }
 
     // Populate revenue
-    const { rows: signalData } = await pool.query(`SELECT * FROM signal ORDER BY "publishedAt" DESC`)
+    const { rows: signalData } = await pool.query(`SELECT * FROM signal ORDER BY publishedat DESC`)
     const monthlyRevenue: Record<string, { amount: number; count: number }> = {}
     for (const s of signalData) {
       if (!s.actualReturn || s.actualReturn <= 0) continue
