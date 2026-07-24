@@ -159,7 +159,7 @@ const translations: Record<string, { fa: string; en: string }> = {
   // Revenue page
   'rev.title': { fa: 'عملکرد سیگنال‌های A|CAP', en: 'A|CAP Revenue' },
   'rev.lbl.performance': { fa: 'درصد بازده واقعی تمام سیگنال‌های صادره', en: 'Actual return percentage of all issued signals' },
-  'rev.filter.net': { fa: 'خالص', en: 'Net' },
+  'rev.filter.net': { fa: 'سود خالص', en: 'Net Profit' },
   'rev.total.signals': { fa: 'کل سیگنال‌ها', en: 'Total Signals' },
   'rev.win.rate.lbl': { fa: 'نرخ برد', en: 'Win Rate' },
   'rev.avg.return': { fa: 'میانگین بازده', en: 'Avg Return' },

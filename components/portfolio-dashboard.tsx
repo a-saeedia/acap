@@ -232,6 +232,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
   const [uploadParsing, setUploadParsing] = useState(false)
   const [uploadResult, setUploadResult] = useState<{ symbol: string; label: string; type: string; quantity: number; price: number }[] | null>(null)
   const [uploadReplace, setUploadReplace] = useState(false)
+  const [uploadIsRial, setUploadIsRial] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AssetForm>(INITIAL_FORM)
   const [stockSearch, setStockSearch] = useState('')
@@ -484,8 +485,9 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
           const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
           for (const row of dataRows) {
             const sym = row[si]?.trim()
-            const qty = parseFloat(String(row[qi] ?? '').replace(/[^0-9.]/g, ''))
+            let qty = parseFloat(String(row[qi] ?? '').replace(/[^0-9.]/g, ''))
             if (!sym || !qty || qty <= 0) continue
+            if (uploadIsRial) qty = qty / 10
             const { type, label } = detectType(sym)
             items.push({ symbol: sym, label, type, quantity: qty, price: 0 })
           }
@@ -496,8 +498,9 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
       const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
       for (const row of dataRows) {
         const sym = row[symIdx]?.trim()
-        const qty = parseFloat(String(row[qtyIdx] ?? '').replace(/[^0-9.]/g, ''))
+        let qty = parseFloat(String(row[qtyIdx] ?? '').replace(/[^0-9.]/g, ''))
         if (!sym || !qty || qty <= 0) continue
+        if (uploadIsRial) qty = qty / 10
         const { type, label } = detectType(sym)
         items.push({ symbol: sym, label, type, quantity: qty, price: 0 })
       }
@@ -990,6 +993,13 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                     </div>
                   </>
                 )}
+              </label>
+            )}
+
+            {!uploadResult && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                <input type="checkbox" checked={uploadIsRial} onChange={e => setUploadIsRial(e.target.checked)} className="rounded" />
+                ارقام به ریال است (تقسیم بر ۱۰)
               </label>
             )}
 
