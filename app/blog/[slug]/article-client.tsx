@@ -4,19 +4,20 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useLang } from '@/components/lang-provider'
 import { BookOpen, Clock, User, Calendar, Eye, Hash, ArrowLeft, Loader2, Share2, Star, Sparkles, Quote, BookMarked, Layers, Lightbulb, AlertTriangle, CheckCircle, Zap, TrendingUp, Brain, Shield, DollarSign, BarChart3 } from 'lucide-react'
 import { getArticleImage } from '@/lib/article-images'
 
 const crimson = '#A51C30'
 
-function formatDate(dateStr: string | Date) {
+function formatDate(dateStr: string | Date, locale: string = 'fa-IR') {
   try {
-    return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(dateStr))
+    return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(dateStr))
   } catch { return String(dateStr) }
 }
 
-function renderContent(text: string | null | undefined) {
-  if (!text) return <p className="text-gray-400 text-center py-8">بدون محتوا</p>
+function renderContent(text: string | null | undefined, t: (key: string) => string = (k) => k) {
+  if (!text) return <p className="text-gray-400 text-center py-8">{t('article.no.content')}</p>
   const hasHtml = /<\/?[a-z][a-z0-9]*[^>]*>/i.test(text)
   if (hasHtml) {
     return <div className="text-gray-200 leading-relaxed space-y-4 [&_h2]:text-2xl [&_h2]:font-black [&_h2]:text-white [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:border-r-4 [&_h2]:border-[#A51C30] [&_h2]:pr-4 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:text-gray-200 [&_p]:leading-relaxed [&_p]:mb-4 [&_p]:text-justify [&_li]:text-gray-200 [&_li]:mr-4 [&_ul]:space-y-2 [&_ul]:my-4 [&_img]:rounded-2xl [&_img]:my-6 [&_img]:shadow-lg [&_blockquote]:border-r-4 [&_blockquote]:border-[#A51C30] [&_blockquote]:pr-4 [&_blockquote]:py-2 [&_blockquote]:my-4 [&_blockquote]:text-gray-300 [&_blockquote]:italic [&_blockquote]:bg-[#A51C30]/5 [&_blockquote]:rounded-l-xl [&_a]:text-blue-400 [&_a]:underline [&_a:hover]:text-blue-300 [&_code]:bg-gray-800 [&_code]:px-2 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-gray-800 [&_pre]:my-4 [&_pre]:text-sm [&_hr]:border-gray-800 [&_hr]:my-8" dangerouslySetInnerHTML={{ __html: text }} />
@@ -80,7 +81,7 @@ function renderContent(text: string | null | undefined) {
   if (elements.length === 0 && text.trim()) {
     return <p className="text-gray-200 leading-relaxed mb-4">{text}</p>
   }
-  return elements.length > 0 ? elements : <p className="text-gray-400 text-center py-8">بدون محتوا</p>
+  return elements.length > 0 ? elements : <p className="text-gray-400 text-center py-8">{t ? t('article.no.content') : 'بدون محتوا'}</p>
 }
 
 const containerVariants = {
@@ -93,6 +94,7 @@ const itemVariants = {
 }
 
 export function ArticleClient({ article, category }: { article: any; category: any }) {
+  const { t, lang } = useLang()
   const router = useRouter()
   const [copied, setCopied] = useState(false)
 
@@ -113,8 +115,8 @@ export function ArticleClient({ article, category }: { article: any; category: a
   }
 
   const breadcrumbItems = [
-    { position: 1, name: 'خانه', url: 'https://a-cap.xyz' },
-    { position: 2, name: 'وبلاگ', url: 'https://a-cap.xyz/blog' },
+    { position: 1, name: t('article.breadcrumb.home'), url: 'https://a-cap.xyz' },
+    { position: 2, name: t('article.breadcrumb.blog'), url: 'https://a-cap.xyz/blog' },
     ...(category ? [{ position: 3, name: category.name, url: `https://a-cap.xyz/blog?cat=${category.slug}` }] : []),
     { position: category ? 4 : 3, name: article.title, url: `https://a-cap.xyz/blog/${article.slug}` },
   ]
@@ -133,7 +135,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
   const catColor = category?.color || crimson
 
   return (
-    <motion.div className="min-h-screen bg-gray-950 text-white" dir="rtl" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div className="min-h-screen bg-gray-950 text-white" dir={lang === 'fa' ? 'rtl' : 'ltr'} variants={containerVariants} initial="hidden" animate="visible">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
       {/* Hero Banner */}
@@ -143,9 +145,9 @@ export function ArticleClient({ article, category }: { article: any; category: a
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-3xl" style={{ backgroundColor: `${catColor}05` }} />
         <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 py-6">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-            <Link href="/" className="hover:text-white transition-colors">خانه</Link>
+            <Link href="/" className="hover:text-white transition-colors">{t('article.breadcrumb.home')}</Link>
             <span className="text-gray-600">/</span>
-            <Link href="/blog" className="hover:text-white transition-colors">وبلاگ</Link>
+            <Link href="/blog" className="hover:text-white transition-colors">{t('article.breadcrumb.blog')}</Link>
             {category && <><span className="text-gray-600">/</span><span style={{ color: catColor }}>{category.name}</span></>}
             <span className="text-gray-600">/</span>
             <span className="text-white truncate max-w-[200px]">{article.title}</span>
@@ -176,9 +178,9 @@ export function ArticleClient({ article, category }: { article: any; category: a
                 {article.authorRole && <div className="text-xs text-gray-500">{article.authorRole}</div>}
               </div>
             </div>
-            <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {formatDate(article.publishedAt)}</span>
-            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> زمان مطالعه: {article.readingTime} دقیقه</span>
-            <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {(article.views ?? 0).toLocaleString('fa-IR')} بازدید</span>
+            <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {formatDate(article.publishedAt, lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
+            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {t('article.reading.time')}: {article.readingTime} {t('article.minutes')}</span>
+            <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {(article.views ?? 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('article.views')}</span>
           </div>
         </motion.div>
 
@@ -190,14 +192,14 @@ export function ArticleClient({ article, category }: { article: any; category: a
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
           <div className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
             <Sparkles className="w-3.5 h-3.5" style={{ color: catColor }} />
-            <span className="text-xs text-white/80">مقاله آموزشی</span>
+            <span className="text-xs text-white/80">{t('article.educational')}</span>
           </div>
         </motion.div>
 
         {/* Content */}
         <motion.div variants={itemVariants} className="prose prose-invert max-w-none mb-12 relative">
           <div className="absolute -top-8 -left-8 text-6xl opacity-5 select-none rotate-180" style={{ color: catColor }}>{'"'}</div>
-          {renderContent(article.content)}
+          {renderContent(article.content, t)}
         </motion.div>
 
         {/* Tags */}
@@ -205,7 +207,7 @@ export function ArticleClient({ article, category }: { article: any; category: a
           <motion.div variants={itemVariants} className="mb-10 p-6 rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50">
             <div className="flex items-center gap-2 mb-4">
               <Hash className="w-4 h-4" style={{ color: catColor }} />
-              <span className="text-sm font-medium text-gray-300">برچسب‌ها:</span>
+              <span className="text-sm font-medium text-gray-300">{t('article.tags')}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag: string, i: number) => (
@@ -220,22 +222,22 @@ export function ArticleClient({ article, category }: { article: any; category: a
         {/* Share */}
         <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-3 mb-12 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-gray-700/50">
           <Share2 className="w-5 h-5 shrink-0" style={{ color: catColor }} />
-          <span className="text-sm font-medium shrink-0 ml-1" style={{ color: catColor }}>اشتراک‌گذاری:</span>
+          <span className="text-sm font-medium shrink-0 ml-1" style={{ color: catColor }}>{t('article.share')}</span>
           <button onClick={handleCopyLink} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-white transition-all border border-gray-700 min-h-[44px]">
-            {copied ? 'کپی شد!' : 'کپی لینک'}
+            {copied ? t('article.copied') : t('article.copy.link')}
           </button>
           <button onClick={handleShareTelegram} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-sm text-blue-400 hover:text-blue-300 transition-all border border-blue-500/20 min-h-[44px]">
-            <Zap className="w-3.5 h-3.5" /> تلگرام
+            <Zap className="w-3.5 h-3.5" /> {t('article.telegram')}
           </button>
           <button onClick={handleShareTwitter} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sm text-sky-400 hover:text-sky-300 transition-all border border-sky-500/20 min-h-[44px]">
-            توییتر
+            {t('article.twitter')}
           </button>
         </motion.div>
 
         {/* Back */}
         <motion.div variants={itemVariants} className="text-center">
           <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-l from-[#8B1A2A] to-[#6B1420] hover:from-[#A51C30] hover:to-[#8B1A2A] text-white font-medium transition-all shadow-lg shadow-[#4A0D16]/30">
-            <ArrowLeft className="w-4 h-4" /> بازگشت به وبلاگ
+            <ArrowLeft className="w-4 h-4" /> {t('article.back.blog')}
           </Link>
         </motion.div>
       </div>

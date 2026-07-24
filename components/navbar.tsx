@@ -3,23 +3,25 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from './theme-provider'
-import { Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle } from 'lucide-react'
+import { useLang } from './lang-provider'
+import { Menu, X, Sun, Zap, User, LogOut, LayoutDashboard, Shield, Crown, HelpCircle } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 
-const navItems: { label: string; href: string; highlight?: boolean }[] = [
-  { label: 'وبلاگ', href: '/blog' },
-  { label: 'آکادمی', href: '/education' },
-  { label: 'درباره ما', href: '#about' },
-  { label: 'تست مالی', href: '#quiz' },
-  { label: 'A|CAP+', href: '#services' },
-  { label: 'سفیران', href: '#ambassador' },
-  { label: 'تیم', href: '#founders' },
-  { label: 'سوالات', href: '#faq' },
+const navItems: { key: string; href: string; highlight?: boolean }[] = [
+  { key: 'nav.blog', href: '/blog' },
+  { key: 'nav.academy', href: '/education' },
+  { key: 'nav.about', href: '#about' },
+  { key: 'nav.quiz', href: '#quiz' },
+  { key: 'nav.plus', href: '#services' },
+  { key: 'nav.ambassador', href: '#ambassador' },
+  { key: 'nav.team', href: '#founders' },
+  { key: 'nav.faq', href: '#faq' },
 ]
 
 export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
-  const { theme, toggleTheme } = useTheme()
+  const { theme, toggleTheme, isBinance } = useTheme()
+  const { lang, toggleLang, t } = useLang()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { data: session } = useSession()
@@ -57,7 +59,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? 'glass border-b border-border shadow-lg shadow-black/20' : 'bg-transparent'
         }`}
-        dir="rtl"
+        dir={lang === 'fa' ? 'rtl' : 'ltr'}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-16">
@@ -83,17 +85,22 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                       : 'text-muted-foreground border-transparent hover:text-foreground hover:border-border/60 hover:bg-white/4'
                   }`}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </button>
               ))}
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Theme toggle: dark ↔ orange */}
               <button
                 onClick={toggleTheme}
-                className="w-9 h-9 flex items-center justify-center glass border border-border rounded-xl hover:border-primary/40 transition-all"
-                aria-label="تغییر تم"
+                className={`w-9 h-9 flex items-center justify-center glass border rounded-xl transition-all ${
+                  isBinance
+                    ? 'border-orange-500/50 bg-orange-500/10 text-orange-400 shadow-sm shadow-orange-500/15'
+                    : 'border-border hover:border-primary/40'
+                }`}
+                aria-label={isBinance ? t('theme.dark') : t('theme.binance')}
               >
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -103,11 +110,16 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                     exit={{ rotate: 90, opacity: 0 }}
                     transition={{ duration: 0.18 }}
                   >
-                    {theme === 'dark' ? <Sun className="w-4 h-4 text-primary" /> : <Moon className="w-4 h-4 text-primary" />}
+                    {isBinance ? (
+                      <Sun className="w-4 h-4 text-orange-400" />
+                    ) : (
+                      <Zap className="w-4 h-4 text-primary" />
+                    )}
                   </motion.div>
                 </AnimatePresence>
               </button>
 
+              
               {session?.user ? (
                 <div className="hidden md:flex items-center gap-2">
                   {isAdmin && (
@@ -116,7 +128,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                       className="flex items-center gap-1.5 glass border border-red-500/30 hover:border-red-500/60 rounded-xl px-3 py-1.5 text-sm text-red-400 transition-all"
                     >
                       <Shield className="w-4 h-4" />
-                      مدیریت
+                      {t('nav.admin')}
                     </button>
                   )}
                   <button
@@ -124,26 +136,26 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                     className="flex items-center gap-1.5 glass border border-border hover:border-blue-400/40 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:text-blue-400 transition-all"
                   >
                     <HelpCircle className="w-4 h-4" />
-                    تیکت
-                  </button>
-                  <button
-                    onClick={() => router.push('/app/personal')}
-                    className="flex items-center gap-1.5 glass border border-amber-500/30 hover:border-amber-500/60 rounded-xl px-3 py-1.5 text-sm text-amber-400 transition-all"
-                  >
-                    <Crown className="w-4 h-4" />
-                    A|CAP+
+                    {t('nav.ticket')}
+                   </button>
+                   <button
+                     onClick={() => router.push('/app/personal')}
+                     className="flex items-center gap-1.5 glass border border-amber-500/30 hover:border-amber-500/60 rounded-xl px-3 py-1.5 text-sm text-amber-400 transition-all"
+                   >
+                     <Crown className="w-4 h-4" />
+                     {t('nav.plus')}
                   </button>
                   <button
                     onClick={() => router.push('/app')}
                     className="flex items-center gap-1.5 glass border border-primary/30 hover:border-primary/60 rounded-xl px-3 py-1.5 text-sm text-primary transition-all"
                   >
                     <LayoutDashboard className="w-4 h-4" />
-                    داشبورد
-                  </button>
-                  <button
-                    onClick={() => signOut().then(() => window.location.reload())}
-                    className="w-9 h-9 flex items-center justify-center glass border border-border hover:border-red-400/40 rounded-xl text-muted-foreground hover:text-red-400 transition-all"
-                    aria-label="خروج"
+                    {t('nav.dashboard')}
+                   </button>
+                   <button
+                     onClick={() => signOut().then(() => window.location.reload())}
+                     className="w-9 h-9 flex items-center justify-center glass border border-border hover:border-red-400/40 rounded-xl text-muted-foreground hover:text-red-400 transition-all"
+                     aria-label={t('nav.logout')}
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -153,13 +165,13 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                   onClick={onOpenAuth}
                   className="hidden md:flex btn-primary px-4 py-2 rounded-xl text-sm font-bold"
                 >
-                  ورود / ثبت‌نام
-                </button>
-              )}
+                  {t('nav.login')}
+                 </button>
+               )}
 
-              <button
-                onClick={() => setMenuOpen(o => !o)}
-                aria-label={menuOpen ? 'بستن منو' : 'منو'}
+               <button
+                 onClick={() => setMenuOpen(o => !o)}
+                 aria-label={menuOpen ? t('nav.close') : t('nav.menu')}
                 className="md:hidden w-11 h-11 flex items-center justify-center glass border border-border rounded-xl"
               >
                 {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -178,7 +190,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
             className="fixed top-16 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border shadow-xl"
-            dir="rtl"
+            dir={lang === 'fa' ? 'rtl' : 'ltr'}
           >
             <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col">
               {navItems.map((item, i) => (
@@ -190,22 +202,22 @@ export function Navbar({ onOpenAuth }: { onOpenAuth?: () => void }) {
                   onClick={() => scrollTo(item.href)}
                   className={`text-right py-3 text-base border-b border-border/40 last:border-0 transition-colors ${item.highlight ? 'text-primary font-black' : 'text-foreground hover:text-primary'}`}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </motion.button>
               ))}
               <div className="pt-3 flex flex-col gap-2">
                 {session?.user ? (
                   <>
-                    {isAdmin && <button onClick={() => router.push('/admin')} className="btn-primary py-3 rounded-xl font-bold bg-red-600/20 text-red-400 border border-red-500/30">پنل مدیریت</button>}
-                    <button onClick={() => router.push('/tickets')} className="btn-primary py-3 rounded-xl font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">تیکت‌ها</button>
-                    <button onClick={() => router.push('/app/personal')} className="btn-primary py-3 rounded-xl font-bold bg-amber-600/20 text-amber-400 border border-amber-500/30">A|CAP+</button>
+                    {isAdmin && <button onClick={() => router.push('/admin')} className="btn-primary py-3 rounded-xl font-bold bg-red-600/20 text-red-400 border border-red-500/30">{t('nav.adminpanel')}</button>}
+                    <button onClick={() => router.push('/tickets')} className="btn-primary py-3 rounded-xl font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">{t('nav.ticket')}</button>
+                    <button onClick={() => router.push('/app/personal')} className="btn-primary py-3 rounded-xl font-bold bg-amber-600/20 text-amber-400 border border-amber-500/30">{t('nav.plus')}</button>
                     <button onClick={() => router.push('/app')} className="btn-primary py-3 rounded-xl font-bold">
-                      داشبورد من
+                      {t('nav.my.dashboard')}
                     </button>
                   </>
                 ) : (
                   <button onClick={() => { setMenuOpen(false); onOpenAuth?.() }} className="btn-primary py-3 rounded-xl font-bold">
-                    ورود / ثبت‌نام
+                    {t('nav.login')}
                   </button>
                 )}
               </div>

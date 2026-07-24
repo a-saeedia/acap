@@ -1,11 +1,15 @@
 'use client'
 
+'use client'
+
 import { InvitationTab } from '@/components/invitation-tab'
+import { useLang } from '@/components/lang-provider'
 import { motion } from 'framer-motion'
 
 export default function InvitePage() {
+  const { t, lang } = useLang()
   return (
-    <div dir="rtl">
+    <div dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -13,10 +17,10 @@ export default function InvitePage() {
       >
         <div className="mb-2">
           <h1 className="text-xl sm:text-2xl font-black text-foreground">
-            دعوت از دوستان
+            {t('invite.title')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            دوستان خود را به A|CAP دعوت کنید و پاداش بگیرید
+            {t('invite.desc')}
           </p>
         </div>
         <InvitationTab />

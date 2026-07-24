@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { useTheme } from './theme-provider'
+import { useLang } from '@/components/lang-provider'
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Connected-A Chart Background
@@ -337,7 +338,8 @@ function CursorWave() {
 // Hero
 // ─────────────────────────────────────────────────────────────────────────────
 export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
-  const { theme } = useTheme()
+  const { t, lang } = useLang()
+
   const scrollTo = (id: string) => {
     const el = document.querySelector(id)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
@@ -348,7 +350,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
       <CursorWave />
       <HorizontalRouteChart />
 
-      <section id="home" className="relative min-h-screen flex flex-col overflow-hidden bg-background" dir="rtl">
+      <section id="home" className="relative min-h-screen flex flex-col overflow-hidden bg-background" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
 
         {/* Connected-A chart background */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden select-none" aria-hidden>
@@ -372,7 +374,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
               transition={{ duration: 0.65 }}
             >
               <Image
-                src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'}
+                src="/logo-transparent.png"
                 alt="A Capital"
                 width={420}
                 height={126}
@@ -391,7 +393,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
             >
               <span className="inline-flex items-center gap-2 border border-primary/30 rounded-full px-5 py-1.5 text-sm text-primary font-semibold tracking-wide backdrop-blur-sm bg-primary/5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                دستیار مدیریت سرمایه مبتنی بر شخصیت مالی
+                {t('hero.badge')}
               </span>
             </motion.div>
 
@@ -405,7 +407,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
                 className="font-black text-foreground"
                 style={{ fontSize: 'clamp(1.5rem, 4.5vw, 3.6rem)', lineHeight: 1.3, letterSpacing: '-0.02em' }}
               >
-                سرمایه‌ات را <span className="text-brand-shimmer whitespace-nowrap">هوشمند مدیریت کن</span>
+                {t('hero.headline.1')} <span className="text-brand-shimmer whitespace-nowrap">{t('hero.headline.2')}</span>
               </h1>
             </motion.div>
 
@@ -417,8 +419,8 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
               className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto"
               style={{ lineHeight: 2.0 }}
             >
-              A | CAP با تحلیل شخصیت مالی شما، نقشه سرمایه‌گذاری اختصاصی طراحی می‌کند.
-              نه بر پایه هیجان، بلکه بر پایه اطلاعات.
+              {t('hero.sub.1')}
+              {t('hero.sub.2')}
             </motion.p>
 
             {/* CTAs */}
@@ -434,7 +436,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
                 whileTap={{ scale: 0.97 }}
                 className="btn-primary px-8 py-3.5 rounded-2xl font-black text-base tracking-wide"
               >
-                تست شخصیت مالی — رایگان
+                {t('hero.cta.quiz')}
               </motion.button>
               <motion.button
                 onClick={onOpenAuth}
@@ -442,7 +444,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
                 whileTap={{ scale: 0.97 }}
                 className="glass border border-primary/25 hover:border-primary/55 text-foreground px-8 py-3.5 rounded-2xl font-bold text-base transition-all"
               >
-                ورود / ثبت‌نام
+                {t('hero.cta.login')}
               </motion.button>
             </motion.div>
 
@@ -454,10 +456,10 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
               className="flex flex-wrap justify-center gap-3 mt-2"
             >
               {[
-                { v: '+۵۰۰', l: 'کاربر فعال' },
-                { v: '۶', l: 'بازار پوشش داده‌شده' },
-                { v: '۴', l: 'تیپ شخصیت مالی' },
-                { v: '۸۷٪', l: 'رضایت کاربران' },
+                { v: '+۵۰۰', l: t('hero.stat.users') },
+                { v: '۶', l: t('hero.stat.markets') },
+                { v: '۴', l: t('hero.stat.types') },
+                { v: '۸۷٪', l: t('hero.stat.satisfaction') },
               ].map(s => (
                 <div key={s.l} className="glass border border-border/50 rounded-xl px-3 sm:px-5 py-3 text-center">
                   <div className="text-primary font-black text-lg sm:text-xl">{s.v}</div>
@@ -484,7 +486,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth?: () => void }) {
           transition={{ repeat: Infinity, duration: 2.2 }}
           className="relative z-10 flex justify-center pb-8 cursor-pointer"
           onClick={() => scrollTo('#about')}
-          aria-label="اسکرول پایین"
+          aria-label={t('hero.scroll')}
         >
           <div className="w-5 h-8 border border-muted-foreground/20 rounded-full flex justify-center pt-1.5">
             <div className="w-1 h-2 bg-primary/50 rounded-full" />

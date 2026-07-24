@@ -9,41 +9,16 @@ import {
 } from 'lucide-react'
 import { getCourses } from '@/app/actions/academy'
 import { useSession } from '@/lib/auth-client'
+import { useLang } from '@/components/lang-provider'
 
 const crimson = '#A51C30'
 const gold = '#D4A843'
-
-const categories = [
-  { id: 'all', label: 'همه دوره‌ها', color: '#6B7280' },
-  { id: 'ict', label: 'ICT', color: '#3B82F6' },
-  { id: 'ai', label: 'هوش مصنوعی', color: '#8B5CF6' },
-  { id: 'stock', label: 'بورس', color: '#10B981' },
-  { id: 'forex', label: 'فارکس', color: '#F59E0B' },
-  { id: 'crypto', label: 'ارز دیجیتال', color: '#EF4444' },
-  { id: 'blockchain', label: 'بلاکچین', color: '#6366F1' },
-  { id: 'trading', label: 'معامله‌گری', color: '#EC4899' },
-  { id: 'psychology', label: 'روانشناسی', color: '#14B8A6' },
-]
-
-const levels = [
-  { id: 'all', label: 'همه سطوح' },
-  { id: 'beginner', label: 'مبتدی' },
-  { id: 'intermediate', label: 'متوسط' },
-  { id: 'advanced', label: 'پیشرفته' },
-]
 
 const levelStyle: Record<string, string> = {
   beginner: 'bg-emerald-500/20 text-emerald-400',
   intermediate: 'bg-amber-500/20 text-amber-400',
   advanced: 'bg-red-500/20 text-red-400',
 }
-
-const sortOptions = [
-  { id: 'popular', label: 'محبوب‌ترین' },
-  { id: 'newest', label: 'جدیدترین' },
-  { id: 'price-asc', label: 'قیمت: کم به زیاد' },
-  { id: 'price-desc', label: 'قیمت: زیاد به کم' },
-]
 
 interface Course {
   id: string; title: string; slug: string; description: string; category: string;
@@ -57,6 +32,39 @@ export default function CatalogPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
+  const { t, lang } = useLang()
+
+  const categories = [
+    { id: 'all', label: t('catalog.all.categories'), color: '#6B7280' },
+    { id: 'ict', label: t('cat.ict'), color: '#3B82F6' },
+    { id: 'ai', label: t('cat.ai'), color: '#8B5CF6' },
+    { id: 'stock', label: t('cat.stock'), color: '#10B981' },
+    { id: 'forex', label: t('cat.forex'), color: '#F59E0B' },
+    { id: 'crypto', label: t('cat.crypto'), color: '#EF4444' },
+    { id: 'blockchain', label: t('cat.blockchain'), color: '#6366F1' },
+    { id: 'trading', label: t('cat.trading'), color: '#EC4899' },
+    { id: 'psychology', label: t('cat.psychology'), color: '#14B8A6' },
+  ]
+
+  const levels = [
+    { id: 'all', label: t('catalog.level.all') },
+    { id: 'beginner', label: t('level.beginner') },
+    { id: 'intermediate', label: t('level.intermediate') },
+    { id: 'advanced', label: t('level.advanced') },
+  ]
+
+  const sortOptions = [
+    { id: 'popular', label: t('catalog.sort.popular') },
+    { id: 'newest', label: t('catalog.sort.newest') },
+    { id: 'price-asc', label: t('catalog.sort.price.asc') },
+    { id: 'price-desc', label: t('catalog.sort.price.desc') },
+  ]
+
+  const levelKeys: Record<string, string> = {
+    beginner: 'level.beginner',
+    intermediate: 'level.intermediate',
+    advanced: 'level.advanced',
+  }
 
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,7 +94,7 @@ export default function CatalogPage() {
 
   const instructors = useMemo(() => {
     const names = new Set(courses.map(c => c.instructorName))
-    return [{ id: 'all', name: 'همه اساتید' }, ...Array.from(names).map(n => ({ id: n, name: n }))]
+    return [{ id: 'all', name: t('catalog.all.instructors') }, ...Array.from(names).map(n => ({ id: n, name: n }))]
   }, [courses])
 
   const filtered = useMemo(() => {
@@ -139,16 +147,16 @@ export default function CatalogPage() {
   return (
     <motion.div
       className="space-y-6 pb-16"
-      dir="rtl"
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header */}
       <motion.div variants={itemVariants}>
-        <h1 className="text-3xl font-black">دوره‌های آموزشی</h1>
+        <h1 className="text-3xl font-black">{t('catalog.title')}</h1>
         <p className="text-gray-400 mt-1">
-          مرور و جستجوی تمام دوره‌های آکادمی A|CAP
+          {t('catalog.subtitle')}
         </p>
       </motion.div>
 
@@ -160,7 +168,7 @@ export default function CatalogPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="جستجوی دوره..."
+            placeholder={t('catalog.search.placeholder')}
             className="w-full bg-gray-800/60 border border-gray-700 rounded-xl py-2.5 pr-10 pl-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-crimson-500/50 transition-all"
           />
           {search && (
@@ -187,7 +195,7 @@ export default function CatalogPage() {
           }`}
         >
           <Filter className="w-4 h-4" />
-          فیلترها
+          {t('catalog.filters')}
         </button>
 
         <div className="flex border border-gray-700 rounded-xl overflow-hidden">
@@ -215,7 +223,7 @@ export default function CatalogPage() {
         >
           {/* Category Tabs */}
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-2 block">دسته‌بندی</label>
+            <label className="text-xs text-gray-500 font-medium mb-2 block">{t('catalog.category')}</label>
             <div className="flex flex-wrap gap-2">
               {categories.map(cat => (
                 <button
@@ -236,7 +244,7 @@ export default function CatalogPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {/* Level Filter */}
             <div>
-              <label className="text-xs text-gray-500 font-medium mb-2 block">سطح دوره</label>
+              <label className="text-xs text-gray-500 font-medium mb-2 block">{t('catalog.level')}</label>
               <div className="flex flex-wrap gap-2">
                 {levels.map(l => (
                   <button
@@ -256,7 +264,7 @@ export default function CatalogPage() {
 
             {/* Instructor Filter */}
             <div>
-              <label className="text-xs text-gray-500 font-medium mb-2 block">استاد</label>
+              <label className="text-xs text-gray-500 font-medium mb-2 block">{t('catalog.instructor')}</label>
               <div className="flex flex-wrap gap-2">
                 {instructors.map(inst => (
                   <button
@@ -279,7 +287,7 @@ export default function CatalogPage() {
 
       {/* Results count */}
       <motion.div variants={itemVariants} className="text-sm text-gray-500">
-        {filtered.length.toLocaleString('fa-IR')} دوره پیدا شد
+        {filtered.length.toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('catalog.found')}
       </motion.div>
 
       {/* Course Grid / List */}
@@ -292,8 +300,8 @@ export default function CatalogPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-20" />
-          <p className="text-lg font-medium mb-2">دوره‌ای یافت نشد</p>
-          <p className="text-sm text-gray-600">متن جستجو یا فیلترهای خود را تغییر دهید</p>
+          <p className="text-lg font-medium mb-2">{t('catalog.empty.title')}</p>
+          <p className="text-sm text-gray-600">{t('catalog.empty.desc')}</p>
         </div>
       ) : viewMode === 'grid' ? (
         <motion.div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" variants={containerVariants}>
@@ -311,10 +319,10 @@ export default function CatalogPage() {
               >
                 <div className="absolute inset-0 opacity-10" style={{ background: `radial-gradient(circle at 50% 50%, ${course.color}, transparent 70%)` }} />
                 {course.isNew && (
-                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-medium border border-emerald-500/20">جدید</span>
+                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-medium border border-emerald-500/20">{t('catalog.new')}</span>
                 )}
                 {course.isBestseller && (
-                  <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-medium border border-amber-500/20">پرفروش</span>
+                  <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-medium border border-amber-500/20">{t('catalog.bestseller')}</span>
                 )}
                 <BookOpen className="w-12 h-12 opacity-30 group-hover:opacity-50 transition-opacity" style={{ color: course.color }} />
               </div>
@@ -322,7 +330,7 @@ export default function CatalogPage() {
               <div className="p-4 space-y-2.5">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${levelStyle[course.level] || 'bg-gray-500/20 text-gray-400'}`}>
-                    {course.level === 'beginner' ? 'مبتدی' : course.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}
+                    {t(levelKeys[course.level])}
                   </span>
                   <span
                     className="px-2 py-0.5 rounded-md text-xs font-medium"
@@ -341,7 +349,7 @@ export default function CatalogPage() {
 
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400 fill-amber-400" />{course.rating?.toFixed(1) || '-'}</span>
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{(course.studentsCount || 0).toLocaleString('fa-IR')}</span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{(course.studentsCount || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{course.duration || '-'}</span>
                 </div>
 
@@ -349,11 +357,11 @@ export default function CatalogPage() {
                   <div className="flex items-center gap-2">
                     {course.originalPrice && course.originalPrice > course.price ? (
                       <>
-                        <span className="font-bold text-crimson-400">{(course.price || 0).toLocaleString('fa-IR')} تومان</span>
-                        <span className="text-xs text-gray-500 line-through">{(course.originalPrice || 0).toLocaleString('fa-IR')}</span>
+                        <span className="font-bold text-crimson-400">{(course.price || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('catalog.toman')}</span>
+                        <span className="text-xs text-gray-500 line-through">{(course.originalPrice || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
                       </>
                     ) : (
-                      <span className="font-bold text-white">{(course.price || 0).toLocaleString('fa-IR')} تومان</span>
+                      <span className="font-bold text-white">{(course.price || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('catalog.toman')}</span>
                     )}
                   </div>
                   <Play className="w-4 h-4 text-gray-500 group-hover:text-crimson-400 transition-colors" />
@@ -382,20 +390,20 @@ export default function CatalogPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-bold text-sm group-hover:text-crimson-400 transition-colors truncate">{course.title}</h3>
                   <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${levelStyle[course.level] || ''}`}>
-                    {course.level === 'beginner' ? 'مبتدی' : course.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}
+                    {t(levelKeys[course.level])}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-400">
                   <span>{course.instructorName}</span>
                   <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400 fill-amber-400" />{course.rating?.toFixed(1) || '-'}</span>
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{(course.studentsCount || 0).toLocaleString('fa-IR')}</span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{(course.studentsCount || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
                   <span>{course.duration || '-'}</span>
                 </div>
               </div>
               <div className="text-left flex-shrink-0">
-                <div className="font-bold text-sm">{(course.price || 0).toLocaleString('fa-IR')} <span className="text-xs font-normal text-gray-500">تومان</span></div>
+                <div className="font-bold text-sm">{(course.price || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} <span className="text-xs font-normal text-gray-500">{t('catalog.toman')}</span></div>
                 {course.originalPrice && course.originalPrice > course.price && (
-                  <div className="text-xs text-gray-500 line-through">{(course.originalPrice || 0).toLocaleString('fa-IR')} تومان</div>
+                  <div className="text-xs text-gray-500 line-through">{(course.originalPrice || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('catalog.toman')}</div>
                 )}
               </div>
             </motion.div>

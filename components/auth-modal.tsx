@@ -22,6 +22,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
   const [error, setError] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [sent, setSent] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -50,7 +51,7 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
   const handleSignIn = async () => {
     if (!email || !password) { setError('لطفاً ایمیل و رمز عبور را وارد کنید'); return }
     setLoading(true); setError('')
-    const { error } = await signIn.email({ email, password })
+    const { error } = await signIn.email({ email, password, rememberMe })
     if (error) {
       setError('ایمیل یا رمز عبور اشتباه است')
       setLoading(false)
@@ -192,6 +193,13 @@ export function AuthModal({ open, onClose, initialMode = 'sign-up' }: AuthModalP
                   </div>
 
                   {error && <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">{error}</div>}
+
+                  {mode === 'sign-in' && (
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                      <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded accent-primary" />
+                      مرا به خاطر بسپار
+                    </label>
+                  )}
 
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     type="submit" disabled={loading}

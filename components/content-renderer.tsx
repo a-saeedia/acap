@@ -1,6 +1,9 @@
 'use client'
 
+import { useLang } from '@/components/lang-provider'
+
 export function ContentRenderer({ text, className = '' }: { text?: string | null; className?: string }) {
+  const { t } = useLang()
   if (!text) return null
 
   const lines = text.split('\n')

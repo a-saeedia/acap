@@ -6,23 +6,24 @@ import { useSession } from '@/lib/auth-client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Crown, ArrowLeft, TrendingUp, X, Loader2, Send, Clock, Bot, Play, Pause, Mic, ChevronDown, MessageSquare, Check, MessageCircle } from 'lucide-react'
 import { getUserSuggestions, markSuggestionRead } from '@/app/actions/admin'
+import { useLang } from '@/components/lang-provider'
 
 type Suggestion = Awaited<ReturnType<typeof getUserSuggestions>>[number]
 
 const PM = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
-function formatTime(d: Date) {
-  return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
+function formatTime(d: Date, lang: string) {
+  return d.toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatDateLabel(d: Date) {
+function formatDateLabel(d: Date, lang: string, tFn: (key: string) => string) {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   const diff = Math.floor((today.getTime() - target.getTime()) / 86400000)
-  if (diff === 0) return 'امروز'
-  if (diff === 1) return 'دیروز'
-  return d.toLocaleDateString('fa-IR', { month: 'long', day: 'numeric', year: 'numeric' })
+  if (diff === 0) return tFn('common.today')
+  if (diff === 1) return tFn('common.yesterday')
+  return d.toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 function dateKey(d: Date) {
@@ -50,6 +51,7 @@ function ContentLines({ text }: { text?: string | null }) {
 }
 
 export default function AcapPlusPage() {
+  const { t, lang } = useLang()
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const [checking, setChecking] = useState(true)
@@ -102,7 +104,7 @@ export default function AcapPlusPage() {
   // Non-plus user — request page
   if (!isPlus && suggestions.length === 0) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6" dir="rtl">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
           <div className="glass border border-amber-500/20 rounded-3xl p-8 sm:p-10 text-center">
             <motion.div
@@ -114,9 +116,9 @@ export default function AcapPlusPage() {
               <Crown className="w-10 h-10 text-white" />
             </motion.div>
             <h1 className="text-3xl sm:text-4xl font-black mb-3 bg-gradient-to-l from-amber-300 to-amber-500 bg-clip-text text-transparent">A|CAP+</h1>
-            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">سطح بعدی مدیریت سرمایه هوشمند</p>
+            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">{t('plus.subtitle')}</p>
             <div className="space-y-3 text-right mb-8">
-              {['پیشنهادات سرمایه‌گذاری اختصاصی', 'سیگنال‌های خرید و فروش لحظه‌ای', 'تحلیل اختصاصی پورتفولیو', 'پشتیبانی VIP در تلگرام', 'دسترسی به آکادمی A|CAP'].map((item, i) => (
+              {[t('plus.feature.custom'), t('plus.feature.signals'), t('plus.feature.portfolio'), t('plus.feature.vip'), t('plus.feature.academy')].map((item, i) => (
                 <motion.div key={item} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.05 }}
                   className="flex items-center gap-3 text-sm"
                 >
@@ -127,7 +129,7 @@ export default function AcapPlusPage() {
             </div>
             {hasRequested ? (
               <div className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-6 py-4 rounded-2xl text-sm font-bold mb-4 flex items-center justify-center gap-2">
-                <Clock className="w-5 h-5" />درخواست شما ثبت شد. پس از تأیید ادمین فعال خواهد شد.
+                <Clock className="w-5 h-5" />{t('plus.requested')}
               </div>
             ) : (
               <>
@@ -142,17 +144,17 @@ export default function AcapPlusPage() {
                 }} disabled={requesting}
                   className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-l from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-6 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-emerald-500/20 mb-3"
                 >
-                  {requesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}درخواست A|CAP+
+                  {requesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}{t('plus.request')}
                 </button>
                 <a href="https://t.me/a_cap_support" target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-3 w-full bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-6 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-amber-500/20 mb-4"
                 >
-                  <MessageCircle className="w-5 h-5" />فعال‌سازی از طریق تلگرام
+                  <MessageCircle className="w-5 h-5" />{t('plus.activate')}
                 </a>
               </>
             )}
             <button onClick={() => router.push('/app')} className="flex items-center justify-center gap-2 w-full text-muted-foreground hover:text-foreground transition-colors py-2">
-              <ArrowLeft className="w-4 h-4" />بازگشت به داشبورد
+              <ArrowLeft className="w-4 h-4" />{t('plus.back')}
             </button>
           </div>
         </motion.div>
@@ -171,7 +173,7 @@ export default function AcapPlusPage() {
   const sortedGroups = Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]))
 
   return (
-    <div className="h-screen bg-gray-950 flex flex-col" dir="rtl">
+    <div className="h-screen bg-gray-950 flex flex-col" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       {/* Fixed header */}
       <header className="shrink-0 bg-gray-900/95 backdrop-blur-xl border-b border-gray-800 px-4 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
@@ -184,13 +186,13 @@ export default function AcapPlusPage() {
             </div>
             <div>
               <h1 className="text-sm font-black text-white">A|CAP Bot</h1>
-              <p className="text-[10px] text-gray-500">{suggestions.length} پیشنهاد</p>
+              <p className="text-[10px] text-gray-500">{t('plus.suggestions').replace('{{count}}', suggestions.length.toString())}</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] text-gray-600">آنلاین</span>
+          <span className="text-[10px] text-gray-600">{t('plus.online')}</span>
         </div>
       </header>
 
@@ -199,8 +201,8 @@ export default function AcapPlusPage() {
         {suggestions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <Bot className="w-12 h-12 mb-3 opacity-30" />
-            <p className="text-sm">هنوز پیشنهادی دریافت نکردی</p>
-            <p className="text-xs text-gray-600 mt-1 mt-1">به زودی اولین پیشنهاد اختصاصی برات میاد</p>
+            <p className="text-sm">{t('plus.empty.title')}</p>
+            <p className="text-xs text-gray-600 mt-1 mt-1">{t('plus.empty.desc')}</p>
           </div>
         ) : (
           <>
@@ -212,10 +214,10 @@ export default function AcapPlusPage() {
                   <span className="text-[11px] text-amber-400/80 font-bold">A|CAP+</span>
                 </div>
                 <p className="text-[13px] text-gray-300 leading-relaxed" style={{ direction: 'rtl', textAlign: 'right' }}>
-                  سلام! اینجا پیشنهادات اختصاصی سرمایه‌گذاری برای تو قرار می‌گیره. هر پیشنهاد می‌تونه شامل تحلیل، تصویر، ویس و ویدئو باشه.
+                  {t('plus.bot.welcome')}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-[10px] text-gray-600">هماکنون</span>
+                  <span className="text-[10px] text-gray-600">{t('plus.bot.now')}</span>
                   <span className="text-blue-400 text-[9px]">✓✓</span>
                 </div>
               </div>
@@ -226,7 +228,7 @@ export default function AcapPlusPage() {
                 {/* Date separator */}
                 <div className="flex justify-center my-3">
                   <span className="text-[10px] text-gray-600 bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700/30">
-                    {formatDateLabel(new Date(daySugs[0].createdAt))}
+                    {formatDateLabel(new Date(daySugs[0].createdAt), lang, t)}
                   </span>
                 </div>
 
@@ -246,7 +248,7 @@ export default function AcapPlusPage() {
                             <div className="w-5 h-5 rounded-full bg-amber-500/30 flex items-center justify-center flex-shrink-0">
                               <Crown className="w-2.5 h-2.5 text-amber-400" />
                             </div>
-                            <span className="text-[10px] text-amber-400/80 font-bold">پیشنهاد اختصاصی</span>
+                            <span className="text-[10px] text-amber-400/80 font-bold">{t('plus.suggestion.label')}</span>
                             {!s.isRead && (
                               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                             )}
@@ -280,7 +282,7 @@ export default function AcapPlusPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <Mic className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                                  <span className="text-[11px] text-gray-400">ویس پیام</span>
+                                  <span className="text-[11px] text-gray-400">{t('plus.voice.label')}</span>
                                   {playingAudio === s.audioUrl && (
                                     <div className="flex gap-0.5 items-center">
                                       {[1,2,3].map(i => (
@@ -309,7 +311,7 @@ export default function AcapPlusPage() {
 
                         {/* Footer: time + read */}
                         <div className="flex items-center gap-1.5 mt-0.5 mr-1">
-                          <span className="text-[10px] text-gray-600">{formatTime(sd)}</span>
+                          <span className="text-[10px] text-gray-600">{formatTime(sd, lang)}</span>
                           {s.isRead ? (
                             <span className="text-blue-400 text-[9px]">✓✓</span>
                           ) : (
@@ -331,7 +333,7 @@ export default function AcapPlusPage() {
       <div className="shrink-0 border-t border-gray-800 px-4 py-3 bg-gray-900/95">
         <div className="flex items-center gap-2 max-w-2xl mx-auto">
           <div className="flex-1 bg-gray-800 rounded-xl px-4 py-2.5 text-gray-500 text-sm text-right border border-gray-700/50">
-            {suggestions.length > 0 ? '💬 برای ثبت نظر با ادمین تماس بگیرید' : 'هنوز پیشنهادی نیست'}
+            {suggestions.length > 0 ? t('plus.input.placeholder') : t('plus.input.empty')}
           </div>
           <button className="w-11 h-11 rounded-xl bg-amber-600/20 flex items-center justify-center text-amber-400 hover:bg-amber-600/30 transition-colors">
             <Send className="w-4 h-4" />

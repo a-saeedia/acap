@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { getMyEnrollments } from '@/app/actions/academy'
 import { useSession } from '@/lib/auth-client'
+import { useLang } from '@/components/lang-provider'
 
 const crimson = '#A51C30'
 const gold = '#D4A843'
@@ -19,12 +20,6 @@ const levelStyle: Record<string, string> = {
   beginner: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20',
   intermediate: 'bg-amber-500/20 text-amber-400 border-amber-500/20',
   advanced: 'bg-red-500/20 text-red-400 border-red-500/20',
-}
-
-const levelLabel: Record<string, string> = {
-  beginner: 'مبتدی',
-  intermediate: 'متوسط',
-  advanced: 'پیشرفته',
 }
 
 interface Course {
@@ -44,6 +39,13 @@ interface Enrollment {
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session } = useSession()
+  const { t, lang } = useLang()
+
+  const levelLabel: Record<string, string> = {
+    beginner: t('level.beginner'),
+    intermediate: t('level.intermediate'),
+    advanced: t('level.advanced'),
+  }
 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,7 +85,7 @@ export default function DashboardPage() {
   return (
     <motion.div
       className="space-y-8 pb-16"
-      dir="rtl"
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -103,24 +105,24 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-black">
-                خوش آمدید، {session?.user?.name || 'کاربر'}
+                {t('acadash.welcome').replace('{{name}}', session?.user?.name || t('common.user'))}
               </h1>
-              <p className="text-gray-400 text-sm mt-1">به داشبورد آموزشی خود خوش آمدید</p>
+              <p className="text-gray-400 text-sm mt-1">{t('acadash.welcome.sub')}</p>
             </div>
           </div>
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
             {[
-              { icon: BookOpen, label: 'دوره‌های ثبت نامی', value: enrollments.length, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-              { icon: Trophy, label: 'دوره‌های تکمیل شده', value: completed.length, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-              { icon: Clock, label: 'ساعت تماشا', value: watchedHours, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-              { icon: BarChart3, label: 'پیشرفت کلی', value: `${totalProgress}%`, color: 'text-crimson-400', bg: 'bg-crimson-500/10' },
+              { icon: BookOpen, label: t('acadash.stat.enrolled'), value: enrollments.length, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+              { icon: Trophy, label: t('acadash.stat.completed'), value: completed.length, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+              { icon: Clock, label: t('acadash.stat.hours'), value: watchedHours, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+              { icon: BarChart3, label: t('acadash.stat.progress'), value: `${totalProgress}%`, color: 'text-crimson-400', bg: 'bg-crimson-500/10' },
             ].map((stat, i) => (
               <div key={i} className={`rounded-xl ${stat.bg} border border-gray-700/50 p-3 text-center`}>
                 <stat.icon className={`w-5 h-5 mx-auto mb-1 ${stat.color}`} />
                 <div className={`text-lg font-bold ${stat.color}`}>
-                  {typeof stat.value === 'number' ? stat.value.toLocaleString('fa-IR') : stat.value}
+                  {typeof stat.value === 'number' ? stat.value.toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US') : stat.value}
                 </div>
                 <div className="text-xs text-gray-500">{stat.label}</div>
               </div>
@@ -141,22 +143,22 @@ export default function DashboardPage() {
           className="rounded-3xl bg-gray-800/40 border border-gray-700/50 p-12 text-center"
         >
           <GraduationCap className="w-20 h-20 mx-auto mb-6 text-gray-600" />
-          <h2 className="text-2xl font-bold mb-2">هنوز در دوره‌ای ثبت نام نکرده‌اید</h2>
+          <h2 className="text-2xl font-bold mb-2">{t('acadash.empty.title')}</h2>
           <p className="text-gray-400 mb-8 max-w-md mx-auto">
-            با ثبت نام در دوره‌های آکادمی A|CAP، مسیر یادگیری سرمایه‌گذاری هوشمند را آغاز کنید
+            {t('acadash.empty.desc')}
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <button
               onClick={() => router.push('/app/academy/catalog')}
               className="px-8 py-3.5 rounded-xl bg-crimson-600 hover:bg-crimson-700 text-white font-bold transition-all shadow-lg shadow-crimson-500/20"
             >
-              مرور دوره‌ها
+              {t('acadash.browse')}
             </button>
             <button
               onClick={() => router.push('/app/academy')}
               className="px-8 py-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold border border-gray-700 transition-all"
             >
-              صفحه اصلی آکادمی
+              {t('acadash.home')}
             </button>
           </div>
         </motion.div>
@@ -169,9 +171,9 @@ export default function DashboardPage() {
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Play className="w-5 h-5 text-crimson-400" />
-                    ادامه یادگیری
+                    {t('acadash.continue')}
                   </h2>
-                  <p className="text-xs text-gray-500 mt-0.5">دوره‌هایی که در حال گذراندن هستید</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('acadash.continue.desc')}</p>
                 </div>
               </div>
 
@@ -203,7 +205,7 @@ export default function DashboardPage() {
                         {/* Progress Bar */}
                         <div className="mt-3 space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-400">پیشرفت</span>
+                            <span className="text-gray-400">{t('acadash.progress')}</span>
                             <span className="text-crimson-400 font-medium">{Math.round(enr.progress)}%</span>
                           </div>
                           <div className="h-2 rounded-full bg-gray-700 overflow-hidden">
@@ -230,9 +232,9 @@ export default function DashboardPage() {
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-amber-400" />
-                    دوره‌های تکمیل شده
+                    {t('acadash.completed.title')}
                   </h2>
-                  <p className="text-xs text-gray-500 mt-0.5">تبریک! این دوره‌ها را با موفقیت به پایان رسانده‌اید</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('acadash.completed.desc')}</p>
                 </div>
               </div>
 
@@ -258,7 +260,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
                       <Award className="w-3 h-3" />
-                      تکمیل شده
+                      {t('acadash.completed.badge')}
                     </div>
                   </motion.div>
                 ))}
@@ -269,8 +271,8 @@ export default function DashboardPage() {
           {/* All Enrollments */}
           <motion.section variants={itemVariants}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">همه دوره‌های من</h2>
-              <span className="text-xs text-gray-500">{enrollments.length} دوره</span>
+              <h2 className="text-xl font-bold">{t('acadash.all.courses')}</h2>
+              <span className="text-xs text-gray-500">{enrollments.length} {t('acadash.count')}</span>
             </div>
 
             <div className="space-y-3">
@@ -295,7 +297,7 @@ export default function DashboardPage() {
                         </h3>
                         {enr.completedAt && (
                           <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
-                            تکمیل شده
+                            {t('acadash.completed.badge')}
                           </span>
                         )}
                       </div>
@@ -306,7 +308,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex-shrink-0 w-24 text-left">
-                      <div className="text-xs text-gray-500 mb-1">پیشرفت</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('acadash.progress')}</div>
                       <div className="text-sm font-bold text-crimson-400">{Math.round(enr.progress)}%</div>
                       <div className="h-1.5 rounded-full bg-gray-700 overflow-hidden mt-1">
                         <div
@@ -331,13 +333,13 @@ export default function DashboardPage() {
           className="rounded-3xl bg-gradient-to-br from-crimson-900/20 via-gray-950 to-gray-950 border border-crimson-500/20 p-6 md:p-8 text-center"
         >
           <Sparkles className="w-10 h-10 mx-auto mb-3 text-crimson-400" />
-          <h2 className="text-xl font-bold mb-2">به یادگیری ادامه دهید</h2>
-          <p className="text-gray-400 text-sm mb-4">دوره‌های جدید را کاوش کنید و مهارت‌های خود را ارتقا دهید</p>
+          <h2 className="text-xl font-bold mb-2">{t('acadash.cta.title')}</h2>
+          <p className="text-gray-400 text-sm mb-4">{t('acadash.cta.desc')}</p>
           <button
             onClick={() => router.push('/app/academy/catalog')}
             className="px-6 py-2.5 rounded-xl bg-crimson-600 hover:bg-crimson-700 text-white font-semibold transition-all"
           >
-            مرور دوره‌ها
+            {t('acadash.browse')}
           </button>
         </motion.div>
       )}

@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
+import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,11 +11,13 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString('base64')
-    const mime = file.type || 'image/png'
-    const dataUrl = `data:${mime};base64,${base64}`
+    const ext = file.name?.split('.').pop() || 'webm'
+    const filename = `${randomUUID()}.${ext}`
+    const filepath = join(process.cwd(), 'public', 'uploads', filename)
+    await writeFile(filepath, buffer)
 
-    return NextResponse.json({ url: dataUrl })
+    const url = `/uploads/${filename}`
+    return NextResponse.json({ url })
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Upload failed' }, { status: 500 })
   }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useLang } from '@/components/lang-provider'
 import { TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
 
 const PERSIAN_LABELS: Record<string, string> = {
@@ -31,11 +32,11 @@ const SYMBOL_ICON: Record<string, { icon: string; color: string; bg: string }> =
   'GBP-IRR': { icon: '£', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
 }
 
-const TABS = [
-  { id: 'all', label: 'همه' },
-  { id: 'crypto', label: 'ارز دیجیتال' },
-  { id: 'gold', label: 'طلا و سکه' },
-  { id: 'forex', label: 'ارز' },
+const TAB_KEYS: { id: string; key: string }[] = [
+  { id: 'all', key: 'price.all' },
+  { id: 'crypto', key: 'price.crypto' },
+  { id: 'gold', key: 'price.gold' },
+  { id: 'forex', key: 'price.forex' },
 ]
 
 const CATEGORIES: Record<string, string[]> = {
@@ -44,14 +45,25 @@ const CATEGORIES: Record<string, string[]> = {
   forex: ['USD-IRR', 'EUR-IRR', 'AED-IRR', 'TRY-IRR', 'GBP-IRR'],
 }
 
-function formatPrice(price: number, isUsd: boolean): string {
+function formatPrice(price: number, isUsd: boolean, locale: string): string {
   if (isUsd) return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  return `${Math.round(price / 10).toLocaleString('fa-IR')}`
+  return `${Math.round(price / 10).toLocaleString(locale)}`
+}
+
+const EN_LABELS: Record<string, string> = {
+  'BTC': 'Bitcoin', 'ETH': 'Ethereum', 'USDT': 'Tether', 'BNB': 'Binance Coin',
+  'SOL': 'Solana', 'XRP': 'Ripple', 'ADA': 'Cardano', 'DOGE': 'Dogecoin',
+  'TRX': 'Tron', 'USD-IRR': 'Dollar', 'EUR-IRR': 'Euro', 'AED-IRR': 'Dirham',
+  'TRY-IRR': 'Lira', 'GBP-IRR': 'Pound', 'GOLD18': 'Gold 18K', 'GOLD24': 'Gold 24K',
+  'COIN': 'Emami Coin', 'HALF_COIN': 'Half Coin', 'QUARTER_COIN': 'Quarter Coin',
+  'BTC-IRR': 'Bitcoin', 'ETH-IRR': 'Ethereum', 'USDT-IRR': 'Tether',
+  'GOLD': 'Gold 18K', 'USD': 'Dollar', 'EUR': 'Euro',
 }
 
 function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; price: number; currency: string; weekChange: number }) {
+  const { t, lang } = useLang()
   const isUsd = currency === 'USD'
-  const label = PERSIAN_LABELS[symbol] || symbol
+  const label = lang === 'fa' ? (PERSIAN_LABELS[symbol] || symbol) : (EN_LABELS[symbol] || symbol)
   const isPositive = weekChange >= 0
   const meta = SYMBOL_ICON[symbol]
 
@@ -109,10 +121,10 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
         <div className="flex items-end justify-between">
           <div>
             <div className="text-lg font-black text-foreground tracking-tight font-mono">
-              {formatPrice(price, isUsd)}
+              {formatPrice(price, isUsd, lang === 'fa' ? 'fa-IR' : 'en-US')}
             </div>
             <div className="text-[10px] text-muted-foreground mt-0.5">
-              {isUsd && !symbol.endsWith('-IRR') ? 'دلار' : 'تومان'}
+              {isUsd && !symbol.endsWith('-IRR') ? t('price.usd') : t('price.toman')}
             </div>
           </div>
         </div>
@@ -122,6 +134,7 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
 }
 
 export default function PricesPage() {
+  const { t, lang } = useLang()
   const [activeTab, setActiveTab] = useState('all')
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string; change?: number }>>({})
   const [loading, setLoading] = useState(true)
@@ -166,10 +179,10 @@ export default function PricesPage() {
   }, [activeTab, prices, grouped])
 
   return (
-    <div dir="rtl" className="min-h-screen">
+    <div dir={lang === 'fa' ? 'rtl' : 'ltr'} className="min-h-screen">
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 no-scrollbar">
-        {TABS.map(tab => (
+        {TAB_KEYS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`relative px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-200 ${
               activeTab === tab.id
@@ -177,7 +190,7 @@ export default function PricesPage() {
                 : 'text-muted-foreground hover:text-foreground border border-transparent hover:bg-muted'
             }`}
           >
-            {tab.label}
+            {t(tab.key)}
           </button>
         ))}
       </div>
@@ -191,14 +204,14 @@ export default function PricesPage() {
           <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-7 h-7 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground">در حال حاضر داده قیمتی در دسترس نیست</p>
+          <p className="text-muted-foreground">{t('price.no.data')}</p>
           <button onClick={loadPrices} className="mt-4 px-5 py-2.5 rounded-xl bg-muted hover:bg-accent text-sm font-semibold transition-colors">
-            تلاش مجدد
+            {t('price.retry')}
           </button>
         </div>
       ) : filteredItems.length === 0 && activeTab !== 'all' ? (
         <div className="text-center py-16">
-          <p className="text-muted-foreground">هیچ قیمتی در این دسته یافت نشد</p>
+          <p className="text-muted-foreground">{t('price.not.found')}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -210,7 +223,7 @@ export default function PricesPage() {
               return (
                 <div key={cat}>
                   <h3 className="text-sm font-bold text-muted-foreground mb-3 px-1">
-                    {cat === 'crypto' ? 'ارز دیجیتال' : cat === 'gold' ? 'طلا و سکه' : 'ارز'}
+                    {cat === 'crypto' ? t('price.category.crypto') : cat === 'gold' ? t('price.category.gold') : t('price.category.forex')}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {items.map(([sym, data]) => (

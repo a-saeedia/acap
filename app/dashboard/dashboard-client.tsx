@@ -13,6 +13,7 @@ import { saveProfile, getDashboardData } from '@/app/actions/profile'
 import { getMyReferralStats } from '@/app/actions/referral'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
 import { ReferralCard } from '@/components/referral-card'
+import { SignalNotifier } from '@/components/signal-notifier'
 import { InvitationTab } from '@/components/invitation-tab'
 import { toPersianDigits } from '@/lib/utils'
 
@@ -351,6 +352,8 @@ export function DashboardClient() {
             </div>
             <OnboardingTasks profile={profile} quizResults={quizResults} subscription={subscription} assetsCount={assetsCount} />
           </motion.div>
+
+          <SignalNotifier userId={session?.user?.id} />
 
           {/* Referral code card — always visible */}
           {referralStats && (

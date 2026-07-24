@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ScrollText } from 'lucide-react'
+import { useLang } from '@/components/lang-provider'
 
 const TERMS = `قوانین و مقررات A | CAP
 
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export function TermsModal({ open, onClose, onAccept, showAccept }: Props) {
+  const { t } = useLang()
   return (
     <AnimatePresence>
       {open && (
@@ -62,7 +64,7 @@ export function TermsModal({ open, onClose, onAccept, showAccept }: Props) {
                   <ScrollText className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-foreground font-black text-lg">قوانین و مقررات</h2>
+                  <h2 className="text-foreground font-black text-lg">{t('terms.title')}</h2>
                   <p className="text-muted-foreground text-xs">A | CAP</p>
                 </div>
               </div>
@@ -89,7 +91,7 @@ export function TermsModal({ open, onClose, onAccept, showAccept }: Props) {
                     onClick={onClose}
                     className="px-6 py-2.5 rounded-xl border border-border text-muted-foreground hover:bg-accent transition-colors text-sm font-semibold"
                   >
-                    رد کردن
+                    {t('terms.reject')}
                   </button>
                   <motion.button
                     whileHover={{ scale: 1.04 }}
@@ -97,7 +99,7 @@ export function TermsModal({ open, onClose, onAccept, showAccept }: Props) {
                     onClick={() => { onAccept?.(); onClose() }}
                     className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-black transition-all hover:shadow-lg hover:shadow-primary/30"
                   >
-                    می‌پذیرم
+                    {t('terms.accept')}
                   </motion.button>
                 </>
               ) : (
@@ -107,7 +109,7 @@ export function TermsModal({ open, onClose, onAccept, showAccept }: Props) {
                   onClick={onClose}
                   className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-black"
                 >
-                  متوجه شدم
+                  {t('terms.got.it')}
                 </motion.button>
               )}
             </div>

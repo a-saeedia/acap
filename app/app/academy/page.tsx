@@ -10,20 +10,21 @@ import {
 } from 'lucide-react'
 import { getFeaturedCourses } from '@/app/actions/academy'
 import { useSession } from '@/lib/auth-client'
+import { useLang } from '@/components/lang-provider'
 
 const crimson = '#A51C30'
 const gold = '#D4A843'
 const goldLight = '#F0D68A'
 
 const categories = [
-  { id: 'ict', label: 'ICT', color: '#3B82F6' },
-  { id: 'ai', label: 'هوش مصنوعی', color: '#8B5CF6' },
-  { id: 'stock', label: 'بورس', color: '#10B981' },
-  { id: 'forex', label: 'فارکس', color: '#F59E0B' },
-  { id: 'crypto', label: 'ارز دیجیتال', color: '#EF4444' },
-  { id: 'blockchain', label: 'بلاکچین', color: '#6366F1' },
-  { id: 'trading', label: 'معامله‌گری', color: '#EC4899' },
-  { id: 'psychology', label: 'روانشناسی', color: '#14B8A6' },
+  { id: 'ict', key: 'cat.ict', color: '#3B82F6' },
+  { id: 'ai', key: 'cat.ai', color: '#8B5CF6' },
+  { id: 'stock', key: 'cat.stock', color: '#10B981' },
+  { id: 'forex', key: 'cat.forex', color: '#F59E0B' },
+  { id: 'crypto', key: 'cat.crypto', color: '#EF4444' },
+  { id: 'blockchain', key: 'cat.blockchain', color: '#6366F1' },
+  { id: 'trading', key: 'cat.trading', color: '#EC4899' },
+  { id: 'psychology', key: 'cat.psychology', color: '#14B8A6' },
 ]
 
 const instructors = [
@@ -48,16 +49,16 @@ const instructors = [
 ]
 
 const statItems = [
-  { icon: Users, value: 200, label: 'تعداد دانشجویان', suffix: '+' },
-  { icon: BookOpen, value: 14, label: 'دوره‌های تخصصی', suffix: '' },
-  { icon: Clock, value: 280, label: 'ساعت آموزش', suffix: '+' },
-  { icon: Star, value: 87, label: 'نرخ رضایت', suffix: '%' },
+  { icon: Users, value: 200, key: 'academy.students', suffix: '+' },
+  { icon: BookOpen, value: 14, key: 'academy.courses', suffix: '' },
+  { icon: Clock, value: 280, key: 'academy.hours', suffix: '+' },
+  { icon: Star, value: 87, key: 'academy.satisfaction', suffix: '%' },
 ]
 
-const levelConfig: Record<string, { label: string; color: string }> = {
-  beginner: { label: 'مبتدی', color: 'bg-primary/20 text-primary' },
-  intermediate: { label: 'متوسط', color: 'bg-primary/20 text-primary' },
-  advanced: { label: 'پیشرفته', color: 'bg-primary/20 text-primary' },
+const levelKeys: Record<string, string> = {
+  beginner: 'level.beginner',
+  intermediate: 'level.intermediate',
+  advanced: 'level.advanced',
 }
 
 const iconMap: Record<string, React.ElementType> = {
@@ -100,6 +101,7 @@ interface Course {
 export default function AcademyPage() {
   const router = useRouter()
   const { data: session } = useSession()
+  const { t, lang } = useLang()
   const [featured, setFeatured] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -130,7 +132,7 @@ export default function AcademyPage() {
   return (
     <motion.div
       className="space-y-8 pb-16"
-      dir="rtl"
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -152,8 +154,8 @@ export default function AcademyPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6"
           >
             <Sparkles className="w-4 h-4" />
-            پلتفرم آموزش سرمایه‌گذاری هوشمند
-          </motion.div>
+            {t('academy.hero.badge')}
+           </motion.div>
 
           <motion.h1
             className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight mb-4"
@@ -161,10 +163,11 @@ export default function AcademyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            آکادمی{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-amber-300 to-primary">
-              A|CAP
-            </span>
+            {lang === 'fa' ? (
+              <>آکادمی{' '}<span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-amber-300 to-primary">A|CAP</span></>
+            ) : (
+              <><span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-amber-300 to-primary">A|CAP</span>{' '}Academy</>
+            )}
           </motion.h1>
 
           <motion.p
@@ -173,16 +176,16 @@ export default function AcademyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            دانشگاه سرمایه‌گذاری هوشمند
-          </motion.p>
+            {t('academy.subtitle')}
+           </motion.p>
 
-          <motion.p
-            className="text-muted-foreground max-w-2xl mb-8 text-lg"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-          >
-            از مبتدی تا حرفه‌ای، مسیر موفقیت در بازارهای مالی را با اساتید برتر ایران طی کنید
+           <motion.p
+             className="text-muted-foreground max-w-2xl mb-8 text-lg"
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ duration: 0.6, delay: 0.25 }}
+           >
+             {t('academy.desc')}
           </motion.p>
 
           <motion.div
@@ -198,7 +201,7 @@ export default function AcademyPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && router.push(`/app/academy/catalog?q=${encodeURIComponent(search)}`)}
-                placeholder="دوره، استاد یا موضوع مورد نظر خود را جستجو کنید..."
+                placeholder={t('academy.search.placeholder')}
                 className="w-full bg-muted border border-border rounded-xl py-3.5 pr-12 pl-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
               />
             </div>
@@ -207,8 +210,8 @@ export default function AcademyPage() {
               className="px-6 py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-foreground font-semibold transition-all flex items-center gap-2"
             >
               <Search className="w-5 h-5" />
-              جستجو
-            </button>
+              {t('academy.search')}
+             </button>
           </motion.div>
 
           {/* Hero Stats */}
@@ -217,10 +220,10 @@ export default function AcademyPage() {
             variants={containerVariants}
           >
             {[
-              { icon: Users, value: 200, label: 'دانشجو', suffix: '+' },
-              { icon: BookOpen, value: 14, label: 'دوره', suffix: '' },
-              { icon: Clock, value: 280, label: 'ساعت آموزش', suffix: '+' },
-              { icon: Star, value: 87, label: 'رضایت', suffix: '%' },
+              { icon: Users, value: 200, key: 'academy.students', suffix: '+' },
+              { icon: BookOpen, value: 14, key: 'academy.courses', suffix: '' },
+              { icon: Clock, value: 280, key: 'academy.hours', suffix: '+' },
+              { icon: Star, value: 87, key: 'academy.satisfaction', suffix: '%' },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -231,7 +234,7 @@ export default function AcademyPage() {
                 <div className="text-2xl md:text-3xl font-bold text-foreground">
                   <Counter value={stat.value} suffix={stat.suffix} />
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                 <div className="text-sm text-muted-foreground mt-1">{t(stat.key)}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -250,7 +253,7 @@ export default function AcademyPage() {
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border hover:border-primary/30 text-sm text-foreground/80 hover:text-foreground transition-all"
               >
                 <CatIcon className="w-4 h-4" style={{ color: cat.color }} />
-                {cat.label}
+                {t(cat.key)}
               </button>
             )
           })}
@@ -261,14 +264,14 @@ export default function AcademyPage() {
       <motion.section variants={itemVariants}>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold">دوره‌های محبوب</h2>
-            <p className="text-muted-foreground text-sm mt-1">پرطرفدارترین دوره‌های آکادمی</p>
+            <h2 className="text-2xl font-bold">{t('academy.popular')}</h2>
+            <p className="text-muted-foreground text-sm mt-1">{t('academy.popular.desc')}</p>
           </div>
           <button
             onClick={() => router.push('/app/academy/catalog')}
             className="flex items-center gap-1 text-primary hover:text-primary transition-colors text-sm font-medium"
           >
-            مشاهده همه
+            {t('academy.view.all')}
             <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
@@ -282,7 +285,7 @@ export default function AcademyPage() {
         ) : featured.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p>هنوز دوره‌ای ثبت نشده است</p>
+            <p>{t('academy.no.courses')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -305,12 +308,12 @@ export default function AcademyPage() {
                   />
                   {course.isNew && (
                     <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-medium border border-primary/20">
-                      جدید
-                    </span>
-                  )}
-                  {course.isBestseller && (
-                    <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-medium border border-primary/20">
-                      پرفروش
+                      {t('academy.new')}
+                     </span>
+                   )}
+                   {course.isBestseller && (
+                     <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-medium border border-primary/20">
+                       {t('academy.bestseller')}
                     </span>
                   )}
                   {React.createElement(getIcon(course.icon), {
@@ -321,8 +324,8 @@ export default function AcademyPage() {
 
                 <div className="p-5 space-y-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${levelConfig[course.level]?.color || 'bg-muted text-muted-foreground'}`}>
-                      {levelConfig[course.level]?.label || course.level}
+                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium bg-primary/20 text-primary`}>
+                      {t(levelKeys[course.level] || 'level.beginner')}
                     </span>
                     <span
                       className="px-2 py-0.5 rounded-md text-xs font-medium"
@@ -331,7 +334,7 @@ export default function AcademyPage() {
                         color: categories.find(c => c.id === course.category)?.color || '#6B7280',
                       }}
                     >
-                      {categories.find(c => c.id === course.category)?.label || course.category}
+                      {t(categories.find(c => c.id === course.category)?.key || 'asset.other')}
                     </span>
                   </div>
 
@@ -351,7 +354,7 @@ export default function AcademyPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Users className="w-3.5 h-3.5" />
-                      <span>{(course.studentsCount || 0).toLocaleString('fa-IR')}</span>
+                      <span>{(course.studentsCount || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
@@ -390,8 +393,8 @@ export default function AcademyPage() {
       {/* Instructors Section */}
       <motion.section variants={itemVariants}>
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold">اساتید آکادمی</h2>
-          <p className="text-muted-foreground text-sm mt-1">یادگیری از بهترین‌های بازارهای مالی</p>
+          <h2 className="text-2xl font-bold">{t('academy.instructors')}</h2>
+          <p className="text-muted-foreground text-sm mt-1">{t('academy.instructors.desc')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -413,8 +416,8 @@ export default function AcademyPage() {
                   <p className="text-sm text-muted-foreground mb-2">{inst.title}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{inst.bio}</p>
                   <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-                    <span>{inst.stats.courses} دوره</span>
-                    <span>{(inst.stats.students ?? 0).toLocaleString('fa-IR')} دانشجو</span>
+                    <span>{inst.stats.courses} {t('academy.courses')}</span>
+                    <span>{(inst.stats.students ?? 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('academy.students')}</span>
                     <span className="flex items-center gap-1">
                       <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                       {inst.stats.rating}
@@ -444,7 +447,7 @@ export default function AcademyPage() {
               <div className="text-3xl md:text-4xl font-black text-foreground">
                 <Counter value={stat.value} suffix={stat.suffix} />
               </div>
-              <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+              <div className="text-sm text-muted-foreground mt-1">{t(stat.key)}</div>
             </motion.div>
           ))}
         </div>
@@ -459,23 +462,23 @@ export default function AcademyPage() {
         <div className="relative z-10">
           <Award className="w-16 h-16 mx-auto mb-6 text-primary" />
           <h2 className="text-3xl md:text-4xl font-black mb-4">
-            آماده شروع سفر سرمایه‌گذاری هوشمند هستید؟
+            {t('academy.cta.title')}
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-8 text-lg">
-            به جمع دانشجویان آکادمی A|CAP بپیوندید و از صفر تا صد بازارهای مالی را حرفه‌ای یاد بگیرید
+            {t('academy.cta.desc')}
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <button
               onClick={() => router.push('/app/academy/catalog')}
               className="px-8 py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-foreground font-bold text-lg transition-all shadow-lg shadow-primary/20"
             >
-              شروع یادگیری
+              {t('academy.start.learning')}
             </button>
             <button
               onClick={() => router.push('/app/academy/dashboard')}
               className="px-8 py-3.5 rounded-xl bg-card hover:bg-accent text-foreground font-semibold text-lg transition-all border border-border"
             >
-              داشبورد من
+              {t('academy.my.dashboard')}
             </button>
           </div>
         </div>

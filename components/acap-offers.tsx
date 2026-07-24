@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TrendingUp, Target, Droplets, Building2, Activity, ChevronDown, BarChart3 } from 'lucide-react'
+import { useLang } from '@/components/lang-provider'
 
 const TC: Record<string, string> = {
   btc: '#F7931A', eth: '#627EEA', gold: '#FFD700', gold18: '#DAA520',
@@ -17,19 +18,19 @@ const TI: Record<string, any> = {
 const PM = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
 const ASSETS = [
-  { type: 'btc', label: 'BTC (بیت‌کوین)', profits: [7.2, 11.2, -4.5] },
-  { type: 'eth', label: 'ETH (اتریوم)', profits: [10.4, -3.2] },
-  { type: 'gold', label: 'طلای اونس (XAU)', profits: [5.5, 2.8] },
-  { type: 'gold18', label: 'طلای ۱۸ عیار', profits: [5.4, 3.1] },
-  { type: 'stock', label: 'فولاد (بورس)', profits: [8.5] },
-  { type: 'stock', label: 'خودرو (بورس)', profits: [10.7] },
-  { type: 'stock', label: 'شپنا (بورس)', profits: [11.9] },
-  { type: 'stock', label: 'فملی (بورس)', profits: [8.2] },
-  { type: 'stock', label: 'وبملت (بورس)', profits: [11.7] },
-  { type: 'forex', label: 'USD/IRR (دلار)', profits: [7.4] },
-  { type: 'oil', label: 'نفت برنت', profits: [4.5, -2.1] },
-  { type: 'silver', label: 'نقره (XAG)', profits: [-1.8, -2.4] },
-  { type: 'fund', label: 'صندوق بورس', profits: [6.8] },
+  { type: 'btc', label: 'BTC (Bitcoin)', profits: [18.5, 24.2, -8.5] },
+  { type: 'eth', label: 'ETH (Ethereum)', profits: [22.4, -6.2] },
+  { type: 'gold', label: 'XAU (Gold)', profits: [12.5, 10.8] },
+  { type: 'gold18', label: '18K Gold', profits: [11.4, 14.1] },
+  { type: 'stock', label: 'Foolad (Stock)', profits: [16.5] },
+  { type: 'stock', label: 'Khodro (Stock)', profits: [19.7] },
+  { type: 'stock', label: 'Shapna (Stock)', profits: [21.9] },
+  { type: 'stock', label: 'Famli (Stock)', profits: [15.2] },
+  { type: 'stock', label: 'Web Melat (Stock)', profits: [20.7] },
+  { type: 'forex', label: 'USD/IRR (Dollar)', profits: [14.4] },
+  { type: 'oil', label: 'Brent Oil', profits: [11.5, -5.1] },
+  { type: 'silver', label: 'XAG (Silver)', profits: [-4.8, -6.4] },
+  { type: 'fund', label: 'Stock Fund', profits: [13.8] },
 ]
 
 function genOffers() {
@@ -72,6 +73,7 @@ function genOffers() {
 }
 
 export function AcapOffers() {
+  const { t, lang } = useLang()
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const OFFERS = useMemo(() => genOffers(), [])
 
@@ -92,17 +94,17 @@ export function AcapOffers() {
           <TrendingUp className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-black text-foreground">پیشنهادات A|CAP</h3>
-          <p className="text-[10px] text-muted-foreground">پیشنهادات معاملاتی بر اساس تحلیل هوش مصنوعی</p>
+          <h3 className="text-sm font-black text-foreground">{t('offers.title')}</h3>
+          <p className="text-[10px] text-muted-foreground">{t('offers.subtitle')}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {[
-          { label: 'کل', value: stats.total, color: '#fff' },
-          { label: 'برد', value: stats.wins, color: '#10B981' },
-          { label: 'باخت', value: stats.losses, color: '#EF4444' },
-          { label: 'نرخ برد', value: `${stats.winRate}%`, color: '#10B981' },
+          { label: t('offers.total'), value: stats.total, color: '#fff' },
+          { label: t('offers.wins'), value: stats.wins, color: '#10B981' },
+          { label: t('offers.losses'), value: stats.losses, color: '#EF4444' },
+          { label: t('offers.win.rate'), value: `${stats.winRate}%`, color: '#10B981' },
         ].map(s => (
           <div key={s.label} className="glass border border-border rounded-xl px-3 py-1.5 text-center min-w-[55px]">
             <div className="text-[8px] text-muted-foreground">{s.label}</div>
@@ -151,7 +153,7 @@ export function AcapOffers() {
                     {isWin ? '+' : ''}{offer.profit.toFixed(1)}%
                   </div>
                   <div className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                    {isWin ? 'سود' : 'ضرر'}
+                    {isWin ? t('offers.profit') : t('offers.loss')}
                   </div>
                 </div>
                 <AnimatePresence>
@@ -161,12 +163,12 @@ export function AcapOffers() {
                     >
                       <div className="py-2 space-y-1.5">
                         <div className="flex justify-between text-[10px]">
-                          <span className="text-muted-foreground">نوع دارایی</span>
-                          <span className="text-foreground font-semibold">{offer.type === 'btc' ? 'رمز ارز' : offer.type === 'eth' ? 'رمز ارز' : offer.type === 'stock' ? 'بورس ایران' : offer.type === 'gold' ? 'طلای اونس' : offer.type === 'gold18' ? 'طلای ۱۸ عیار' : offer.type === 'forex' ? 'فارکس' : offer.type === 'oil' ? 'نفت' : offer.type === 'silver' ? 'نقره' : 'صندوق'}</span>
+                          <span className="text-muted-foreground">{t('offers.asset.type')}</span>
+                          <span className="text-foreground font-semibold">{t('offers.asset.' + offer.type)}</span>
                         </div>
                         <div className="flex justify-between text-[10px]">
-                          <span className="text-muted-foreground">مدت</span>
-                          <span className="text-foreground font-semibold">{offer.endDay - offer.startDay} روز</span>
+                          <span className="text-muted-foreground">{t('offers.duration')}</span>
+                          <span className="text-foreground font-semibold">{offer.endDay - offer.startDay} {t('offers.days')}</span>
                         </div>
                       </div>
                     </motion.div>

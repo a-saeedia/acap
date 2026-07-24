@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import { LangProvider } from '@/components/lang-provider'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { SelfDestructGuard } from '@/components/self-destruct-guard'
 import { Tracker } from '@/components/tracker'
+
 
 const SITE_NAME = 'A | CAP'
 const SITE_DESCRIPTION = 'پلتفرم هوشمند مدیریت سرمایه بر اساس شخصیت مالی در ایران. تحلیل بازار طلا، ارز، رمز ارز و بورس با هوش مصنوعی.'
@@ -41,10 +43,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
-    { media: '(prefers-color-scheme: dark)', color: '#040D21' },
-  ],
+  themeColor: '#0B0E11',
 }
 
 export default function RootLayout({
@@ -94,12 +93,12 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('acap-theme');if(t==='light')document.documentElement.classList.add('light')}catch(e){}})()`,
+            __html: `(function(){try{if(localStorage.getItem('acap-theme')!=='dark')document.documentElement.classList.add('binance')}catch(e){document.documentElement.classList.add('binance')}try{var l=localStorage.getItem('acap-lang');if(l==='en'){document.documentElement.setAttribute('lang','en');document.documentElement.setAttribute('dir','ltr')}}catch(e){}})()`,
           }}
         />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Vazirmatn, sans-serif' }}>
-        <ThemeProvider><ErrorBoundary><SelfDestructGuard><Tracker>{children}</Tracker></SelfDestructGuard></ErrorBoundary></ThemeProvider>
+        <ThemeProvider><LangProvider><ErrorBoundary><SelfDestructGuard><Tracker>{children}</Tracker></SelfDestructGuard></ErrorBoundary></LangProvider></ThemeProvider>
       </body>
     </html>
   )

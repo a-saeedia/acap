@@ -3,27 +3,28 @@
 import { motion } from 'framer-motion'
 import { AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
-import { useTheme } from './theme-provider'
+import { useLang } from '@/components/lang-provider'
+
 
 export function Footer() {
-  const { theme } = useTheme()
+  const { t, lang } = useLang()
   const scrollTo = (href: string) => {
     const el = document.querySelector(href)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
 
   const navLinks = [
-    { label: 'درباره ما', href: '#about' },
-    { label: 'تست مالی', href: '#quiz' },
-    { label: 'خدمات', href: '#services' },
-    { label: 'سفیران', href: '#ambassador' },
-    { label: 'تیم', href: '#founders' },
-    { label: 'سوالات', href: '#faq' },
+    { label: t('nav.about'), href: '#about' },
+    { label: t('nav.quiz'), href: '#quiz' },
+    { label: t('nav.services'), href: '#services' },
+    { label: t('nav.ambassador'), href: '#ambassador' },
+    { label: t('nav.team'), href: '#founders' },
+    { label: t('nav.faq'), href: '#faq' },
   ]
 
   const channels = [
     {
-      name: 'پشتیبانی تلگرام',
+      name: t('footer.support'),
       handle: '@a_cap_support',
       url: 'https://t.me/a_cap_support',
       logo: '/telegram-logo.svg',
@@ -33,7 +34,7 @@ export function Footer() {
   ]
 
   return (
-    <footer className="relative bg-background border-t border-border overflow-hidden" dir="rtl">
+    <footer className="relative bg-background border-t border-border overflow-hidden" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <div className="absolute inset-0 grid-pattern opacity-20 pointer-events-none" />
 
       {/* Disclaimer */}
@@ -42,9 +43,9 @@ export function Footer() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
             <div>
-              <div className="text-destructive font-black text-sm mb-1">افشای ریسک و سلب مسئولیت</div>
+              <div className="text-destructive font-black text-sm mb-1">{t('footer.disclaimer.title')}</div>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                سرمایه‌گذاری در بازارهای مالی با ریسک ذاتی همراه است. تمام مطالب و تحلیل‌های ارائه‌شده توسط A | CAP جنبه اطلاعاتی و آموزشی دارند و توصیه سرمایه‌گذاری قطعی نیستند. تمام مسئولیت تصمیمات مالی برعهده شخص سرمایه‌گذار است.
+                {t('footer.disclaimer.text')}
               </p>
             </div>
           </div>
@@ -72,7 +73,7 @@ export function Footer() {
               }}
             />
             <Image
-              src={theme === 'light' ? '/logo-light.png' : '/logo-transparent.png'}
+              src="/logo-transparent.png"
               alt="A Capital"
               width={480}
               height={144}
@@ -89,7 +90,7 @@ export function Footer() {
             transition={{ delay: 0.2 }}
             className="text-muted-foreground text-sm leading-relaxed max-w-md"
           >
-            دستیار مدیریت سرمایه مبتنی بر شخصیت مالی — نقشه ثروت اختصاصی شما
+            {t('footer.tagline')}
           </motion.p>
 
           {/* Brand wordmark */}
@@ -153,7 +154,7 @@ export function Footer() {
 
           {/* Nav links */}
           <div>
-            <div className="text-foreground font-black text-sm mb-5 tracking-wide">بخش‌ها</div>
+            <div className="text-foreground font-black text-sm mb-5 tracking-wide">{t('footer.sections')}</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
               {navLinks.map(link => (
                 <button
@@ -169,7 +170,7 @@ export function Footer() {
 
           {/* CTAs */}
           <div>
-            <div className="text-foreground font-black text-sm mb-5 tracking-wide">شروع کن</div>
+            <div className="text-foreground font-black text-sm mb-5 tracking-wide">{t('footer.get.started')}</div>
             <div className="flex flex-col gap-3">
               <motion.button
                 onClick={() => scrollTo('#quiz')}
@@ -177,7 +178,7 @@ export function Footer() {
                 whileTap={{ scale: 0.97 }}
                 className="glass border border-border hover:border-primary/50 text-foreground hover:text-primary py-3 px-4 rounded-xl text-sm font-bold transition-all text-right"
               >
-                تست شخصیت مالی رایگان
+                {t('footer.cta.quiz')}
               </motion.button>
               <motion.a
                 href="/acap-plus"
@@ -187,7 +188,7 @@ export function Footer() {
                 whileTap={{ scale: 0.97 }}
                 className="btn-primary py-3 px-4 rounded-xl text-sm font-black text-center"
               >
-                اشتراک ACAP Plus
+                {t('footer.cta.plus')}
               </motion.a>
               <motion.a
                 href="/#quiz"
@@ -195,7 +196,7 @@ export function Footer() {
                 whileTap={{ scale: 0.97 }}
                 className="glass border border-border hover:border-primary/30 text-muted-foreground hover:text-primary py-3 px-4 rounded-xl text-sm font-bold text-center transition-all"
               >
-                عضویت در برنامه سفیران
+                {t('footer.cta.ambassador')}
               </motion.a>
             </div>
           </div>
@@ -204,12 +205,12 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-border mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-muted-foreground text-xs text-center sm:text-right">
-            © ۱۴۰۴ A | CAP — تمامی حقوق محفوظ است
+            {t('footer.copyright')}
           </div>
 
           {/* Platform logos inline */}
           <div className="flex items-center gap-3">
-            <span className="text-muted-foreground text-xs">در دسترس روی:</span>
+            <span className="text-muted-foreground text-xs">{t('footer.available')}</span>
             <a href="https://t.me/a_cap_support" target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-opacity">
               <Image src="/telegram-logo.svg" alt="Telegram" width={22} height={22} className="rounded-md" />
             </a>
@@ -217,7 +218,7 @@ export function Footer() {
 
           <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            سیستم فعال
+            {t('footer.system.active')}
           </div>
         </div>
       </div>

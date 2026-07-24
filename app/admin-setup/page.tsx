@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLang } from '@/components/lang-provider'
 
 export default function AdminSetupPage() {
   const router = useRouter()
+  const { t, lang } = useLang()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -21,23 +23,23 @@ export default function AdminSetupPage() {
       const data = await res.json()
       if (res.ok) {
         setStatus('success')
-        setMessage('ادمین با موفقیت تنظیم شد!')
+        setMessage(t('setup.success.title'))
       } else {
         setStatus('error')
-        setMessage(data.error || 'خطا در تنظیم ادمین')
+        setMessage(data.error || t('setup.error.generic'))
       }
     } catch {
       setStatus('error')
-      setMessage('خطا در ارتباط با سرور')
+      setMessage(t('setup.error.server'))
     }
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-4">
+    <div dir={lang === 'fa' ? 'rtl' : 'ltr'} className="min-h-screen bg-gray-950 text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-black">تنظیم مدیر سیستم</h1>
-          <p className="text-gray-400 mt-2 text-sm">ایمیلی را وارد کنید که با آن ثبت‌نام کرده‌اید و هم‌اکنون با آن لاگین هستید.</p>
+          <h1 className="text-3xl font-black">{t('setup.title')}</h1>
+          <p className="text-gray-400 mt-2 text-sm">{t('setup.desc')}</p>
         </div>
 
         {status === 'success' ? (
@@ -45,22 +47,22 @@ export default function AdminSetupPage() {
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">✓</span>
             </div>
-            <h2 className="text-xl font-bold text-emerald-400 mb-2">ادمین با موفقیت تنظیم شد</h2>
-            <p className="text-gray-400 mb-6">اکنون می‌توانید وارد پنل ادمین شوید.</p>
+            <h2 className="text-xl font-bold text-emerald-400 mb-2">{t('setup.success.title')}</h2>
+            <p className="text-gray-400 mb-6">{t('setup.success.desc')}</p>
             <button onClick={() => router.push('/admin')}
               className="px-6 py-3 rounded-xl bg-crimson-600 hover:bg-crimson-700 text-white font-medium transition-all"
-            >ورود به پنل ادمین</button>
+            >{t('setup.go.admin')}</button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-gray-900 border border-gray-800 rounded-3xl p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">ایمیل حساب مدیریت</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('setup.email.label')}</label>
               <input
                 type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                placeholder={t('setup.email.placeholder')}
                 className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-crimson-500 transition-colors"
               />
-              <p className="text-xs text-gray-500 mt-1.5">از حسابی که قبلاً ثبت‌نام کرده‌اید استفاده کنید.</p>
+              <p className="text-xs text-gray-500 mt-1.5">{t('setup.email.hint')}</p>
             </div>
 
             {message && (
@@ -73,8 +75,8 @@ export default function AdminSetupPage() {
               className="w-full py-3 rounded-xl bg-crimson-600 hover:bg-crimson-700 disabled:opacity-50 text-white font-medium transition-all flex items-center justify-center gap-2"
             >
               {status === 'loading' ? (
-                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> در حال تنظیم...</>
-              ) : 'تنظیم به عنوان مدیر'}
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {t('setup.loading')}</>
+              ) : t('setup.submit')}
             </button>
           </form>
         )}
@@ -82,7 +84,7 @@ export default function AdminSetupPage() {
         <div className="text-center mt-6">
           <button onClick={() => router.push('/')}
             className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          >بازگشت به صفحه اصلی</button>
+          >{t('setup.back')}</button>
         </div>
       </div>
     </div>

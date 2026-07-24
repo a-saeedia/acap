@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Zap, TrendingUp, Award, Activity, X } from 'lucide-react'
+import { useLang } from '@/components/lang-provider'
 
 const persianMonthsShort = ['فر', 'ار', 'خ', 'ت', 'م', 'ش', 'مه', 'آب', 'آ', 'د', 'ب', 'اس']
+const englishMonthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -16,11 +18,13 @@ const itemVariants = {
 }
 
 export function RevenueWidget() {
+  const { t, lang } = useLang()
   const [signals, setSignals] = useState<any[]>([])
   const [revMonths, setRevMonths] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'1' | '3' | '6' | 'net'>('3')
   const [selectedSignal, setSelectedSignal] = useState<any | null>(null)
+  const monthsShort = lang === 'fa' ? persianMonthsShort : englishMonthsShort
 
   useEffect(() => {
     const ac = new AbortController()
@@ -46,13 +50,13 @@ export function RevenueWidget() {
 
   return (
     <section className="py-20 px-4 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 overflow-hidden">
-      <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-6xl mx-auto" dir="rtl">
+      <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-6xl mx-auto" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
         <motion.div variants={itemVariants} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold mb-3">
             <Zap className="w-3.5 h-3.5" /> A|CAP Revenue
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white">عملکرد سیگنال‌های A|CAP</h2>
-          <p className="text-sm text-gray-400 mt-2">درصد بازده واقعی تمام سیگنال‌های صادره</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-white">{t('rev.title')}</h2>
+          <p className="text-sm text-gray-400 mt-2">{t('rev.lbl.performance')}</p>
         </motion.div>
 
         {loading ? (
@@ -62,14 +66,14 @@ export function RevenueWidget() {
         ) : total === 0 ? (
           <motion.div variants={itemVariants} className="text-center py-16 text-gray-500">
             <Activity className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">هنوز سیگنالی ثبت نشده</p>
+            <p className="text-sm">{t('rev.no.signals')}</p>
           </motion.div>
         ) : (
           <>
             {/* Filter bar */}
             <motion.div variants={itemVariants} className="flex justify-center mb-8">
               <div className="inline-flex gap-1 p-1 rounded-xl bg-gray-800/50 border border-gray-700/30">
-                {([['1', 'ماه'], ['3', '۳ ماه'], ['6', '۶ ماه'], ['net', 'خالص']] as const).map(([key, label]) => (
+                {([['1', t('rev.filter.1m')], ['3', t('rev.filter.3m')], ['6', t('rev.filter.6m')], ['net', t('rev.filter.net')]] as const).map(([key, label]) => (
                   <button key={key} onClick={() => setFilter(key)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                       filter === key ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/30' : 'text-gray-400 hover:text-white'
@@ -82,10 +86,10 @@ export function RevenueWidget() {
             {/* Stats cards */}
             <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {[
-                { label: 'کل سیگنال‌ها', value: total, suffix: '', color: 'text-white', icon: Activity },
-                { label: 'نرخ برد', value: winRate, suffix: '%', color: 'text-emerald-400', icon: Award },
-                { label: 'میانگین بازده', value: (avgReturn >= 0 ? '+' : '') + avgReturn.toFixed(1), suffix: '%', color: 'text-amber-400', icon: TrendingUp },
-                { label: 'بهترین بازده', value: '+' + bestReturn.toFixed(1), suffix: '%', color: 'text-emerald-400', icon: Zap },
+                { label: t('rev.total.signals'), value: total, suffix: '', color: 'text-white', icon: Activity },
+                { label: t('rev.win.rate.lbl'), value: winRate, suffix: '%', color: 'text-emerald-400', icon: Award },
+                { label: t('rev.avg.return'), value: (avgReturn >= 0 ? '+' : '') + avgReturn.toFixed(1), suffix: '%', color: 'text-amber-400', icon: TrendingUp },
+                { label: t('rev.best.return'), value: '+' + bestReturn.toFixed(1), suffix: '%', color: 'text-emerald-400', icon: Zap },
               ].map(stat => {
                 const Icon = stat.icon
                 return (
@@ -100,43 +104,72 @@ export function RevenueWidget() {
 
             {/* Bar chart + signal feed side by side on large screens */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-              {/* Bar chart - dashboard style */}
+              {/* Cumulative performance line chart */}
               <motion.div variants={itemVariants}
                 className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-4"
               >
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="w-4 h-4 text-amber-400" />
                   <h3 className="text-sm font-bold text-white">
-                    {filter === 'net' ? 'بازده خالص' : `بازده ${filter === '1' ? 'ماه جاری' : filter === '3' ? 'سه ماه اخیر' : 'شش ماه اخیر'}`}
+                    {filter === 'net' ? t('rev.net.return') : filter === '1' ? t('rev.this.month') : filter === '3' ? t('rev.3months') : t('rev.6months')}
                   </h3>
-                  <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg font-bold">{winRate}% موفقیت</span>
+                  <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg font-bold">{t('rev.win.rate').replace('{{rate}}', String(winRate))}</span>
                 </div>
-                <div className="flex items-end gap-2" style={{ height: '100px' }}>
-                  {filter === 'net' ? (
-                    <div className="flex flex-col items-center gap-1 w-full">
-                      <span className={`text-base font-black ${netRev >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{netRev >= 0 ? '+' : ''}{netRev.toFixed(1)}%</span>
-                      <div className={`w-full rounded-t ${netRev >= 0 ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : 'bg-gradient-to-t from-red-600 to-red-400'}`}
-                        style={{ height: `${Math.max(Math.abs(netRev) / (Math.abs(netRev) || 1) * 80, 8)}px` }} />
-                    </div>
-                  ) : (
-                    revMonths.length > 0 ? (
-                      [...revMonths].sort((a, b) => (b.year - a.year) || (b.month - a.month)).reverse().map((r: any) => {
-                        const maxAmt = Math.max(...revMonths.map((x: any) => Math.abs(x.amount)), 1)
-                        const barH = Math.max(Math.round((Math.abs(r.amount) / maxAmt) * 80), 4)
-                        const isPos = r.amount >= 0
-                        return (
-                          <div key={`${r.year}-${r.month}`} className="flex flex-col items-center gap-1 flex-1 min-w-0">
-                            <span className={`text-[10px] font-bold tabular-nums ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>{isPos ? '+' : ''}{r.amount.toFixed(1)}%</span>
-                            <div className={`w-full rounded-t ${isPos ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : 'bg-gradient-to-t from-red-600 to-red-400'}`}
-                              style={{ height: `${barH}px` }} />
-                            <span className="text-[8px] text-gray-500">{persianMonthsShort[r.month - 1] || r.month}</span>
-                          </div>
-                        )
-                      })
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full text-xs text-gray-600">داده‌ای نیست</div>
+                <div style={{ height: '140px' }}>
+                  {(() => {
+                    if (filter === 'net') {
+                      return (
+                        <div className="flex flex-col items-center justify-center h-full gap-1">
+                          <span className={`text-2xl font-black ${netRev >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{netRev >= 0 ? '+' : ''}{netRev.toFixed(1)}%</span>
+                          <span className="text-[10px] text-gray-500">{t('rev.total.return')}</span>
+                        </div>
+                      )
+                    }
+                    const sorted = [...revMonths].sort((a, b) => a.year - b.year || a.month - b.month)
+                    if (!sorted.length) return <div className="flex items-center justify-center h-full text-xs text-gray-600">{t('common.no.data')}</div>
+
+                    const w = 560, h = 140, padL = 40, padR = 10, padT = 10, padB = 20
+                    const chartW = w - padL - padR, chartH = h - padT - padB
+
+                    let cumulative = 0
+                    const points = sorted.map(r => {
+                      cumulative += r.amount
+                      return { x: 0, y: 0, amount: cumulative, label: monthsShort[r.month - 1] || String(r.month), raw: r.amount }
+                    })
+
+                    const values = points.map(p => p.amount)
+                    const minVal = Math.min(...values, 0)
+                    const maxVal = Math.max(...values, 1)
+                    const range = maxVal - minVal || 1
+
+                    const toX = (i: number) => padL + (i / Math.max(points.length - 1, 1)) * chartW
+                    const toY = (v: number) => padT + chartH - ((v - minVal) / range) * chartH
+
+                    const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.amount).toFixed(1)}`).join(' ')
+                    const areaD = `${lineD} L${toX(points.length - 1).toFixed(1)},${toY(minVal).toFixed(1)} L${toX(0).toFixed(1)},${toY(minVal).toFixed(1)} Z`
+
+                    const midY = toY(0)
+                    const midIdx = Math.round((midY - padT) / chartH * points.length)
+
+                    return (
+                      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="rgb(251,191,36)" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="rgb(251,191,36)" stopOpacity="0.02" />
+                          </linearGradient>
+                        </defs>
+                        <path d={areaD} fill="url(#cumGrad)" />
+                        <path d={lineD} fill="none" stroke="rgb(251,191,36)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {points.map((p, i) => (
+                          <g key={i}>
+                            <circle cx={toX(i)} cy={toY(p.amount)} r="3" fill="rgb(251,191,36)" stroke="#1f2937" strokeWidth="1.5" />
+                            <text x={toX(i)} y={h - 4} textAnchor="middle" fill="#6b7280" fontSize="8">{p.label}</text>
+                          </g>
+                        ))}
+                      </svg>
                     )
-                  )}
+                  })()}
                 </div>
               </motion.div>
 
@@ -146,7 +179,7 @@ export function RevenueWidget() {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <Zap className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-sm font-bold text-white">خوراک سیگنال‌ها</h3>
+                  <h3 className="text-sm font-bold text-white">{t('rev.signal.feed')}</h3>
                 </div>
                 <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
                   {signals.slice(0, filter === 'net' ? 20 : 8).map((s: any) => {
@@ -165,7 +198,7 @@ export function RevenueWidget() {
                             }`}>{s.action === 'buy' ? 'BUY' : 'SELL'}</span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[10px] text-gray-500 ltr" dir="ltr">{sd.toLocaleDateString('fa-IR')}</span>
+                            <span className="text-[10px] text-gray-500 ltr" dir="ltr">{sd.toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
                             <span className={`text-[11px] font-black tabular-nums ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
                               {s.actualReturn !== null && s.actualReturn !== undefined ? `${isWin ? '+' : ''}${s.actualReturn.toFixed(1)}%` : '—'}
                             </span>
@@ -173,7 +206,7 @@ export function RevenueWidget() {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] text-gray-500 font-semibold">{s.symbol}</span>
-                          <span className="text-[10px] text-gray-500">{String(s.type) === 'crypto' ? 'ارز دیجیتال' : String(s.type) === 'stock' ? 'سهام' : String(s.type) === 'gold' ? 'طلا' : String(s.type) === 'dollar' ? 'دلار' : 'فارکس'}</span>
+                          <span className="text-[10px] text-gray-500">{String(s.type) === 'crypto' ? t('asset.crypto.long') : String(s.type) === 'stock' ? t('asset.stock') : String(s.type) === 'gold' ? t('asset.gold') : String(s.type) === 'dollar' ? t('asset.dollar') : t('asset.forex')}</span>
                         </div>
                       </div>
                     )
@@ -211,18 +244,18 @@ export function RevenueWidget() {
                   </button>
                 </div>
                 <div className="space-y-3 text-sm text-gray-300">
-                  <div className="flex justify-between"><span className="text-gray-500">نماد</span><span className="text-white font-semibold">{selectedSignal.symbol}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">نوع</span><span className="text-white font-semibold">{String(selectedSignal.type) === 'crypto' ? 'ارز دیجیتال' : String(selectedSignal.type) === 'stock' ? 'سهام' : String(selectedSignal.type) === 'gold' ? 'طلا' : String(selectedSignal.type) === 'dollar' ? 'دلار' : 'فارکس'}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">نوع معامله</span><span className={`font-bold ${selectedSignal.action === 'buy' ? 'text-emerald-400' : 'text-red-400'}`}>{selectedSignal.action === 'buy' ? 'خرید' : 'فروش'}</span></div>
-                  {selectedSignal.entryPrice && <div className="flex justify-between"><span className="text-gray-500">قیمت ورود</span><span className="text-white font-semibold">{selectedSignal.entryPrice.toLocaleString()}</span></div>}
-                  {selectedSignal.targetPrice && <div className="flex justify-between"><span className="text-gray-500">قیمت هدف</span><span className="text-emerald-400 font-semibold">{selectedSignal.targetPrice.toLocaleString()}</span></div>}
-                  {selectedSignal.stopLoss && <div className="flex justify-between"><span className="text-gray-500">حد ضرر</span><span className="text-red-400 font-semibold">{selectedSignal.stopLoss.toLocaleString()}</span></div>}
+                  <div className="flex justify-between"><span className="text-gray-500">{t('rev.symbol')}</span><span className="text-white font-semibold">{selectedSignal.symbol}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">{t('rev.type')}</span><span className="text-white font-semibold">{String(selectedSignal.type) === 'crypto' ? t('asset.crypto.long') : String(selectedSignal.type) === 'stock' ? t('asset.stock') : String(selectedSignal.type) === 'gold' ? t('asset.gold') : String(selectedSignal.type) === 'dollar' ? t('asset.dollar') : t('asset.forex')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">{t('rev.action')}</span><span className={`font-bold ${selectedSignal.action === 'buy' ? 'text-emerald-400' : 'text-red-400'}`}>{selectedSignal.action === 'buy' ? t('rev.buy') : t('rev.sell')}</span></div>
+                  {selectedSignal.entryPrice && <div className="flex justify-between"><span className="text-gray-500">{t('rev.entry.price')}</span><span className="text-white font-semibold">{selectedSignal.entryPrice.toLocaleString()}</span></div>}
+                  {selectedSignal.targetPrice && <div className="flex justify-between"><span className="text-gray-500">{t('rev.target.price')}</span><span className="text-emerald-400 font-semibold">{selectedSignal.targetPrice.toLocaleString()}</span></div>}
+                  {selectedSignal.stopLoss && <div className="flex justify-between"><span className="text-gray-500">{t('rev.stop.loss')}</span><span className="text-red-400 font-semibold">{selectedSignal.stopLoss.toLocaleString()}</span></div>}
                   {selectedSignal.actualReturn !== null && selectedSignal.actualReturn !== undefined && (
-                    <div className="flex justify-between"><span className="text-gray-500">بازده واقعی</span><span className={`font-black ${(selectedSignal.actualReturn ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{(selectedSignal.actualReturn ?? 0) >= 0 ? '+' : ''}{selectedSignal.actualReturn.toFixed(2)}%</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">{t('rev.return')}</span><span className={`font-black ${(selectedSignal.actualReturn ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{(selectedSignal.actualReturn ?? 0) >= 0 ? '+' : ''}{selectedSignal.actualReturn.toFixed(2)}%</span></div>
                   )}
                   {selectedSignal.description && (
                     <div className="pt-2 border-t border-gray-800">
-                      <span className="text-gray-500 text-xs">توضیحات</span>
+                      <span className="text-gray-500 text-xs">{t('rev.description')}</span>
                       <p className="text-white mt-1 text-xs leading-relaxed">{selectedSignal.description}</p>
                     </div>
                   )}

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
+import { useLang } from '@/components/lang-provider'
 import { getMyAssets } from '@/app/actions/assets'
 import { getDashboardData } from '@/app/actions/profile'
 import { OnboardingTasks } from '@/components/onboarding-tasks'
@@ -19,20 +20,20 @@ import { getAssetPriceIr } from '@/lib/price-utils'
 type Asset = Awaited<ReturnType<typeof getMyAssets>>[number]
 type InvestorKey = 'conservative' | 'balanced' | 'growth' | 'aggressive'
 
-const TYPE_INFO: Record<InvestorKey, { name: string; emoji: string; color: string }> = {
-  conservative: { name: 'محافظه‌کار', emoji: '🛡️', color: '#10B981' },
-  balanced: { name: 'متعادل', emoji: '⚖️', color: '#3B82F6' },
-  growth: { name: 'رشدگرا', emoji: '🚀', color: '#1D9BF0' },
-  aggressive: { name: 'تهاجمی', emoji: '🔥', color: '#EF4444' },
+const TYPE_INFO: Record<InvestorKey, { key: string; emoji: string; color: string }> = {
+  conservative: { key: 'investor.conservative', emoji: '🛡️', color: '#10B981' },
+  balanced: { key: 'investor.balanced', emoji: '⚖️', color: '#3B82F6' },
+  growth: { key: 'investor.growth', emoji: '🚀', color: '#1D9BF0' },
+  aggressive: { key: 'investor.aggressive', emoji: '🔥', color: '#EF4444' },
 }
 
-const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-  crypto: { label: 'رمز ارز', color: '#F59E0B' },
-  stock: { label: 'بورس ایران', color: '#2979FF' },
-  gold: { label: 'طلا', color: '#F59E0B' },
-  currency: { label: 'ارز', color: '#10B981' },
-  cash: { label: 'وجه نقد', color: '#06B6D4' },
-  other: { label: 'سایر', color: '#8B5CF6' },
+const TYPE_CONFIG: Record<string, { key: string; color: string }> = {
+  crypto: { key: 'asset.crypto', color: '#F59E0B' },
+  stock: { key: 'asset.stock', color: '#2979FF' },
+  gold: { key: 'asset.gold', color: '#F59E0B' },
+  currency: { key: 'asset.currency', color: '#10B981' },
+  cash: { key: 'asset.cash', color: '#06B6D4' },
+  other: { key: 'asset.other', color: '#8B5CF6' },
 }
 
 const containerVariants = {
@@ -44,37 +45,14 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 }
 
-const steps = [
-  {
-    icon: '👋',
-    title: 'به A|CAP خوش اومدی!',
-    desc: 'این داشبورد مرکز مدیریت سرمایه‌تست. از اینجا می‌تونی همه کارهای مالی‌ت رو انجام بدی.'
-  },
-  {
-    icon: '📊',
-    title: 'مدیریت سبد سرمایه',
-    desc: 'می‌تونی دارایی‌هات رو اضافه کنی - از رمزارز و طلا و سهام گرفته تا وجه نقد. با اسکن هوشمند پرتفوی، پیشنهادات شخصی دریافت کن.'
-  },
-  {
-    icon: '💎',
-    title: 'سیگنال‌ها و A|CAP+',
-    desc: 'با فعال‌سازی A|CAP+ سیگنال‌های خرید و فروش اختصاصی، تحلیل پرتفوی هوشمند و پشتیبانی VIP دریافت می‌کنی.'
-  },
-  {
-    icon: '📚',
-    title: 'آکادمی و وبلاگ',
-    desc: 'دوره‌های آموزشی ICT، هوش مصنوعی، فارکس و بورس رو در آکادمی ببین. وبلاگ هم پر از مقالات تحلیلی و آموزشی روزانه‌ست.'
-  },
-  {
-    icon: '🚀',
-    title: 'آماده شروع هستی!',
-    desc: 'همین حالا می‌تونی دارایی‌هات رو اضافه کنی، تست شخصیت مالی بدی و از همه امکانات استفاده کنی. موفق باشی!'
-  }
-]
+const stepKeys = ['tutorial.step1', 'tutorial.step2', 'tutorial.step3', 'tutorial.step4', 'tutorial.step5']
+
+const stepIcons = ['👋', '📊', '💎', '📚', '🚀']
 
 export default function MergedDashboard() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
+  const { t, lang } = useLang()
   const [dashData, setDashData] = useState<any>(null)
   const [assets, setAssets] = useState<Asset[]>([])
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
@@ -163,7 +141,7 @@ export default function MergedDashboard() {
   const hasAssets = assets.length > 0
 
   return (
-    <div dir="rtl" className="overflow-x-hidden">
+    <div dir={lang === 'fa' ? 'rtl' : 'ltr'} className="overflow-x-hidden">
       {showLoading && (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
@@ -176,7 +154,7 @@ export default function MergedDashboard() {
           <motion.div variants={itemVariants} className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-black text-white truncate">
-                خوش آمدی، {user.name.split(' ')[0]} 👋
+                {lang === 'fa' ? `خوش آمدی، ${user.name.split(' ')[0]} 👋` : `Welcome, ${user.name.split(' ')[0]} 👋`}
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-gray-400 text-xs truncate">{user.email}</p>
@@ -193,7 +171,7 @@ export default function MergedDashboard() {
           {/* ========== DASHBOARD ========== */}
           <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'ارزش کل', value: hasAssets ? formatToman(totalValue) : '—', color: '#10B981', icon: Wallet },
+                  { label: t('dash.total.value'), value: hasAssets ? formatToman(totalValue) : '—', color: '#10B981', icon: Wallet },
                 ].map((stat, i) => (
                   <div key={stat.label}
                     className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 hover:border-white/[0.15] transition-all"
@@ -209,9 +187,9 @@ export default function MergedDashboard() {
                   <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 flex items-center gap-3 col-span-1 sm:col-span-2 md:col-span-2 hover:border-white/[0.15] transition-all">
                     <span className="text-xl sm:text-2xl">{typeInfo.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[10px] sm:text-xs text-gray-400">شخصیت مالی</div>
-                      <div className="font-black text-sm sm:text-base" style={{ color: typeInfo.color }}>{typeInfo.name}</div>
-                      <div className="text-[10px] sm:text-xs text-gray-400">ریسک‌پذیری {toPersianDigits(latest.score)}/۱۰۰</div>
+                      <div className="text-[10px] sm:text-xs text-gray-400">{t('dash.financial.personality')}</div>
+                      <div className="font-black text-sm sm:text-base" style={{ color: typeInfo.color }}>{t(typeInfo.key)}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-400">{t('dash.risk.tolerance').replace('{{score}}', lang === 'fa' ? toPersianDigits(latest.score) : String(latest.score))}</div>
                     </div>
                     <div className="w-20 sm:w-24 md:w-32 shrink-0">
                       <div className="h-1.5 sm:h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -221,21 +199,21 @@ export default function MergedDashboard() {
                     <button onClick={() => router.push('/#quiz')}
                       className="text-[10px] sm:text-xs text-blue-400 hover:text-blue-300 font-semibold shrink-0 border border-blue-500/20 rounded-lg px-2 sm:px-3 py-1.5"
                     >
-                      تست مجدد
-                    </button>
-                  </div>
-                ) : (
-                  <div className="col-span-1 sm:col-span-2 md:col-span-1 bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 hover:border-blue-500/40 transition-all cursor-pointer group"
-                    onClick={() => router.push('/#quiz')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg">
-                        <Brain className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] text-blue-400 font-semibold">تست شخصیت مالی</span>
-                        <div className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">شروع تست</div>
-                      </div>
+                      {t('dash.retest')}
+                     </button>
+                   </div>
+                 ) : (
+                   <div className="col-span-1 sm:col-span-2 md:col-span-1 bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 hover:border-blue-500/40 transition-all cursor-pointer group"
+                     onClick={() => router.push('/#quiz')}
+                   >
+                     <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg">
+                         <Brain className="w-5 h-5 text-white" />
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <span className="text-[10px] text-blue-400 font-semibold">{t('dash.quiz.title')}</span>
+                         <div className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">{t('dash.start.test')}</div>
+                       </div>
                       <div className="shrink-0">
                         <svg className="w-5 h-5 text-blue-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </div>
@@ -257,12 +235,12 @@ export default function MergedDashboard() {
                       <Brain className="w-7 h-7 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-black text-white">تست شخصیت مالی خود را شروع کنید!</h3>
-                      <p className="text-sm text-gray-300 mt-0.5">با انجام این تست، مسیر سرمایه‌گذاری مناسب شخصیت خود را کشف کنید</p>
+                      <h3 className="text-base font-black text-white">{t('dash.quiz.cta.title')}</h3>
+                      <p className="text-sm text-gray-300 mt-0.5">{t('dash.quiz.cta.desc')}</p>
                     </div>
                     <div className="shrink-0">
                       <span className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all shadow-lg">
-                        شروع تست
+                        {t('dash.start.quiz')}
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </span>
                     </div>
@@ -280,22 +258,22 @@ export default function MergedDashboard() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-400" />
-                        <h3 className="text-sm font-bold text-white">سبد سرمایه</h3>
+                        <h3 className="text-sm font-bold text-white">{t('dash.portfolio')}</h3>
                       </div>
                       <button onClick={() => router.push('/app/assets')}
                         className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
                       >
-                        مدیریت کامل ←
+                        {t('dash.full.manage')}
                       </button>
                     </div>
 
                     {!hasAssets ? (
                       <div className="text-center py-6">
-                        <p className="text-gray-400 text-sm mb-3">سبد شما خالی است — اولین دارایی را ثبت کنید</p>
+                        <p className="text-gray-400 text-sm mb-3">{t('dash.empty.portfolio')}</p>
                         <button onClick={() => router.push('/app/assets')}
                           className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all"
                         >
-                          + افزودن دارایی
+                          {t('dash.add.asset')}
                         </button>
                       </div>
                     ) : (
@@ -326,7 +304,7 @@ export default function MergedDashboard() {
                               })()}
                               <circle cx="40" cy="40" r="23" fill="#111827" />
                               <text x="40" y="38" textAnchor="middle" className="fill-white text-[7px] font-bold">{assets.length}</text>
-                              <text x="40" y="48" textAnchor="middle" className="fill-gray-400 text-[5px]">دارایی</text>
+                              <text x="40" y="48" textAnchor="middle" className="fill-gray-400 text-[5px]">{t('dash.assets.count')}</text>
                             </svg>
                           </div>
                           <div className="flex-1 space-y-1 min-w-0">
@@ -337,7 +315,7 @@ export default function MergedDashboard() {
                                 <div key={type} className="flex items-center justify-between text-xs">
                                   <span className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.color }} />
-                                    <span className="text-white font-medium">{cfg.label}</span>
+                                    <span className="text-white font-medium">{t(cfg.key)}</span>
                                   </span>
                                   <span className="text-gray-400">{pct.toFixed(0)}%</span>
                                 </div>
@@ -350,7 +328,7 @@ export default function MergedDashboard() {
                           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/20 text-blue-400 text-sm font-bold hover:from-blue-600/30 hover:to-purple-600/30 transition-all"
                         >
                           <Brain className="w-4 h-4" />
-                          اسکن هوشمند پرتفوی
+                          {t('dash.smart.scan')}
                         </button>
 
                         <div className="space-y-1 mt-3">
@@ -370,7 +348,7 @@ export default function MergedDashboard() {
                             <button onClick={() => router.push('/app/assets')}
                               className="text-xs text-blue-400 hover:text-blue-300 font-semibold w-full text-center pt-1"
                             >
-                              + {assets.length - 4} دارایی دیگر
+                              {t('dash.more.assets').replace('{{count}}', String(assets.length - 4))}
                             </button>
                           )}
                         </div>
@@ -385,13 +363,13 @@ export default function MergedDashboard() {
                   <motion.div variants={itemVariants}
                     className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4"
                   >
-                    <h3 className="text-sm font-bold text-white mb-3">دسترسی سریع</h3>
+                    <h3 className="text-sm font-bold text-white mb-3">{t('dash.quick.access')}</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: 'A|CAP+', icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
-                        { label: 'قیمت‌ها', icon: TrendingUp, action: () => router.push('/app/prices'), color: 'text-emerald-400' },
-                        { label: 'تیکت', icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
-                        { label: 'آکادمی', icon: Shield, action: () => router.push('/app/academy'), color: 'text-purple-400' },
+                        { label: t('nav.plus'), icon: Crown, action: () => router.push(isPlus ? '/app/personal' : '/acap-plus'), color: 'text-amber-400' },
+                        { label: t('app.prices'), icon: TrendingUp, action: () => router.push('/app/prices'), color: 'text-emerald-400' },
+                        { label: t('nav.ticket'), icon: HelpCircle, action: () => router.push('/tickets'), color: 'text-blue-400' },
+                        { label: t('app.academy'), icon: Shield, action: () => router.push('/app/academy'), color: 'text-purple-400' },
                       ].map(btn => (
                         <button key={btn.label} onClick={btn.action}
                           className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/[0.05] border border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.08] transition-all text-sm font-semibold text-white"
@@ -408,12 +386,12 @@ export default function MergedDashboard() {
                   >
                     <div className="flex items-center gap-2 mb-3">
                       <User className="w-4 h-4 text-blue-400" />
-                      <h3 className="text-sm font-bold text-white">اطلاعات حساب</h3>
+                      <h3 className="text-sm font-bold text-white">{t('dash.account.info')}</h3>
                     </div>
                     <div className="space-y-1.5">
                       {[
-                        { label: 'نام', value: user.name },
-                        { label: 'ایمیل', value: user.email },
+                        { label: t('dash.name'), value: user.name },
+                        { label: t('dash.email'), value: user.email },
                       ].map(item => (
                         <div key={item.label} className="flex justify-between items-center py-1 border-b border-white/[0.06] last:border-0">
                           <span className="text-gray-400 text-xs">{item.label}</span>
@@ -428,7 +406,7 @@ export default function MergedDashboard() {
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/20 transition-all"
                     >
                       <Shield className="w-4 h-4" />
-                      پنل مدیریت
+                      {t('dash.admin.panel')}
                     </motion.button>
                   )}
               </div>
@@ -454,7 +432,7 @@ export default function MergedDashboard() {
                   <div className="flex items-center justify-between p-4 border-b border-gray-800">
                     <div className="flex items-center gap-2">
                       <Brain className="w-4 h-4 text-blue-400" />
-                      <h3 className="text-sm font-bold text-white">اسکن هوشمند پرتفوی</h3>
+                      <h3 className="text-sm font-bold text-white">{t('dash.smart.scan')}</h3>
                     </div>
                     <button onClick={() => setShowAdvisor(false)} className="p-1 rounded-lg hover:bg-gray-800 text-gray-400">
                       <X className="w-4 h-4" />
@@ -480,57 +458,57 @@ export default function MergedDashboard() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-                onClick={() => {
-                  if (tutorialStep >= steps.length - 1) {
-                    localStorage.setItem('acap_tutorial_done', 'true')
-                    setTutorialStep(null)
-                  } else {
-                    setTutorialStep(tutorialStep + 1)
-                  }
-                }}
-              >
-                <motion.div
-                  key={tutorialStep}
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className="text-center mb-5">
-                    <div className="text-5xl mb-3">{steps[tutorialStep].icon}</div>
-                    <h2 className="text-xl font-black text-white">{steps[tutorialStep].title}</h2>
-                    <p className="text-sm text-gray-400 mt-2 leading-relaxed">{steps[tutorialStep].desc}</p>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 mb-5">
-                    {steps.map((_, i) => (
-                      <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === tutorialStep ? 'bg-blue-400 w-5' : i < tutorialStep ? 'bg-blue-400/40' : 'bg-gray-700'}`} />
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => {
-                      if (tutorialStep >= steps.length - 1) {
-                        localStorage.setItem('acap_tutorial_done', 'true')
-                        setTutorialStep(null)
-                      } else {
-                        setTutorialStep(tutorialStep + 1)
-                      }
-                    }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-bold transition-colors"
-                    >
-                      {tutorialStep >= steps.length - 1 ? 'شروع کن!' : 'بعدی'}
-                    </button>
-                    <button onClick={() => {
+                  onClick={() => {
+                    if (tutorialStep >= stepKeys.length - 1) {
                       localStorage.setItem('acap_tutorial_done', 'true')
                       setTutorialStep(null)
-                    }}
-                      className="px-4 py-3 rounded-xl bg-gray-800 text-gray-400 hover:text-white text-sm font-medium transition-colors"
-                    >
-                      رد کردن
-                    </button>
-                  </div>
-                </motion.div>
+                    } else {
+                      setTutorialStep(tutorialStep + 1)
+                    }
+                  }}
+                >
+                  <motion.div
+                    key={tutorialStep}
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="text-center mb-5">
+                      <div className="text-5xl mb-3">{stepIcons[tutorialStep]}</div>
+                      <h2 className="text-xl font-black text-white">{t(stepKeys[tutorialStep] + '.title')}</h2>
+                      <p className="text-sm text-gray-400 mt-2 leading-relaxed">{t(stepKeys[tutorialStep] + '.desc')}</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 mb-5">
+                      {stepKeys.map((_, i) => (
+                        <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === tutorialStep ? 'bg-blue-400 w-5' : i < tutorialStep ? 'bg-blue-400/40' : 'bg-gray-700'}`} />
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => {
+                        if (tutorialStep >= stepKeys.length - 1) {
+                          localStorage.setItem('acap_tutorial_done', 'true')
+                          setTutorialStep(null)
+                        } else {
+                          setTutorialStep(tutorialStep + 1)
+                        }
+                      }}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-bold transition-colors"
+                      >
+                        {tutorialStep >= stepKeys.length - 1 ? t('dash.start') : t('dash.next')}
+                      </button>
+                      <button onClick={() => {
+                        localStorage.setItem('acap_tutorial_done', 'true')
+                        setTutorialStep(null)
+                      }}
+                        className="px-4 py-3 rounded-xl bg-gray-800 text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                      >
+                        {t('dash.skip')}
+                      </button>
+                    </div>
+                  </motion.div>
               </motion.div>
             )}
           </AnimatePresence>

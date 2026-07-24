@@ -4,14 +4,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Brain, PieChart, Target } from 'lucide-react'
 import { getAssetPriceIr } from '@/lib/price-utils'
-
-const TYPE_LABELS: Record<string, string> = {
-  crypto: 'رمز ارز',
-  stock: 'بورس ایران',
-  gold: 'طلا',
-  currency: 'ارز',
-  other: 'سایر',
-}
+import { useLang } from '@/components/lang-provider'
 
 const TYPE_EMOJI: Record<string, string> = {
   crypto: '\u20BF',
@@ -19,13 +12,6 @@ const TYPE_EMOJI: Record<string, string> = {
   gold: '\uD83D\uDD36',
   currency: '\uD83D\uDCB5',
   other: '\uD83D\uDCB0',
-}
-
-const INVESTOR_TYPES: Record<string, { name: string; emoji: string; color: string }> = {
-  conservative: { name: '\u0645\u062D\u0627\u0641\u0638\u0647\u200C\u06A9\u0627\u0631', emoji: '\uD83D\uDEE1\uFE0F', color: '#10B981' },
-  balanced: { name: '\u0645\u062A\u0639\u0627\u062F\u0644', emoji: '\u2696\uFE0F', color: '#3B82F6' },
-  growth: { name: '\u0631\u0634\u062F\u06AF\u0631\u0627', emoji: '\uD83D\uDE80', color: '#1D9BF0' },
-  aggressive: { name: '\u062A\u0647\u0627\u062C\u0645\u06CC', emoji: '\uD83D\uDD25', color: '#EF4444' },
 }
 
 const IDEAL_ALLOCATION: Record<string, Record<string, number>> = {
@@ -46,14 +32,15 @@ interface AdvisorProps {
 }
 
 function formatCurrency(n: number): string {
-  if (n >= 1_000_000_000_000) return (n / 1_000_000_000_000).toFixed(2) + ' \u062A\u0631\u06CC\u0644\u06CC\u0648\u0646'
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + ' \u0645\u06CC\u0644\u06CC\u0627\u0631\u062F'
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + ' \u0645\u06CC\u0644\u06CC\u0648\u0646'
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + ' \u0647\u0632\u0627\u0631'
-  return n.toLocaleString('fa-IR')
+  if (n >= 1_000_000_000_000) return (n / 1_000_000_000_000).toFixed(2) + 'T'
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return n.toLocaleString('en-US')
 }
 
 function ScoreCircle({ score }: { score: number }) {
+  const { t } = useLang()
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
@@ -89,7 +76,7 @@ function ScoreCircle({ score }: { score: number }) {
         {score}
       </motion.text>
       <text x="70" y="82" textAnchor="middle" className="fill-muted-foreground" fontSize="10">
-        {'\u0627\u0632 \u06F1\u06F0\u06F0'}
+        {t('pa.from').replace('{{value}}', '100')}
       </text>
     </svg>
   )
@@ -97,6 +84,22 @@ function ScoreCircle({ score }: { score: number }) {
 
 export function PortfolioAdvisor(props: AdvisorProps) {
   const { assets, prices, stockPrices, investorType, quizTaken } = props
+  const { t, lang } = useLang()
+
+  const TYPE_LABELS: Record<string, string> = {
+    crypto: t('asset.crypto'),
+    stock: t('asset.stock'),
+    gold: t('asset.gold'),
+    currency: t('asset.currency'),
+    other: t('asset.other'),
+  }
+
+  const INVESTOR_TYPES: Record<string, { name: string; emoji: string; color: string }> = {
+    conservative: { name: t('investor.conservative'), emoji: '\uD83D\uDEE1\uFE0F', color: '#10B981' },
+    balanced: { name: t('investor.balanced'), emoji: '\u2696\uFE0F', color: '#3B82F6' },
+    growth: { name: t('investor.growth'), emoji: '\uD83D\uDE80', color: '#1D9BF0' },
+    aggressive: { name: t('investor.aggressive'), emoji: '\uD83D\uDD25', color: '#EF4444' },
+  }
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, a) => {
@@ -163,27 +166,27 @@ export function PortfolioAdvisor(props: AdvisorProps) {
       if (g.gap > 0) {
         if (g.type === 'stock') {
           items.push({
-            text: `\u0628\u0631\u0627\u06CC \u0633\u0631\u0645\u0627\u06CC\u0647\u200C\u06AF\u0630\u0627\u0631\u06CC \u062F\u0631 \u0628\u0648\u0631\u0633 \u0627\u06CC\u0631\u0627\u0646\u060C ${absGap}\u066A \u0627\u0632 \u0633\u0628\u062F \u062E\u0648\u062F \u0631\u0627 \u0627\u062E\u062A\u0635\u0627\u0635 \u062F\u0647\u06CC\u062F`,
+            text: t('pa.increase.stock').replace('{pct}', String(absGap)),
             severity: 'warning',
             icon: '\uD83D\uDCC8',
           })
         } else {
           items.push({
-            text: `\u0633\u0647\u0645 ${label} \u062E\u0648\u062F \u0631\u0627 ${absGap}\u066A \u0627\u0641\u0632\u0627\u06CC\u0634 \u062F\u0647\u06CC\u062F`,
+            text: t('pa.increase').replace('{type}', label).replace('{pct}', String(absGap)),
             severity: 'warning',
-            icon: '↑',
+            icon: '\u2191',
           })
         }
       } else {
         if (investorType === 'conservative' && g.type === 'crypto') {
           items.push({
-            text: `\u06A9\u0631\u06CC\u067E\u062A\u0648 \u062E\u0648\u062F \u0631\u0627 ${absGap}\u066A \u06A9\u0627\u0647\u0634 \u062F\u0647\u06CC\u062F \u0648 \u0628\u0647 \u0637\u0644\u0627 \u0627\u0636\u0627\u0641\u0647 \u06A9\u0646\u06CC\u062F`,
+            text: t('pa.crypto.to.gold').replace('{pct}', String(absGap)),
             severity: 'critical',
             icon: '\uD83D\uDD25',
           })
         } else {
           items.push({
-            text: `\u0633\u0647\u0645 ${label} \u062E\u0648\u062F \u0631\u0627 ${absGap}\u066A \u06A9\u0627\u0647\u0634 \u062F\u0647\u06CC\u062F`,
+            text: t('pa.decrease').replace('{type}', label).replace('{pct}', String(absGap)),
             severity: 'critical',
             icon: '\uD83D\uDCC9',
           })
@@ -195,7 +198,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
     if (otherCurrent > 5) {
       significantGaps++
       items.push({
-        text: `\u0633\u0647\u0645 \u0633\u0627\u06CC\u0631 \u062F\u0627\u0631\u0627\u06CC\u06CC\u200C\u0647\u0627\u06CC \u062E\u0648\u062F \u0631\u0627 ${Math.round(otherCurrent)}\u066A \u06A9\u0627\u0647\u0634 \u062F\u0647\u06CC\u062F`,
+        text: t('pa.reduce.other').replace('{pct}', String(Math.round(otherCurrent))),
         severity: 'critical',
         icon: '\uD83D\uDCB0',
       })
@@ -203,14 +206,14 @@ export function PortfolioAdvisor(props: AdvisorProps) {
 
     if (significantGaps === 0 && totalValue > 0) {
       items.push({
-        text: '\u067E\u0631\u062A\u0641\u0648\u06CC \u0634\u0645\u0627 \u0645\u062A\u0639\u0627\u062F\u0644 \u0627\u0633\u062A',
+        text: t('pa.balanced'),
         severity: 'good',
         icon: '\u2705',
       })
     }
 
     return items
-  }, [gaps, investorType, currentAllocation, totalValue])
+  }, [gaps, investorType, currentAllocation, totalValue, t])
 
   if (!quizTaken) {
     return (
@@ -218,21 +221,21 @@ export function PortfolioAdvisor(props: AdvisorProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="glass border border-border rounded-3xl p-8 text-center"
-        dir="rtl"
+        dir={lang === 'fa' ? 'rtl' : 'ltr'}
       >
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/20">
           <Brain className="w-8 h-8 text-primary" />
         </div>
-        <h3 className="text-lg font-black text-foreground mb-2">{'\u062A\u0633\u062A \u0634\u062E\u0635\u06CC\u062A \u0645\u0627\u0644\u06CC \u0627\u0646\u062C\u0627\u0645 \u0646\u0634\u062F\u0647'}</h3>
+        <h3 className="text-lg font-black text-foreground mb-2">{t('pa.no.quiz.title')}</h3>
         <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-          {'\u0628\u0631\u0627\u06CC \u062F\u0631\u06CC\u0627\u0641\u062A \u0645\u0634\u0627\u0648\u0631\u0647 \u067E\u0631\u062A\u0641\u0648\u06CC\u060C \u0627\u0628\u062A\u062F\u0627 \u062A\u0633\u062A \u0634\u062E\u0635\u06CC\u062A \u0645\u0627\u0644\u06CC \u0631\u0627 \u0627\u0646\u062C\u0627\u0645 \u062F\u0647\u06CC\u062F'}
+          {t('pa.no.quiz.desc')}
         </p>
         <a
           href="/#quiz"
           className="inline-flex items-center gap-2 btn-primary px-6 py-3 rounded-xl text-sm font-bold"
         >
           <Brain className="w-4 h-4" />
-          {'\u0634\u0631\u0648\u0639 \u062A\u0633\u062A \u0634\u062E\u0635\u06CC\u062A \u0645\u0627\u0644\u06CC'}
+          {t('pa.no.quiz.cta')}
         </a>
       </motion.div>
     )
@@ -244,21 +247,21 @@ export function PortfolioAdvisor(props: AdvisorProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="glass border border-border rounded-3xl p-8 text-center"
-        dir="rtl"
+        dir={lang === 'fa' ? 'rtl' : 'ltr'}
       >
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/20">
           <PieChart className="w-8 h-8 text-primary" />
         </div>
-        <h3 className="text-lg font-black text-foreground mb-2">{'\u0633\u0628\u062F \u062F\u0627\u0631\u0627\u06CC\u06CC \u062E\u0627\u0644\u06CC \u0627\u0633\u062A'}</h3>
+        <h3 className="text-lg font-black text-foreground mb-2">{t('pa.empty.title')}</h3>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          {'\u0628\u0631\u0627\u06CC \u062F\u0631\u06CC\u0627\u0641\u062A \u0645\u0634\u0627\u0648\u0631\u0647\u060C \u0627\u0628\u062A\u062F\u0627 \u062F\u0627\u0631\u0627\u06CC\u06CC\u200C\u0647\u0627\u06CC \u062E\u0648\u062F \u0631\u0627 \u0627\u0636\u0627\u0641\u0647 \u06A9\u0646\u06CC\u062F'}
+          {t('pa.empty.desc')}
         </p>
       </motion.div>
     )
   }
 
   return (
-    <div dir="rtl">
+    <div dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -279,7 +282,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
             {investorInfo.emoji}
           </motion.div>
           <div className="text-xs font-mono tracking-widest text-muted-foreground mb-1">
-            {'\u0634\u062E\u0635\u06CC\u062A \u0645\u0627\u0644\u06CC \u0634\u0645\u0627'}
+            {t('pa.personality')}
           </div>
           <h3 className="text-xl sm:text-2xl font-black mb-1" style={{ color: investorInfo.color }}>
             {investorInfo.name}
@@ -289,7 +292,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
         <div className="p-6 sm:p-8">
           <div className="flex flex-col items-center gap-2 mb-6">
             <span className="text-xs text-muted-foreground font-semibold">
-              {'\u0627\u0645\u062A\u06CC\u0627\u0632 \u062A\u0637\u0627\u0628\u0642 \u067E\u0631\u062A\u0641\u0648\u06CC'}
+              {t('pa.score')}
             </span>
             <ScoreCircle score={score} />
           </div>
@@ -298,7 +301,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
             <div className="flex items-center gap-2 mb-4">
               <Target className="w-4 h-4 text-primary" />
               <h4 className="font-black text-sm text-foreground">
-                {'\u0645\u0642\u0627\u06CC\u0633\u0647 \u062A\u0648\u0632\u06CC\u0639 \u0641\u0639\u0644\u06CC \u0648 \u0627\u06CC\u062F\u0647\u200C\u0622\u0644'}
+                {t('pa.comparison')}
               </h4>
             </div>
             <div className="space-y-5" dir="ltr">
@@ -311,15 +314,15 @@ export function PortfolioAdvisor(props: AdvisorProps) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.08, duration: 0.4 }}
                   >
-                    <div className="flex items-center gap-2 mb-2.5" dir="rtl">
+                    <div className="flex items-center gap-2 mb-2.5" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
                       <span className="text-lg">{TYPE_EMOJI[g.type]}</span>
                       <span className="text-xs font-bold text-foreground">{TYPE_LABELS[g.type]}</span>
                     </div>
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground w-16 shrink-0" dir="rtl">
-                          {'\u0648\u0636\u0639\u06CC\u062A \u0641\u0639\u0644\u06CC'}
+                        <span className="text-[10px] text-muted-foreground w-16 shrink-0" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+                          {t('pa.current')}
                         </span>
                         <div className="flex-1 h-4 bg-accent/30 rounded-full overflow-hidden">
                           <motion.div
@@ -336,8 +339,8 @@ export function PortfolioAdvisor(props: AdvisorProps) {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground w-16 shrink-0" dir="rtl">
-                          {'\u0645\u0642\u062F\u0627\u0631 \u0627\u06CC\u062F\u0647\u200C\u0622\u0644'}
+                        <span className="text-[10px] text-muted-foreground w-16 shrink-0" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+                          {t('pa.ideal')}
                         </span>
                         <div className="flex-1 h-4 bg-accent/30 rounded-full overflow-hidden">
                           <motion.div
@@ -360,7 +363,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.7 + i * 0.08 }}
                         className="flex items-center gap-1 mt-1.5 mr-[4.5rem]"
-                        dir="rtl"
+                        dir={lang === 'fa' ? 'rtl' : 'ltr'}
                       >
                         {g.gap > 0 ? (
                           <>
@@ -369,7 +372,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
                               +{Math.abs(Math.round(g.gap))}%
                             </span>
                             <span className="text-[10px] text-muted-foreground">
-                              {'\u0646\u06CC\u0627\u0632 \u0628\u0647 \u0627\u0641\u0632\u0627\u06CC\u0634'}
+                              {t('pa.needs.increase')}
                             </span>
                           </>
                         ) : (
@@ -379,7 +382,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
                               -{Math.abs(Math.round(g.gap))}%
                             </span>
                             <span className="text-[10px] text-muted-foreground">
-                              {'\u0646\u06CC\u0627\u0632 \u0628\u0647 \u06A9\u0627\u0647\u0634'}
+                              {t('pa.needs.decrease')}
                             </span>
                           </>
                         )}
@@ -395,7 +398,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-4 h-4 text-primary" />
               <h4 className="font-black text-sm text-foreground">
-                {'\u062A\u0648\u0635\u06CC\u0647 \u0647\u0627\u06CC \u067E\u0631\u062A\u0641\u0648\u06CC'}
+                {t('pa.recommendations')}
               </h4>
             </div>
             <div className="space-y-3">
@@ -437,11 +440,11 @@ export function PortfolioAdvisor(props: AdvisorProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
         className="glass border border-border rounded-2xl p-4 flex items-center justify-around gap-3"
-        dir="rtl"
+        dir={lang === 'fa' ? 'rtl' : 'ltr'}
       >
         <div className="text-center">
           <div className="text-xs text-muted-foreground mb-1">
-            {'\u0627\u0631\u0632\u0634 \u06A9\u0644 \u067E\u0631\u062A\u0641\u0648\u06CC'}
+            {t('pa.total.value')}
           </div>
           <div className="text-sm font-black text-foreground">
             {formatCurrency(Math.round(totalValue))}
@@ -450,7 +453,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
         <div className="w-px h-8 bg-border/50" />
         <div className="text-center">
           <div className="text-xs text-muted-foreground mb-1">
-            {'\u062A\u0639\u062F\u0627\u062F \u062F\u0627\u0631\u0627\u06CC\u06CC\u200C\u0647\u0627'}
+            {t('pa.asset.count')}
           </div>
           <div className="text-sm font-black text-foreground">
             {assets.length}
@@ -459,7 +462,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
         <div className="w-px h-8 bg-border/50" />
         <div className="text-center">
           <div className="text-xs text-muted-foreground mb-1">
-            {'\u062A\u0639\u062F\u0627\u062F \u062F\u0633\u062A\u0647\u200C\u0647\u0627'}
+            {t('pa.category.count')}
           </div>
           <div className="text-sm font-black text-foreground">
             {typeCount}

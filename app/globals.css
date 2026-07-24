@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @plugin '@tailwindcss/typography';
 
-@custom-variant dark (&:is(.dark *));
+
 
 @theme inline {
   --font-sans: 'Vazirmatn', 'Vazirmatn Fallback', sans-serif;
@@ -13,6 +13,13 @@
   --color-brand-dark: var(--brand-dark);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
+  --color-app-bg: var(--app-bg);
+  --color-app-surface: var(--app-surface);
+  --color-app-elevated: var(--app-elevated);
+  --color-app-text: var(--app-text);
+  --color-app-text-muted: var(--app-text-muted);
+  --color-app-border: var(--app-border);
+  --color-app-accent: var(--app-accent);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -88,43 +95,57 @@
   --brand-dark: #2563EB;
   --surface: #0F1F32;
   --surface-elevated: #152B44;
+  --app-bg: #0B1926;
+  --app-surface: #111827;
+  --app-elevated: #1F2937;
+  --app-text: #FFFFFF;
+  --app-text-muted: #9CA3AF;
+  --app-border: #1F2937;
+  --app-accent: #60A5FA;
 }
 
-/* ===== DAY / LIGHT MODE ===== */
-.light {
-  color-scheme: light;
-  --background: #F5F7FA;
-  --foreground: #0F1E3A;
-  --card: #FFFFFF;
-  --card-foreground: #0F1E3A;
-  --popover: #FFFFFF;
-  --popover-foreground: #0F1E3A;
-  --primary: #1565C0;
-  --primary-foreground: #FFFFFF;
-  --secondary: #E8EDF5;
-  --secondary-foreground: #1E3A5F;
-  --muted: #E8EDF5;
-  --muted-foreground: #5A7A9E;
-  --accent: #DCE6F5;
-  --accent-foreground: #1565C0;
-  --destructive: #DC2626;
-  --border: rgba(21, 101, 192, 0.14);
-  --input: rgba(21, 101, 192, 0.08);
-  --ring: #1565C0;
+/* ===== BINANCE MODE (Orange-Black) ===== */
+.binance {
+  color-scheme: dark;
+  --background: #0B0E11;
+  --foreground: #EAECEF;
+  --card: #1E2329;
+  --card-foreground: #EAECEF;
+  --popover: #1E2329;
+  --popover-foreground: #EAECEF;
+  --primary: #F7931A;
+  --primary-foreground: #0B0E11;
+  --secondary: #2B3139;
+  --secondary-foreground: #EAECEF;
+  --muted: #2B3139;
+  --muted-foreground: #848E9C;
+  --accent: #2B3139;
+  --accent-foreground: #F7931A;
+  --destructive: #EF4444;
+  --border: rgba(247, 147, 26, 0.18);
+  --input: rgba(247, 147, 26, 0.1);
+  --ring: #F7931A;
   --radius: 0.75rem;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #0F1E3A;
-  --sidebar-primary: #1565C0;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E8EDF5;
-  --sidebar-accent-foreground: #0F1E3A;
-  --sidebar-border: rgba(21, 101, 192, 0.14);
-  --sidebar-ring: #1565C0;
-  --brand: #1565C0;
-  --brand-light: #2979FF;
-  --brand-dark: #0D47A1;
-  --surface: #FFFFFF;
-  --surface-elevated: #E8EDF5;
+  --sidebar: #181A20;
+  --sidebar-foreground: #EAECEF;
+  --sidebar-primary: #F7931A;
+  --sidebar-primary-foreground: #0B0E11;
+  --sidebar-accent: #2B3139;
+  --sidebar-accent-foreground: #EAECEF;
+  --sidebar-border: rgba(247, 147, 26, 0.18);
+  --sidebar-ring: #F7931A;
+  --brand: #F7931A;
+  --brand-light: #FFB347;
+  --brand-dark: #CC7000;
+  --surface: #181A20;
+  --surface-elevated: #1E2329;
+  --app-bg: #0B0E11;
+  --app-surface: #1E2329;
+  --app-elevated: #2B3139;
+  --app-text: #EAECEF;
+  --app-text-muted: #848E9C;
+  --app-border: #2B3139;
+  --app-accent: #F7931A;
 }
 
 @layer base {
@@ -155,9 +176,9 @@ body::before {
   pointer-events: none;
   z-index: -1;
 }
-.light body::before {
-  background: radial-gradient(ellipse at 30% 20%, rgba(21, 101, 192, 0.03) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 80%, rgba(21, 101, 192, 0.02) 0%, transparent 60%);
+.binance body::before {
+  background: radial-gradient(ellipse at 30% 20%, rgba(247, 147, 26, 0.05) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(247, 147, 26, 0.03) 0%, transparent 60%);
 }
 
 /* ===== Animations ===== */
@@ -232,10 +253,10 @@ body::before {
   border: 1px solid rgba(59, 130, 246, 0.12);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
-.light .glass {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(21, 101, 192, 0.12);
-  box-shadow: 0 4px 24px rgba(21, 101, 192, 0.06);
+.binance .glass {
+  background: rgba(30, 35, 41, 0.75);
+  border: 1px solid rgba(247, 147, 26, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* ===== Brand shimmer ===== */
@@ -248,8 +269,8 @@ body::before {
   animation: shimmer-blue 3.5s linear infinite;
 }
 
-.light .text-brand-shimmer {
-  background: linear-gradient(90deg, #0D47A1 0%, #1565C0 30%, #2979FF 50%, #1565C0 70%, #0D47A1 100%);
+.binance .text-brand-shimmer {
+  background: linear-gradient(90deg, #CC7000 0%, #F7931A 30%, #FFB347 50%, #F7931A 70%, #CC7000 100%);
   background-size: 220% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -278,8 +299,8 @@ body::before {
   box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
   transform: translateY(-2px);
 }
-.light .hover-glow:hover {
-  box-shadow: 0 0 30px rgba(21, 101, 192, 0.15);
+.binance .hover-glow:hover {
+  box-shadow: 0 0 30px rgba(247, 147, 26, 0.2);
 }
 
 /* ===== Grid pattern overlay ===== */
@@ -289,10 +310,10 @@ body::before {
     linear-gradient(90deg, rgba(59, 130, 246, 0.04) 1px, transparent 1px);
   background-size: 60px 60px;
 }
-.light .grid-pattern {
+.binance .grid-pattern {
   background-image:
-    linear-gradient(rgba(21, 101, 192, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(21, 101, 192, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(247, 147, 26, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(247, 147, 26, 0.06) 1px, transparent 1px);
 }
 
 /* ===== Progress bar ===== */
@@ -341,11 +362,11 @@ body::before {
   opacity: 0.52;
   cursor: not-allowed;
 }
-.light .btn-primary {
-  background: linear-gradient(135deg, #1565C0, #0D47A1);
+.binance .btn-primary {
+  background: linear-gradient(135deg, #F7931A, #CC7000);
 }
-.light .btn-primary:hover {
-  box-shadow: 0 0 30px rgba(21, 101, 192, 0.35);
+.binance .btn-primary:hover {
+  box-shadow: 0 0 30px rgba(247, 147, 26, 0.45);
 }
 
 /* ===== Input field ===== */
@@ -368,11 +389,11 @@ body::before {
   border-color: rgba(59, 130, 246, 0.5);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
-.light .input-field {
-  background: rgba(21, 101, 192, 0.04);
-  border: 1px solid rgba(21, 101, 192, 0.16);
+.binance .input-field {
+  background: rgba(247, 147, 26, 0.04);
+  border: 1px solid rgba(247, 147, 26, 0.16);
 }
-.light .input-field:focus {
-  border-color: rgba(21, 101, 192, 0.5);
-  box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.08);
+.binance .input-field:focus {
+  border-color: rgba(247, 147, 26, 0.5);
+  box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.12);
 }

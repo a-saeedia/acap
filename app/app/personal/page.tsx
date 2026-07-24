@@ -2,20 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLang } from '@/components/lang-provider'
+import { useSession } from '@/lib/auth-client'
 import { Play, Pause, X, Crown, Mic, Calendar } from 'lucide-react'
 
-function formatTime(d: Date) {
-  return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
+function formatTime(d: Date, lang: string) {
+  return d.toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 }
+
+const signalLabels: Record<string, { bg: string; border: string; icon: string; key: string }> = {
+  crypto: { bg: 'from-orange-600/20 via-orange-600/5 to-transparent', border: 'border-r-orange-500', icon: 'text-orange-400', key: 'asset.crypto.long' },
+  gold: { bg: 'from-yellow-600/20 via-yellow-600/5 to-transparent', border: 'border-r-yellow-500', icon: 'text-yellow-400', key: 'asset.gold' },
+  dollar: { bg: 'from-emerald-600/20 via-emerald-600/5 to-transparent', border: 'border-r-emerald-500', icon: 'text-emerald-400', key: 'asset.dollar' },
+  stock: { bg: 'from-cyan-600/20 via-cyan-600/5 to-transparent', border: 'border-r-cyan-500', icon: 'text-cyan-400', key: 'asset.stock.market' },
+  forex: { bg: 'from-blue-600/20 via-blue-600/5 to-transparent', border: 'border-r-blue-500', icon: 'text-blue-400', key: 'asset.forex' },
+}
+const defaultSignal = { bg: 'from-pink-600/20 via-pink-600/5 to-transparent', border: 'border-r-pink-500', icon: 'text-pink-400', key: 'asset.other' }
+
 
 function getSignalColor(type: string) {
   const ct = String(type || '').toLowerCase()
-  if (ct === 'crypto') return { bg: 'from-orange-600/20 via-orange-600/5 to-transparent', border: 'border-r-orange-500', icon: 'text-orange-400', label: 'ارز دیجیتال' }
-  if (ct === 'gold') return { bg: 'from-yellow-600/20 via-yellow-600/5 to-transparent', border: 'border-r-yellow-500', icon: 'text-yellow-400', label: 'طلا' }
-  if (ct === 'dollar') return { bg: 'from-emerald-600/20 via-emerald-600/5 to-transparent', border: 'border-r-emerald-500', icon: 'text-emerald-400', label: 'دلار' }
-  if (ct === 'stock') return { bg: 'from-cyan-600/20 via-cyan-600/5 to-transparent', border: 'border-r-cyan-500', icon: 'text-cyan-400', label: 'بورس' }
-  if (ct === 'forex') return { bg: 'from-blue-600/20 via-blue-600/5 to-transparent', border: 'border-r-blue-500', icon: 'text-blue-400', label: 'فارکس' }
-  return { bg: 'from-pink-600/20 via-pink-600/5 to-transparent', border: 'border-r-pink-500', icon: 'text-pink-400', label: 'سایر' }
+  return signalLabels[ct] || defaultSignal
 }
 
 function monthKey(d: Date) {
@@ -23,11 +30,12 @@ function monthKey(d: Date) {
 }
 
 function SignalBubble({ item, onClick, isSuggestion }: { item: any; onClick: () => void; isSuggestion?: boolean }) {
+  const { t, lang } = useLang()
   const isSignal = !isSuggestion
   const type = isSignal ? String(item.type || '') : ''
   const col = getSignalColor(isSuggestion ? '' : type)
   const profit = isSuggestion ? item.profitPercent : item.actualReturn
-  const profitLabel = isSuggestion ? 'سود پیشنهادی' : 'بازده واقعی'
+  const profitLabel = isSuggestion ? t('sig.suggested.profit') : t('sig.actual.return')
   const date = new Date(isSuggestion ? item.createdAt : item.publishedAt || item.createdAt)
 
   let leftColor = col.border
@@ -70,14 +78,16 @@ function SignalBubble({ item, onClick, isSuggestion }: { item: any; onClick: () 
       </div>
       <div className="flex items-center gap-2 md:gap-2 mt-1 pr-9 md:pr-0">
         {!isSuggestion && <span className="text-[8px] md:text-[9px] text-gray-500">{item.symbol}</span>}
-        <span className="text-[8px] md:text-[9px] text-gray-600">{col.label}</span>
-        <span className="text-[7px] md:text-[8px] text-gray-600 mr-auto">{formatTime(date)}</span>
+        <span className="text-[8px] md:text-[9px] text-gray-600">{t(col.key)}</span>
+        <span className="text-[7px] md:text-[8px] text-gray-600 mr-auto">{formatTime(date, lang)}</span>
       </div>
     </button>
   )
 }
 
 export default function PersonalPage() {
+  const { t, lang } = useLang()
+  const { data: session } = useSession()
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [signals, setSignals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,13 +96,14 @@ export default function PersonalPage() {
   const [sigTab, setSigTab] = useState<'suggestions' | 'signals'>('suggestions')
 
   useEffect(() => {
+    const userId = session?.user?.id || ''
     Promise.all([
       import('@/app/actions/admin').then(m =>
         m.getUserSuggestions().then(setSuggestions).catch(() => {})
       ),
-      fetch('/api/signals').then(r => r.json()).then(d => setSignals(d.signals || [])).catch(() => {}),
+      fetch('/api/signals' + (userId ? `?userId=${userId}` : '')).then(r => r.json()).then(d => setSignals(d.signals || [])).catch(() => {}),
     ]).finally(() => setLoading(false))
-  }, [])
+  }, [session])
 
   const sorted = [...suggestions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const grouped = sorted.reduce((acc: Record<string, any[]>, s: any) => {
@@ -108,12 +119,12 @@ export default function PersonalPage() {
       {/* Tab bar */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h1 className="text-sm md:text-base font-black text-white leading-tight">سیگنال‌ها</h1>
-          <span className="text-[8px] md:text-[9px] text-gray-500">{sigTab === 'suggestions' ? suggestions.length : signals.length} پیام</span>
+          <h1 className="text-sm md:text-base font-black text-white leading-tight">{t('sig.title')}</h1>
+          <span className="text-[8px] md:text-[9px] text-gray-500">{t('sig.messages').replace('{{count}}', String(sigTab === 'suggestions' ? suggestions.length : signals.length))}</span>
         </div>
         <div className="flex gap-0.5">
-          <button onClick={() => setSigTab('suggestions')} className={`px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all ${sigTab === 'suggestions' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>اختصاصی</button>
-          <button onClick={() => setSigTab('signals')} className={`px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all ${sigTab === 'signals' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>عمومی</button>
+          <button onClick={() => setSigTab('suggestions')} className={`px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all ${sigTab === 'suggestions' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>{t('sig.private')}</button>
+          <button onClick={() => setSigTab('signals')} className={`px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all ${sigTab === 'signals' ? 'bg-[#2AABEE] text-white' : 'bg-[#2a2d3a] text-gray-400'}`}>{t('sig.public')}</button>
         </div>
       </div>
 
@@ -127,7 +138,7 @@ export default function PersonalPage() {
           signals.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-gray-500 py-16">
               <Crown className="w-8 h-8 mb-2 opacity-20" />
-              <p className="text-xs md:text-sm">هنوز سیگنال عمومی ثبت نشده</p>
+              <p className="text-xs md:text-sm">{t('sig.no.public')}</p>
             </div>
           ) : (
             <div className="space-y-1 md:space-y-2">
@@ -139,7 +150,7 @@ export default function PersonalPage() {
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-gray-500 py-16">
             <Crown className="w-8 h-8 mb-2 opacity-20" />
-            <p className="text-xs md:text-sm">هنوز سیگنالی ثبت نشده</p>
+            <p className="text-xs md:text-sm">{t('sig.no.private')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -182,8 +193,8 @@ export default function PersonalPage() {
                   <div className="min-w-0">
                     <h2 className="text-[14px] font-bold text-white truncate">{selected.title}</h2>
                     <div className="flex items-center gap-2 text-[8px] text-gray-500">
-                      <span>{formatTime(new Date(selected.createdAt || selected.publishedAt))}</span>
-                      <span>{new Date(selected.createdAt || selected.publishedAt).toLocaleDateString('fa-IR')}</span>
+                      <span>{formatTime(new Date(selected.createdAt || selected.publishedAt), lang)}</span>
+                      <span>{new Date(selected.createdAt || selected.publishedAt).toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
                     </div>
                   </div>
                 </div>
@@ -195,7 +206,7 @@ export default function PersonalPage() {
               <div className="px-4 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
                 {selected.profitPercent && (
                   <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-3.5 text-center">
-                    <div className="text-[9px] text-gray-500 mb-0.5">سود</div>
+                    <div className="text-[9px] text-gray-500 mb-0.5">{t('sig.profit')}</div>
                     <div className="text-xl font-black text-emerald-400">+{Number(selected.profitPercent).toFixed(1)}%</div>
                   </div>
                 )}
@@ -236,7 +247,7 @@ export default function PersonalPage() {
                     </button>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <Mic className="w-4 h-4 text-gray-600 shrink-0" />
-                      <span className="text-[11px] text-gray-400">ویس تحلیل</span>
+                      <span className="text-[11px] text-gray-400">{t('sig.voice')}</span>
                       {playingAudio === selected.audioUrl && (
                         <div className="flex gap-px items-center">
                           {[1,2,3].map(i => <div key={i} className="w-0.5 h-3 bg-[#2AABEE] rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
@@ -248,7 +259,7 @@ export default function PersonalPage() {
 
                 {selected.expiresAt && (
                   <div className={`text-[11px] ${new Date(selected.expiresAt) < new Date() ? 'text-red-400' : 'text-gray-500'}`}>
-                    {new Date(selected.expiresAt) < new Date() ? '⛔ منقضی شده' : `⏳ ${new Date(selected.expiresAt).toLocaleDateString('fa-IR')}`}
+                    {new Date(selected.expiresAt) < new Date() ? t('sig.expired') : `⏳ ${new Date(selected.expiresAt).toLocaleDateString(lang === 'fa' ? 'fa-IR' : 'en-US')}`}
                   </div>
                 )}
               </div>
@@ -257,7 +268,7 @@ export default function PersonalPage() {
                 <button onClick={() => { setSelected(null); setPlayingAudio(null) }}
                   className="w-full py-2.5 rounded-xl bg-white/[0.04] border border-[#2a2d3a] text-gray-400 hover:text-white hover:border-[#2AABEE]/30 transition-all text-[12px] font-medium"
                 >
-                  بستن
+                  {t('common.close')}
                 </button>
               </div>
             </motion.div>

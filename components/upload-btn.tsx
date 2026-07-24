@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { Loader2, Plus, X } from 'lucide-react'
+import { useLang } from '@/components/lang-provider'
 
 export function UploadBtn({ label, onUpload, accept, currentUrl }: { label: string; onUpload: (url: string) => void; accept?: string; currentUrl?: string }) {
+  const { t } = useLang()
   const [uploading, setUploading] = useState(false)
   return (
     <div>
@@ -11,7 +13,7 @@ export function UploadBtn({ label, onUpload, accept, currentUrl }: { label: stri
       <div className="flex gap-2 items-center">
         <label className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 cursor-pointer hover:border-blue-500/50 transition-colors text-sm text-gray-400 hover:text-white">
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          <span className="text-xs">{uploading ? 'در حال آپلود...' : 'انتخاب فایل'}</span>
+          <span className="text-xs">{uploading ? t('common.uploading') : t('common.choose.file')}</span>
           <input type="file" accept={accept || 'image/*'} className="hidden" onChange={(e) => {
             const file = e.target.files?.[0]; if (!file) return
             setUploading(true)

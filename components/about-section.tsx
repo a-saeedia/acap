@@ -2,26 +2,28 @@
 
 import { motion } from 'framer-motion'
 import { Shield, Target, Brain, BarChart2, Users, Zap, TrendingUp, Gem, DollarSign, Bitcoin, Globe, Building2 } from 'lucide-react'
-
-const markets = [
-  { name: 'بورس', Icon: TrendingUp, desc: 'تحلیل سهام و اوراق بهادار' },
-  { name: 'طلا', Icon: Gem, desc: 'فرصت‌های بازار طلا' },
-  { name: 'ارز و دلار', Icon: DollarSign, desc: 'تحلیل نرخ ارز' },
-  { name: 'ارز دیجیتال', Icon: Bitcoin, desc: 'سیگنال‌های کریپتو' },
-  { name: 'فارکس', Icon: Globe, desc: 'بازار جهانی فارکس' },
-  { name: 'صندوق‌های سرمایه', Icon: Building2, desc: 'صندوق‌های درآمد ثابت و کالا' },
-]
-
-const values = [
-  { icon: Brain, title: 'هوشمند', desc: 'ساخت سبد سرمایه‌گذاری بر اساس شخصیت مالی شما به کمک هوش مصنوعی' },
-  { icon: Shield, title: 'امن', desc: 'مدیریت ریسک حرفه‌ای. هیچ فرصتی بیش از ۲۰٪ سرمایه را درگیر نمی‌کند' },
-  { icon: Target, title: 'دقیق', desc: 'تحلیل جریان نقدینگی و رفتار بازار با متدولوژی ICT' },
-  { icon: BarChart2, title: 'شفاف', desc: 'سیگنال‌های واضح با سطح ریسک مشخص: کم‌ریسک، متعادل، پرریسک' },
-  { icon: Zap, title: 'لحظه‌ای', desc: 'آپدیت‌ها و هشدارهای لحظه‌ای در همه بازارها' },
-  { icon: Users, title: 'اجتماعی', desc: 'اکوسیستم سفیران با درآمد پایدار از معرفی' },
-]
+import { useLang } from '@/components/lang-provider'
 
 export function AboutSection() {
+  const { t, lang } = useLang()
+
+  const markets = [
+    { name: t('about.mkt.stock'), Icon: TrendingUp, desc: t('about.mkt.stock.desc') },
+    { name: t('about.mkt.gold'), Icon: Gem, desc: t('about.mkt.gold.desc') },
+    { name: t('about.mkt.currency'), Icon: DollarSign, desc: t('about.mkt.currency.desc') },
+    { name: t('about.mkt.crypto'), Icon: Bitcoin, desc: t('about.mkt.crypto.desc') },
+    { name: t('about.mkt.forex'), Icon: Globe, desc: t('about.mkt.forex.desc') },
+    { name: t('about.mkt.fund'), Icon: Building2, desc: t('about.mkt.fund.desc') },
+  ]
+
+  const values = [
+    { icon: Brain, title: t('about.val.smart'), desc: t('about.val.smart.desc') },
+    { icon: Shield, title: t('about.val.secure'), desc: t('about.val.secure.desc') },
+    { icon: Target, title: t('about.val.precise'), desc: t('about.val.precise.desc') },
+    { icon: BarChart2, title: t('about.val.transparent'), desc: t('about.val.transparent.desc') },
+    { icon: Zap, title: t('about.val.realtime'), desc: t('about.val.realtime.desc') },
+    { icon: Users, title: t('about.val.social'), desc: t('about.val.social.desc') },
+  ]
   return (
     <section id="about" className="relative py-24 lg:py-32 overflow-hidden bg-background">
       <div className="absolute inset-0 grid-pattern opacity-50 pointer-events-none" />
@@ -43,14 +45,14 @@ export function AboutSection() {
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 glass border border-border rounded-full px-4 py-1.5 mb-6">
-            <span className="text-xs text-primary font-semibold">ما که هستیم؟</span>
+            <span className="text-xs text-primary font-semibold">{t('about.badge')}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground mb-4 text-balance">
-            یک اکوسیستم کامل{' '}
-            <span className="text-brand-shimmer">مدیریت ثروت</span>
+            {t('about.headline.1')}{' '}
+            <span className="text-brand-shimmer">{t('about.headline.2')}</span>
           </h2>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            در A | CAP باور داریم که هیچ نسخه یکسانی برای همه سرمایه‌گذاران وجود ندارد. ما برای شما نقشه مدیریت ثروت شخصی می‌سازیم.
+            {t('about.desc')}
           </p>
         </motion.div>
 
@@ -65,18 +67,18 @@ export function AboutSection() {
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
               <p className="text-lg sm:text-xl text-foreground font-bold leading-relaxed mb-4">
-                «A | CAP جایی است برای کسانی که می‌خواهند سرمایه‌گذاری را نه بر پایه هیجان، بلکه بر پایه تحلیل، مدیریت ریسک و برنامه‌ریزی بلندمدت دنبال کنند.»
+                {t('about.quote')}
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                ماموریت ما ایجاد شفافیت در تصمیمات مالی، ارتقای سواد سرمایه‌گذاری و کمک به ساخت سبدهای سرمایه‌گذاری متعادل و هوشمند است.
+                {t('about.mission')}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'بازارهای تحلیل‌شده', value: '۶', sub: 'بازار فعال' },
-                { label: 'نوع شخصیت مالی', value: '۴', sub: 'تیپ سرمایه‌گذار' },
-                { label: 'برنامه سفیران', value: 'فعال', sub: 'لینک اختصاصی' },
-                { label: 'اشتراک پریمیوم', value: 'Plus', sub: 'ACAP' },
+                { label: t('about.stat.analyzed'), value: '۶', sub: t('about.stat.active') },
+                { label: t('about.stat.type'), value: '۴', sub: t('about.stat.investor') },
+                { label: t('about.stat.ambassador'), value: t('common.active'), sub: t('about.stat.link') },
+                { label: t('about.stat.premium'), value: 'Plus', sub: 'ACAP' },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -103,7 +105,7 @@ export function AboutSection() {
           transition={{ duration: 0.7 }}
           className="mb-16"
         >
-          <h3 className="text-xl font-black text-foreground mb-6 text-center">بازارهایی که پوشش می‌دهیم</h3>
+          <h3 className="text-xl font-black text-foreground mb-6 text-center">{t('about.markets.title')}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {markets.map((market, i) => (
               <motion.div

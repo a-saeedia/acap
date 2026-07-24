@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useLang } from '@/components/lang-provider'
 import {
   Search, BookOpen, Clock, User, ChevronLeft,
   TrendingUp, BarChart3, Brain, LineChart, Shield, DollarSign,
@@ -36,9 +37,9 @@ interface Category {
   color: string | null; icon: string | null; order: number;
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, locale: string = 'fa-IR') {
   try {
-    return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(dateStr))
+    return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(dateStr))
   } catch { return dateStr }
 }
 
@@ -70,6 +71,7 @@ const itemVariants = {
 }
 
 export default function BlogPage() {
+  const { t, lang } = useLang()
   const router = useRouter()
   const [articles, setArticles] = useState<Article[]>([])
   const [featured, setFeatured] = useState<Article[]>([])
@@ -138,7 +140,7 @@ export default function BlogPage() {
   return (
     <motion.div
       className="min-h-screen bg-gray-950 text-white pb-20"
-      dir="rtl"
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -161,19 +163,18 @@ export default function BlogPage() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-crimson-500/10 border border-crimson-500/20 text-crimson-400 text-sm font-medium mb-6">
               <Sparkles className="w-4 h-4" />
-              دانشنامه سرمایه‌گذاری هوشمند
+              {t('blog.hero.badge')}
             </div>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight mb-4">
-              وبلاگ{' '}
+              {t('blog.hero.title')}{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-l from-crimson-400 via-amber-300 to-crimson-400">
                 A|CAP
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-8 leading-relaxed">
-              مقالات تخصصی در زمینه مدیریت سرمایه، تحلیل بازارهای مالی، شخصیت‌شناسی مالی
-              و معرفی ابزارهای هوشمند سرمایه‌گذاری
+              {t('blog.hero.desc')}
             </p>
 
             <div className="flex w-full max-w-xl mx-auto gap-2">
@@ -184,7 +185,7 @@ export default function BlogPage() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && router.push(`/blog?q=${encodeURIComponent(search)}`)}
-                  placeholder="جستجوی مقاله..."
+                  placeholder={t('blog.search.placeholder')}
                   className="w-full bg-gray-800/80 border border-gray-700 rounded-xl py-3.5 pr-12 pl-4 text-white placeholder:text-gray-500 focus:outline-none focus:border-crimson-500/50 focus:ring-1 focus:ring-crimson-500/20 transition-all"
                 />
               </div>
@@ -207,9 +208,9 @@ export default function BlogPage() {
               <div>
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                  مقالات ویژه
+                  {t('blog.featured.title')}
                 </h2>
-                <p className="text-gray-400 text-sm mt-1">پرطرفدارترین و جدیدترین مطالب</p>
+                <p className="text-gray-400 text-sm mt-1">{t('blog.featured.subtitle')}</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => scrollFeatured('right')} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
@@ -242,7 +243,7 @@ export default function BlogPage() {
                       style={{ backgroundImage: `url(${article.image || getArticleImage(article.title, cat?.color || crimson)})` }}
                     >
                       <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-crimson-500/20 text-crimson-400 text-xs font-medium border border-crimson-500/20">
-                        ویژه
+                        {t('blog.featured.badge')}
                       </span>
                     </div>
                     <div className="p-5 space-y-3">
@@ -256,12 +257,12 @@ export default function BlogPage() {
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" /> {article.author}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {article.readingTime} دقیقه
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {formatDate(article.publishedAt)}
-                        </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {article.readingTime} {t('blog.min.read')}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> {formatDate(article.publishedAt, lang === 'fa' ? 'fa-IR' : 'en-US')}
+                          </span>
                       </div>
                     </div>
                   </motion.div>
@@ -283,7 +284,7 @@ export default function BlogPage() {
               }`}
             >
               <BookOpen className="w-4 h-4" />
-              همه مقالات
+              {t('blog.filter.all')}
             </button>
             {categories.map(cat => {
               const CatIcon = getIcon(cat.icon || 'BookOpen')
@@ -317,15 +318,15 @@ export default function BlogPage() {
               <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-crimson-500/20 to-crimson-500/5 flex items-center justify-center mx-auto mb-6">
                 <BookOpen className="w-10 h-10 text-crimson-400/60" />
               </div>
-              <h3 className="text-xl font-bold mb-2">هنوز مقاله‌ای منتشر نشده</h3>
+              <h3 className="text-xl font-bold mb-2">{t('blog.empty.title')}</h3>
               <p className="text-gray-400 max-w-md mx-auto">
-                به زودی مقالات آموزشی جدید در این بخش منتشر خواهد شد. برای اطلاع از آخرین مطالب، ما را دنبال کنید.
+                {t('blog.empty.desc')}
               </p>
               <button
                 onClick={() => { setSelectedCategory(undefined); setSearch('') }}
                 className="mt-6 px-6 py-2.5 rounded-xl bg-crimson-600 hover:bg-crimson-700 text-white font-medium transition-all"
               >
-                مشاهده همه مقالات
+                {t('blog.empty.cta')}
               </button>
             </div>
           ) : (
@@ -348,7 +349,7 @@ export default function BlogPage() {
                       >
                         {article.isFeatured && (
                           <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-medium border border-amber-500/20 flex items-center gap-1">
-                            <Star className="w-3 h-3" /> ویژه
+                            <Star className="w-3 h-3" /> {t('blog.featured.badge')}
                           </span>
                         )}
                       </div>
@@ -375,15 +376,15 @@ export default function BlogPage() {
                             <User className="w-3 h-3" /> {article.author}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {article.readingTime} دقیقه
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" /> {formatDate(article.publishedAt)}
+                          <Clock className="w-3 h-3" /> {article.readingTime} {t('blog.min.read')}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> {formatDate(article.publishedAt, lang === 'fa' ? 'fa-IR' : 'en-US')}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Eye className="w-3 h-3" />
-                          <span>{(article.views ?? 0).toLocaleString('fa-IR')} بازدید</span>
+                          <span>{(article.views ?? 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('blog.views')}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -399,9 +400,9 @@ export default function BlogPage() {
                     className="px-8 py-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold transition-all border border-gray-700 flex items-center gap-2 disabled:opacity-50"
                   >
                     {loadingMore ? (
-                      <><Loader2 className="w-5 h-5 animate-spin" /> در حال بارگذاری...</>
+                      <><Loader2 className="w-5 h-5 animate-spin" /> {t('blog.loading')}</>
                     ) : (
-                      <><BookOpen className="w-5 h-5" /> مقالات بیشتر</>
+                      <><BookOpen className="w-5 h-5" /> {t('blog.load.more')}</>
                     )}
                   </button>
                 </div>
@@ -416,7 +417,7 @@ export default function BlogPage() {
             href="/app"
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> بازگشت به داشبورد
+            <ArrowLeft className="w-4 h-4" /> {t('blog.back.dashboard')}
           </Link>
         </motion.div>
       </div>

@@ -3,6 +3,7 @@
 import { useSession } from '@/lib/auth-client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLang } from '@/components/lang-provider'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { PortfolioDashboard } from '@/components/portfolio-dashboard'
 import { getDashboardData } from '@/app/actions/profile'
@@ -10,6 +11,7 @@ import { getDashboardData } from '@/app/actions/profile'
 export default function AssetsPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
+  const { t, lang } = useLang()
   const [loading, setLoading] = useState(true)
   const [investorType, setInvestorType] = useState<string | null>(null)
   const [quizTaken, setQuizTaken] = useState(false)
@@ -35,18 +37,19 @@ export default function AssetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="glass border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push('/app')}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
           >
-            <ArrowRight className="w-4 h-4" />
-            بازگشت
+            {lang === 'fa' ? <ArrowRight className="w-4 h-4" /> : null}
+            {t('common.back')}
+            {lang === 'en' ? <ArrowRight className="w-4 h-4" /> : null}
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">مدیریت سبد سرمایه</span>
+            <span className="text-xs text-muted-foreground">{t('app.portfolio')}</span>
           </div>
         </div>
       </header>

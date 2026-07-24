@@ -10,26 +10,10 @@ import {
 } from 'lucide-react'
 import { getCourseBySlug, getCourses, enrollInCourse } from '@/app/actions/academy'
 import { useSession } from '@/lib/auth-client'
+import { useLang } from '@/components/lang-provider'
 
 const crimson = '#A51C30'
 const gold = '#D4A843'
-
-const categories: Record<string, { label: string; color: string }> = {
-  ict: { label: 'ICT', color: '#3B82F6' },
-  ai: { label: 'هوش مصنوعی', color: '#8B5CF6' },
-  stock: { label: 'بورس', color: '#10B981' },
-  forex: { label: 'فارکس', color: '#F59E0B' },
-  crypto: { label: 'ارز دیجیتال', color: '#EF4444' },
-  blockchain: { label: 'بلاکچین', color: '#6366F1' },
-  trading: { label: 'معامله‌گری', color: '#EC4899' },
-  psychology: { label: 'روانشناسی', color: '#14B8A6' },
-}
-
-const levelConfig: Record<string, { label: string; color: string }> = {
-  beginner: { label: 'مبتدی', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' },
-  intermediate: { label: 'متوسط', color: 'bg-amber-500/20 text-amber-400 border-amber-500/20' },
-  advanced: { label: 'پیشرفته', color: 'bg-red-500/20 text-red-400 border-red-500/20' },
-}
 
 interface SyllabusItem {
   title?: string
@@ -53,7 +37,25 @@ export default function CourseDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { data: session } = useSession()
+  const { t, lang } = useLang()
   const slug = params.slug as string
+
+  const categories: Record<string, { label: string; color: string }> = {
+    ict: { label: t('cat.ict'), color: '#3B82F6' },
+    ai: { label: t('cat.ai'), color: '#8B5CF6' },
+    stock: { label: t('cat.stock'), color: '#10B981' },
+    forex: { label: t('cat.forex'), color: '#F59E0B' },
+    crypto: { label: t('cat.crypto'), color: '#EF4444' },
+    blockchain: { label: t('cat.blockchain'), color: '#6366F1' },
+    trading: { label: t('cat.trading'), color: '#EC4899' },
+    psychology: { label: t('cat.psychology'), color: '#14B8A6' },
+  }
+
+  const levelConfig: Record<string, { label: string; color: string }> = {
+    beginner: { label: t('level.beginner'), color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' },
+    intermediate: { label: t('level.intermediate'), color: 'bg-amber-500/20 text-amber-400 border-amber-500/20' },
+    advanced: { label: t('level.advanced'), color: 'bg-red-500/20 text-red-400 border-red-500/20' },
+  }
 
   const [course, setCourse] = useState<Course | null>(null)
   const [related, setRelated] = useState<Course[]>([])
@@ -108,9 +110,9 @@ export default function CourseDetailPage() {
     return (
       <div className="text-center py-20 text-gray-500">
         <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-20" />
-        <p className="text-lg font-medium">دوره مورد نظر یافت نشد</p>
+        <p className="text-lg font-medium">{t('course.not.found')}</p>
         <button onClick={() => router.push('/app/academy/catalog')} className="mt-4 text-crimson-400 hover:underline">
-          بازگشت به کاتالوگ
+          {t('course.back.catalog')}
         </button>
       </div>
     )
@@ -135,7 +137,7 @@ export default function CourseDetailPage() {
   return (
     <motion.div
       className="space-y-8 pb-16"
-      dir="rtl"
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
@@ -150,9 +152,9 @@ export default function CourseDetailPage() {
         <div className="relative z-10 p-6 md:p-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-            <button onClick={() => router.push('/app/academy')} className="hover:text-gray-300 transition-colors">آکادمی</button>
+            <button onClick={() => router.push('/app/academy')} className="hover:text-gray-300 transition-colors">{t('course.breadcrumb.academy')}</button>
             <ChevronLeft className="w-3 h-3" />
-            <button onClick={() => router.push('/app/academy/catalog')} className="hover:text-gray-300 transition-colors">دوره‌ها</button>
+            <button onClick={() => router.push('/app/academy/catalog')} className="hover:text-gray-300 transition-colors">{t('course.breadcrumb.courses')}</button>
             <ChevronLeft className="w-3 h-3" />
             <span className="text-gray-300 truncate">{course.title}</span>
           </div>
@@ -168,10 +170,10 @@ export default function CourseDetailPage() {
                   {catInfo.label}
                 </span>
                 {course.isBestseller && (
-                  <span className="px-3 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/20">پرفروش</span>
+                  <span className="px-3 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/20">{t('course.bestseller')}</span>
                 )}
                 {course.isNew && (
-                  <span className="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">جدید</span>
+                  <span className="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">{t('course.new')}</span>
                 )}
               </div>
 
@@ -186,20 +188,20 @@ export default function CourseDetailPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  {course.rating?.toFixed(1) || '۰'} <span className="text-gray-600">({(course.studentsCount || 0).toLocaleString('fa-IR')} دانشجو)</span>
+                  {course.rating?.toFixed(1) || '0'} <span className="text-gray-600">({(course.studentsCount || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('course.students')})</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4" />
-                  {course.duration || 'متغیر'}
+                  {course.duration || t('common.variable')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <FileText className="w-4 h-4" />
-                  {course.lessons} درس
+                  {course.lessons} {t('course.lessons')}
                 </span>
                 {course.videoHours && (
                   <span className="flex items-center gap-1.5">
                     <Play className="w-4 h-4" />
-                    {course.videoHours} ساعت ویدیو
+                    {course.videoHours} {t('course.video.hours')}
                   </span>
                 )}
               </div>
@@ -211,16 +213,16 @@ export default function CourseDetailPage() {
                 <div>
                   {discountPercent > 0 && (
                     <span className="inline-block px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm font-medium mb-2">
-                      {discountPercent}% تخفیف ویژه
+                      {t('course.discount').replace('{{percent}}', String(discountPercent))}
                     </span>
                   )}
                   <div className="text-3xl font-black">
-                    <span className="text-crimson-400">{(course.price || 0).toLocaleString('fa-IR')}</span>
-                    <span className="text-sm font-normal text-gray-400 mr-1">تومان</span>
+                    <span className="text-crimson-400">{(course.price || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')}</span>
+                    <span className="text-sm font-normal text-gray-400 mr-1">{t('course.toman')}</span>
                   </div>
                   {course.originalPrice && course.originalPrice > course.price && (
                     <div className="text-sm text-gray-500 line-through mt-1">
-                      {(course.originalPrice || 0).toLocaleString('fa-IR')} تومان
+                      {(course.originalPrice || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('course.toman')}
                     </div>
                   )}
                 </div>
@@ -239,12 +241,12 @@ export default function CourseDetailPage() {
                   ) : enrolled ? (
                     <>
                       <Check className="w-5 h-5" />
-                      ثبت نام شدید
+                      {t('course.enrolled')}
                     </>
                   ) : (
                     <>
                       <GraduationCap className="w-5 h-5" />
-                      شروع دوره
+                      {t('course.start')}
                     </>
                   )}
                 </button>
@@ -252,15 +254,15 @@ export default function CourseDetailPage() {
                 <div className="text-xs text-gray-500 space-y-2">
                   <div className="flex items-center justify-center gap-1">
                     <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>دسترسی مادام العمر</span>
+                    <span>{t('course.lifetime')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                    <span>آموزش آنلاین و آفلاین</span>
+                    <span>{t('course.online.offline')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <MessageCircle className="w-3.5 h-3.5 text-amber-400" />
-                    <span>پشتیبانی اختصاصی</span>
+                    <span>{t('course.dedicated.support')}</span>
                   </div>
                 </div>
               </div>
@@ -280,7 +282,7 @@ export default function CourseDetailPage() {
             >
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <Award className="w-5 h-5 text-crimson-400" />
-                در این دوره چه یاد می‌گیرید؟
+                {t('course.what.learn')}
               </h2>
               <div className="grid md:grid-cols-2 gap-3">
                 {whatYouLearn.map((item, i) => (
@@ -302,7 +304,7 @@ export default function CourseDetailPage() {
             >
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-400" />
-                پیش‌نیازها
+                {t('course.prerequisites')}
               </h2>
               <ul className="space-y-2">
                 {prerequisites.map((pr, i) => (
@@ -324,7 +326,7 @@ export default function CourseDetailPage() {
             >
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-crimson-400" />
-                سرفصل‌های دوره
+                {t('course.syllabus')}
               </h2>
               <div className="space-y-2">
                 {syllabus.map((mod, i) => {
@@ -341,10 +343,10 @@ export default function CourseDetailPage() {
                             {i + 1}
                           </span>
                           <div>
-                            <span className="font-medium text-sm">{mod.title || mod.module || `ماژول ${i + 1}`}</span>
-                            {lessons.length > 0 && (
-                              <span className="text-xs text-gray-500 mr-2">{lessons.length} درس</span>
-                            )}
+                            <span className="font-medium text-sm">{mod.title || mod.module || t('course.module').replace('{{number}}', String(i + 1))}</span>
+{lessons.length > 0 && (
+                                  <span className="text-xs text-gray-500 mr-2">{lessons.length} {t('course.lessons')}</span>
+                                )}
                           </div>
                         </div>
                         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -362,14 +364,14 @@ export default function CourseDetailPage() {
                                 <div key={j} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-800/40 text-sm">
                                   <div className="flex items-center gap-2">
                                     <Play className="w-3.5 h-3.5 text-gray-500" />
-                                    <span className="text-gray-300">{lesson.title || `درس ${j + 1}`}</span>
+                                    <span className="text-gray-300">{lesson.title || t('course.lesson').replace('{{number}}', String(j + 1))}</span>
                                   </div>
                                   {lesson.duration && (
                                     <span className="text-xs text-gray-500">{lesson.duration}</span>
                                   )}
                                 </div>
                               )) : (
-                                <div className="py-2 px-3 text-sm text-gray-500">در حال بروزرسانی</div>
+                                <div className="py-2 px-3 text-sm text-gray-500">{t('course.updating')}</div>
                               )}
                             </div>
                           </motion.div>
@@ -391,7 +393,7 @@ export default function CourseDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl bg-gray-800/40 border border-gray-700/50 p-6"
           >
-            <h3 className="text-sm font-bold text-gray-400 mb-3">مدرس دوره</h3>
+            <h3 className="text-sm font-bold text-gray-400 mb-3">{t('course.instructor.card')}</h3>
             <div className="flex items-center gap-3">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold text-white flex-shrink-0"
@@ -406,7 +408,7 @@ export default function CourseDetailPage() {
               <div>
                 <div className="font-bold">{course.instructorName}</div>
                 <div className="text-xs text-gray-400">
-                  {course.instructor === 'ali-borhan' ? 'بنیان‌گذار A|CAP' : 'تحلیلگر بازارهای مالی'}
+                  {course.instructor === 'ali-borhan' ? t('course.instructor.founder') : t('course.instructor.analyst')}
                 </div>
               </div>
             </div>
@@ -418,14 +420,14 @@ export default function CourseDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl bg-gray-800/40 border border-gray-700/50 p-6 space-y-3"
           >
-            <h3 className="text-sm font-bold text-gray-400 mb-2">اطلاعات دوره</h3>
+            <h3 className="text-sm font-bold text-gray-400 mb-2">{t('course.info')}</h3>
             {[
-              { icon: Users, label: 'تعداد دانشجویان', value: (course.studentsCount || 0).toLocaleString('fa-IR') },
-              { icon: Clock, label: 'مدت زمان', value: course.duration || 'متغیر' },
-              { icon: FileText, label: 'تعداد دروس', value: (course.lessons ?? 0).toLocaleString('fa-IR') },
-              { icon: Play, label: 'ساعت ویدیو', value: course.videoHours ? `${course.videoHours} ساعت` : '-' },
-              { icon: BarChart3, label: 'سطح دوره', value: lvlInfo.label },
-              { icon: Target, label: 'دسته‌بندی', value: catInfo.label },
+              { icon: Users, label: t('course.stat.students'), value: (course.studentsCount || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US') },
+              { icon: Clock, label: t('course.stat.duration'), value: course.duration || t('common.variable') },
+              { icon: FileText, label: t('course.stat.lessons'), value: (course.lessons ?? 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US') },
+              { icon: Play, label: t('course.stat.video'), value: course.videoHours ? `${course.videoHours} ${t('common.hours')}` : '-' },
+              { icon: BarChart3, label: t('course.stat.level'), value: lvlInfo.label },
+              { icon: Target, label: t('course.stat.category'), value: catInfo.label },
             ].map((stat, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2 text-gray-400">
@@ -443,7 +445,7 @@ export default function CourseDetailPage() {
             className="w-full py-2.5 rounded-xl border border-gray-700 text-sm text-gray-400 hover:text-white hover:border-gray-600 transition-all flex items-center justify-center gap-2"
           >
             <Share2 className="w-4 h-4" />
-            اشتراک‌گذاری دوره
+            {t('course.share')}
           </button>
         </div>
       </div>
@@ -455,12 +457,12 @@ export default function CourseDetailPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">دوره‌های مرتبط</h2>
+            <h2 className="text-xl font-bold">{t('course.related')}</h2>
             <button
               onClick={() => router.push('/app/academy/catalog')}
               className="text-sm text-crimson-400 hover:text-crimson-300 transition-colors flex items-center gap-1"
             >
-              مشاهده همه <ChevronLeft className="w-3 h-3" />
+              {t('course.view.all')} <ChevronLeft className="w-3 h-3" />
             </button>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
@@ -488,7 +490,7 @@ export default function CourseDetailPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400 fill-amber-400" />{r.rating?.toFixed(1) || '-'}</span>
-                  <span className="font-medium text-crimson-400">{(r.price || 0).toLocaleString('fa-IR')} تومان</span>
+                  <span className="font-medium text-crimson-400">{(r.price || 0).toLocaleString(lang === 'fa' ? 'fa-IR' : 'en-US')} {t('course.toman')}</span>
                 </div>
               </motion.div>
             ))}

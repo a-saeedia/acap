@@ -1,46 +1,54 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
-type Theme = 'dark' | 'light'
+export type Theme = 'dark' | 'binance'
 
 interface ThemeContextValue {
   theme: Theme
+  setTheme: (t: Theme) => void
   toggleTheme: () => void
+  isBinance: boolean
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'dark',
+  theme: 'binance',
+  setTheme: () => {},
   toggleTheme: () => {},
+  isBinance: true,
 })
 
+function applyThemeClass(theme: Theme) {
+  const root = document.documentElement
+  if (theme === 'binance') {
+    root.classList.add('binance')
+  } else {
+    root.classList.remove('binance')
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setThemeState] = useState<Theme>('binance')
 
   useEffect(() => {
     const stored = localStorage.getItem('acap-theme') as Theme | null
-    const resolved = stored ?? 'dark'
-    setTheme(resolved)
-    if (resolved === 'light') {
-      document.documentElement.classList.add('light')
-    } else {
-      document.documentElement.classList.remove('light')
-    }
+    const resolved = stored === 'dark' ? 'dark' : 'binance'
+    setThemeState(resolved)
+    applyThemeClass(resolved)
   }, [])
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('acap-theme', next)
-    if (next === 'light') {
-      document.documentElement.classList.add('light')
-    } else {
-      document.documentElement.classList.remove('light')
-    }
-  }
+  const setTheme = useCallback((t: Theme) => {
+    setThemeState(t)
+    localStorage.setItem('acap-theme', t)
+    applyThemeClass(t)
+  }, [])
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'binance' ? 'dark' : 'binance')
+  }, [theme, setTheme])
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isBinance: theme === 'binance' }}>
       {children}
     </ThemeContext.Provider>
   )

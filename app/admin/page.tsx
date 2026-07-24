@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion, getSignals, getAcapRevenue, createSignal, updateSignal, deleteSignal, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, recalculateSignalReturn, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion, getSignals, getAcapRevenue, createSignal, updateSignal, deleteSignal, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, recalculateSignalReturn, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest, populateSignals } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
@@ -10,6 +10,7 @@ import { toJalaali } from 'jalaali-js'
 import { persianDatetimeToGregorianISO, gregorianISOToPersianDatetime } from '@/lib/persian-date'
 import { PersianDateTimePicker } from '@/components/persian-datetime-picker'
 import { UploadBtn } from '@/components/upload-btn'
+import { VoiceRecorder } from '@/components/voice-recorder'
 
 type User = Awaited<ReturnType<typeof getUsers>>[number]
 type Ticket = Awaited<ReturnType<typeof getTickets>>[number]
@@ -425,10 +426,10 @@ export default function AdminPage() {
                             <input value={sugProfitMsg} onChange={e => setSugProfitMsg(e.target.value)} placeholder="پیام سود" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                             <input value={sugExpiresAt} onChange={e => setSugExpiresAt(e.target.value)} placeholder="تاریخ انقضا" type="text" className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm focus:border-blue-500/50 focus:outline-none transition-colors" />
                             </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                            <UploadBtn label="تصویر (اختیاری)" accept="image/*" currentUrl={sugImageUrl} onUpload={setSugImageUrl} />
-                            <UploadBtn label="ویس / صدا (اختیاری)" accept="audio/*" currentUrl={sugAudioUrl} onUpload={setSugAudioUrl} />
-                          </div>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                             <UploadBtn label="تصویر (اختیاری)" accept="image/*" currentUrl={sugImageUrl} onUpload={setSugImageUrl} />
+                             <div className="flex gap-2 items-end"><VoiceRecorder onRecord={setSugAudioUrl} />{sugAudioUrl ? <button onClick={() => setSugAudioUrl('')} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button> : null}</div>
+                           </div>
                           <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
                             <input type="checkbox" checked={sugBroadcast} onChange={e => setSugBroadcast(e.target.checked)} className="rounded" />
                             ارسال به همه کاربران A|CAP+
@@ -927,7 +928,19 @@ function AdminSignals() {
     setSignals(sigs); setRevenues(revs)
   }, [])
 
-  useEffect(() => { load().catch(() => {}).finally(() => setLoading(false)) }, [load])
+  useEffect(() => {
+    load().catch(() => {}).finally(async () => {
+      const sigs = await getSignals()
+      if (sigs.length === 0) {
+        try {
+          await populateSignals()
+          await load()
+        } catch (e) { console.error('auto seed failed:', e) }
+      } else {
+        setLoading(false)
+      }
+    })
+  }, [load])
 
   function openSignalForm(s?: any) {
     getUsers().then(u => setUserList(u.map((x: any) => ({ id: x.id, name: x.name, email: x.email })))).catch(() => {})
@@ -1026,9 +1039,9 @@ function AdminSignals() {
               </div>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UploadBtn label="تصویر سیگنال" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
-            <UploadBtn label="ویس / صدا" accept="audio/*" currentUrl={sf.audioUrl} onUpload={v => setSf(p => ({ ...p, audioUrl: v }))} />
+            <div className="flex gap-2 items-end"><VoiceRecorder onRecord={v => setSf(p => ({ ...p, audioUrl: v }))} />{sf.audioUrl ? <button onClick={() => setSf(p => ({ ...p, audioUrl: '' }))} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button> : null}</div>
           </div>
           {signalError && <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2"><X className="w-3.5 h-3.5 text-red-400 shrink-0" /><p className="text-red-400 text-xs font-bold">{signalError}</p></div>}
           <button onClick={saveSignal} disabled={signalSaving}
@@ -1083,7 +1096,13 @@ function AdminSignals() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
             <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
             <div className="flex gap-2">
-              
+              <button onClick={async () => {
+                try {
+                  const r = await populateSignals()
+                  alert(`${r.signals} سیگنال و ${r.revenueMonths} ماه درآمد نمونه ساخته شد`)
+                  await load()
+                } catch (e: any) { alert('خطا: ' + (e?.message || 'نامشخص')) }
+              }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Signal className="w-3.5 h-3.5" /> تولید سیگنال نمونه</button>
               <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
             </div>
           </div>

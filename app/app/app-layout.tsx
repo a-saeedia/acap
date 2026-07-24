@@ -3,25 +3,27 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession, signOut } from '@/lib/auth-client'
+import { useLang } from '@/components/lang-provider'
 import Link from 'next/link'
 import { LayoutDashboard, Wallet, TrendingUp, Zap, Crown, GraduationCap, BookOpen, Gift, LogOut, Menu, X, ChevronLeft, ArrowRight } from 'lucide-react'
 
 
 const navItems = [
-  { href: '/app', label: 'خلاصه من', icon: LayoutDashboard },
-  { href: '/app/revenue', label: 'A|CAP Revenue', icon: Zap },
-  { href: '/app/assets', label: 'دارایی‌ها', icon: Wallet },
-  { href: '/app/prices', label: 'قیمت‌ها', icon: TrendingUp },
-  { href: '/app/personal', label: 'سیگنال‌های شخصی', icon: Crown },
-  { href: '/app/academy', label: 'آکادمی', icon: GraduationCap },
-  { href: '/app/invite', label: 'دعوت از دوستان', icon: Gift },
-  { href: '/blog', label: 'وبلاگ', icon: BookOpen },
+  { href: '/app', key: 'app.summary', icon: LayoutDashboard },
+  { href: '/app/revenue', key: 'app.revenue', icon: Zap },
+  { href: '/app/assets', key: 'app.assets', icon: Wallet },
+  { href: '/app/prices', key: 'app.prices', icon: TrendingUp },
+  { href: '/app/personal', key: 'app.personal', icon: Crown },
+  { href: '/app/academy', key: 'app.academy', icon: GraduationCap },
+  { href: '/app/invite', key: 'app.invite', icon: Gift },
+  { href: '/blog', key: 'app.blog', icon: BookOpen },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const { t, lang } = useLang()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -32,21 +34,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
   if (isPending) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
-      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen flex items-center justify-center bg-app-bg">
+      <div className="w-8 h-8 border-2 border-app-accent border-t-transparent rounded-full animate-spin" />
     </div>
   )
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex max-md:flex-col overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-app-bg text-app-text flex max-md:flex-col overflow-x-hidden" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       {/* Sidebar */}
-      <aside className={`w-64 bg-gray-900/95 border-l border-gray-800 hidden md:flex flex-col fixed h-full z-30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <aside className={`w-64 bg-app-surface/95 border-l border-app-border hidden md:flex flex-col fixed h-full z-30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex items-center justify-between p-4 pb-0">
           <Link href="/" className="text-2xl font-black tracking-widest hover:opacity-80 transition-opacity">
-            A <span className="text-blue-400">|</span> CAP
+            A <span className="text-app-accent">|</span> CAP
           </Link>
-          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-all">
+          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-app-elevated text-app-text-muted hover:text-app-text transition-all">
             <ChevronLeft className="w-5 h-5" />
           </button>
         </div>
@@ -55,21 +57,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Link key={item.href} href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 pathname === item.href || (item.href !== '/app' && pathname.startsWith(item.href))
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/20'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  ? 'bg-app-accent/20 text-app-accent border border-app-accent/25'
+                  : 'text-app-text-muted hover:text-app-text hover:bg-app-elevated'
               }`}
             >
               <item.icon className="w-5 h-5 min-w-5" />
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
         </nav>
-        <div className="p-4 pt-4 border-t border-gray-800">
-          <div className="text-sm text-gray-400 mb-2 truncate">{session.user.name}</div>
+        <div className="p-4 pt-4 border-t border-app-border">
+          <div className="text-sm text-app-text-muted mb-2 truncate">{session.user.name}</div>
           <button onClick={() => signOut().then(() => router.push('/'))}
             className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-400/10 transition-all"
           >
-            <LogOut className="w-4 h-4" /> خروج
+            <LogOut className="w-4 h-4" /> {t('app.logout')}
           </button>
         </div>
       </aside>
@@ -77,15 +79,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar reopen button (when collapsed) */}
       {!sidebarOpen && (
         <button onClick={() => setSidebarOpen(true)}
-          className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 p-2 rounded-l-xl bg-gray-900/95 border border-gray-800 border-r-0 text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+          className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 p-2 rounded-l-xl bg-app-surface/95 border border-app-border border-r-0 text-app-text-muted hover:text-app-text hover:bg-app-elevated transition-all"
         >
           <ChevronLeft className="w-5 h-5 rotate-180" />
         </button>
       )}
 
       {/* Mobile header */}
-      <div className="md:hidden h-14 shrink-0 bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 px-4 flex items-center justify-between">
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-800 transition-colors">
+      <div className="md:hidden h-14 shrink-0 bg-app-surface/90 backdrop-blur-xl border-b border-app-border px-4 flex items-center justify-between">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-app-elevated transition-colors">
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
         <Link href="/" className="font-bold text-base hover:opacity-80 transition-opacity">A | CAP</Link>
@@ -95,15 +97,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile slide-in drawer */}
       <div className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-        <nav className={`absolute top-0 bottom-0 right-0 w-72 bg-gray-900 border-l border-gray-800 overflow-y-auto transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <nav className={`absolute top-0 bottom-0 right-0 w-72 bg-app-surface border-l border-app-border overflow-y-auto transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             <div className="pt-14 px-4 pb-4">
-            <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-gray-800/50">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-app-elevated/50">
+              <div className="w-10 h-10 rounded-full bg-app-accent flex items-center justify-center text-app-text font-bold text-sm shrink-0">
                 {session.user.name.charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-white truncate">{session.user.name}</div>
-                <div className="text-xs text-gray-400 truncate">{session.user.email}</div>
+                <div className="text-sm font-bold text-app-text truncate">{session.user.name}</div>
+                <div className="text-xs text-app-text-muted truncate">{session.user.email}</div>
               </div>
             </div>
             <div className="space-y-1">
@@ -112,20 +114,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all ${
                     pathname === item.href || (item.href !== '/app' && pathname.startsWith(item.href))
-                      ? 'bg-blue-600/20 text-blue-400'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      ? 'bg-app-accent/20 text-app-accent'
+                      : 'text-app-text-muted hover:text-app-text hover:bg-app-elevated'
                   }`}
                 >
                   <item.icon className="w-5 h-5 min-w-5" />
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               ))}
             </div>
-            <div className="mt-6 pt-4 border-t border-gray-800">
+            <div className="mt-6 pt-4 border-t border-app-border">
               <button onClick={() => signOut().then(() => router.push('/'))}
                 className="w-full flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm text-red-400 hover:bg-red-400/10 transition-all"
               >
-                <LogOut className="w-5 h-5 min-w-5" /> خروج از حساب
+                <LogOut className="w-5 h-5 min-w-5" /> {t('app.logout.account')}
               </button>
             </div>
           </div>
@@ -137,9 +139,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-6xl mx-auto p-4 md:p-8">
           {pathname !== '/app' && pathname !== '/app/assets' && (
             <button onClick={() => router.push('/app')}
-              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors mb-4 md:mb-6"
+              className="flex items-center gap-1.5 text-sm text-app-text-muted hover:text-app-text transition-colors mb-4 md:mb-6"
             >
-              <ArrowRight className="w-4 h-4" /> بازگشت
+              {lang === 'fa' ? <ArrowRight className="w-4 h-4" /> : null} {t('app.back')} {lang === 'en' ? <ArrowRight className="w-4 h-4" /> : null}
             </button>
           )}
           {children}
