@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Plus, X } from 'lucide-react'
+import { Loader2, Plus, X, ZoomIn } from 'lucide-react'
 import { useLang } from '@/components/lang-provider'
 
 export function UploadBtn({ label, onUpload, accept, currentUrl }: { label: string; onUpload: (url: string) => void; accept?: string; currentUrl?: string }) {
   const { t } = useLang()
   const [uploading, setUploading] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
   return (
     <div>
       <label className="text-[10px] text-gray-500 mb-1 block">{label}</label>
@@ -27,9 +28,22 @@ export function UploadBtn({ label, onUpload, accept, currentUrl }: { label: stri
         </label>
         {currentUrl ? <button onClick={() => onUpload('')} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button> : null}
       </div>
-      {currentUrl && currentUrl.startsWith('data:') ? (
-        currentUrl.startsWith('data:image') ? <img src={currentUrl} alt="" className="w-full h-20 object-cover rounded-lg mt-1 border border-gray-700" /> : <audio src={currentUrl} controls className="w-full h-8 mt-1" />
-      ) : null}
+      {currentUrl && currentUrl.startsWith('data:image') ? (
+        <>
+          <img src={currentUrl} alt="" className="w-full h-24 object-cover rounded-lg mt-1 border border-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreview(currentUrl)} />
+          <div className="flex justify-end mt-1">
+            <button onClick={() => setPreview(currentUrl)} className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"><ZoomIn className="w-3 h-3" />بزرگنمایی</button>
+          </div>
+        </>
+      ) : currentUrl && currentUrl.startsWith('data:') ? <audio src={currentUrl} controls className="w-full h-8 mt-1" /> : null}
+      {preview && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setPreview(null)}>
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <img src={preview} alt="" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl" style={{ objectFit: 'contain' }} />
+            <button onClick={() => setPreview(null)} className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-colors"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
