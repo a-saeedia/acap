@@ -11,12 +11,35 @@ const DEFAULT_RESPONSE = {
     'EUR-IRR': { price: 2000000, currency: 'IRR', change: 0 },
     'AED-IRR': { price: 504000, currency: 'IRR', change: 0 },
     'GOLD18': { price: 3500000, currency: 'IRR', change: 0 },
+    'GOLD24': { price: 4666660, currency: 'IRR', change: 0 },
+    'COIN': { price: 420000000, currency: 'IRR', change: 0 },
     'BTC': { price: 65000, currency: 'USD', change: 0 },
     'ETH': { price: 3400, currency: 'USD', change: 0 },
     'USDT': { price: 1, currency: 'USD', change: 0 },
+    'BNB': { price: 570, currency: 'USD', change: 0 },
+    'SOL': { price: 140, currency: 'USD', change: 0 },
+    'XRP': { price: 0.6, currency: 'USD', change: 0 },
+    'ADA': { price: 0.4, currency: 'USD', change: 0 },
+    'DOGE': { price: 0.12, currency: 'USD', change: 0 },
+    'TRX': { price: 0.12, currency: 'USD', change: 0 },
+    'TRY-IRR': { price: 56000, currency: 'IRR', change: 0 },
+    'GBP-IRR': { price: 2580000, currency: 'IRR', change: 0 },
   },
   irrRate: 1850000,
   stockPrices: {},
+}
+
+async function fetchFromDb() {
+  try {
+    const r = await pool.query('SELECT DISTINCT ON (symbol) symbol, price, currency FROM asset_price ORDER BY symbol, "updatedAt" DESC')
+    if (r.rows.length === 0) return null
+    const prices: Record<string, { price: number; currency: string; change: number }> = {}
+    for (const row of r.rows) {
+      if (row.price > 0) prices[row.symbol] = { price: Number(row.price), currency: row.currency ?? 'IRR', change: 0 }
+    }
+    if (Object.keys(prices).length === 0) return null
+    return { prices, irrRate: 620000, stockPrices: {} }
+  } catch { return null }
 }
 
 async function backgroundRefresh() {
@@ -31,6 +54,7 @@ async function backgroundRefresh() {
 
     const now = new Date().toISOString()
     const allSymbols = [...new Set([...Object.keys(prices), ...Object.keys(stockPrices)])]
+    if (allSymbols.length === 0) return
 
     let existing = new Set<string>()
     try {
@@ -55,70 +79,44 @@ async function backgroundRefresh() {
       const d = prices[sym] ?? stockPrices[sym]
       if (d) await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [d.price, sym])
     }
-
-    const finalPrices: Record<string, { price: number; currency: string; change: number }> = {}
-    for (const [sym, d] of Object.entries(prices)) {
-      finalPrices[sym] = { price: d.price, currency: d.currency ?? 'IRR', change: (d as any).change ?? 0 }
-    }
-    for (const [sym, d] of Object.entries(stockPrices)) {
-      finalPrices[sym] = { price: d.price, currency: 'IRR', change: (d as any).change ?? 0 }
-    }
-    if (Object.keys(finalPrices).length > 0) {
-      cache = { body: { prices: finalPrices, irrRate, stockPrices }, expiry: Date.now() + 25000 }
-    }
   } catch (e) { console.error('backgroundRefresh error:', e) }
-}
-
-async function fetchFromDb() {
-  try {
-    const r = await pool.query('SELECT DISTINCT ON (symbol) symbol, price, currency FROM asset_price ORDER BY symbol, "updatedAt" DESC')
-    if (r.rows.length === 0) return null
-    const prices: Record<string, { price: number; currency: string; change: number }> = {}
-    for (const row of r.rows) {
-      if (row.price > 0) prices[row.symbol] = { price: Number(row.price), currency: row.currency ?? 'IRR', change: 0 }
-    }
-    if (Object.keys(prices).length === 0) return null
-    return { prices, irrRate: 620000, stockPrices: {} }
-  } catch { return null }
 }
 
 export async function GET() {
   const now = Date.now()
 
-  // Serve cache if fresh
+  // Serve fresh cache
   if (cache && now < cache.expiry) {
     return Response.json(cache.body, {
       headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60' },
     })
   }
 
-  // Serve cache if stale + trigger background refresh
+  // Trigger background refresh if needed (never blocks)
+  if (!refreshPromise) {
+    refreshPromise = backgroundRefresh()
+      .catch(e => console.error('backgroundRefresh failed:', e))
+      .finally(() => { refreshPromise = null })
+  }
+
+  // Serve stale cache
   if (cache) {
-    if (!refreshPromise) {
-      refreshPromise = backgroundRefresh().finally(() => { refreshPromise = null })
-    }
     return Response.json(cache.body, {
       headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60' },
     })
   }
 
-  // No cache - try DB then default, never block on external APIs
+  // No cache — load from DB (fast query, no external APIs)
   const dbData = await fetchFromDb()
   if (dbData) {
-    cache = { body: dbData, expiry: now + 25000 }
-    if (!refreshPromise) {
-      refreshPromise = backgroundRefresh().finally(() => { refreshPromise = null })
-    }
+    cache = { body: dbData, expiry: now + 30000 }
     return Response.json(dbData, {
       headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60' },
     })
   }
 
-  // Last resort - return defaults and refresh in background
-  cache = { body: DEFAULT_RESPONSE, expiry: now + 15000 }
-  if (!refreshPromise) {
-    refreshPromise = backgroundRefresh().finally(() => { refreshPromise = null })
-  }
+  // Last resort — return default prices
+  cache = { body: DEFAULT_RESPONSE, expiry: now + 30000 }
   return Response.json(DEFAULT_RESPONSE, {
     headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60' },
   })
