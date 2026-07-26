@@ -23,6 +23,10 @@ export async function GET(req: NextRequest) {
     // Migration 0008: add visibility and targetUserIds
     await pool.query(`ALTER TABLE signal ADD COLUMN IF NOT EXISTS "visibility" text NOT NULL DEFAULT 'public'`)
     await pool.query(`ALTER TABLE signal ADD COLUMN IF NOT EXISTS "targetUserIds" jsonb`)
+    // New: audience field for general vs A|CAP+ signals
+    await pool.query(`ALTER TABLE signal ADD COLUMN IF NOT EXISTS "audience" text NOT NULL DEFAULT 'general'`)
+    // New: type field for acap_revenue to separate general vs plus revenue
+    await pool.query(`ALTER TABLE acap_revenue ADD COLUMN IF NOT EXISTS "type" text NOT NULL DEFAULT 'general'`)
 
     return NextResponse.json({ success: true, message: 'All migrations applied' })
   } catch (e: any) {

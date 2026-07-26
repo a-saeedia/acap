@@ -907,6 +907,8 @@ function AdminSignals() {
   const [signals, setSignals] = useState<any[]>([])
   const [revenues, setRevenues] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [migrating, setMigrating] = useState(false)
+  const [migrateError, setMigrateError] = useState('')
   const [signalTab, setSignalTab] = useState<'signals' | 'revenue'>('signals')
   const [showSignalForm, setShowSignalForm] = useState(false)
   const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
@@ -966,7 +968,13 @@ function AdminSignals() {
       const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, visibility: sf.visibility, targetUserIds: sf.visibility === 'private' ? sf.targetUserIds : undefined, audience: sf.audience, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
       if (signalFormMode === 'create') await createSignal(data); else if (editSignalId) await updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
-    } catch (e) { setSignalError(e instanceof Error ? e.message : 'خطا در انتشار سیگنال') }; setSignalSaving(false)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'خطا در انتشار سیگنال'
+      if (msg.includes('column') || msg.includes('audience') || msg.includes('visibility') || msg.includes('type')) {
+        setSignalError('ستون‌های دیتابیس وجود ندارند. روی دکمه قرمز "اجرای مهاجرت" کلیک کنید.')
+        setMigrateError('نیاز به اجرای مهاجرت دیتابیس است')
+      } else setSignalError(msg)
+    }; setSignalSaving(false)
   }
 
   async function handleDeleteSignal(id: string) { if (!confirm('حذف سیگنال؟')) return; await deleteSignal(id); await load() }
@@ -1106,6 +1114,21 @@ function AdminSignals() {
       </div>
       {signalTab === 'signals' && (
         <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden shadow-lg shadow-black/10">
+          {migrateError && (
+            <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] text-red-400">{migrateError}</span>
+              <button onClick={async () => {
+                setMigrating(true); setMigrateError('')
+                try {
+                  const r = await fetch('/api/migrate?key=acap_migrate_2026')
+                  const j = await r.json()
+                  if (j.success) { setMigrateError(''); await load() }
+                  else setMigrateError('خطا: ' + (j.error || 'نامشخص'))
+                } catch (e: any) { setMigrateError('خطا: ' + e.message) }
+                setMigrating(false)
+              }} disabled={migrating} className="text-[10px] px-2.5 py-1 bg-red-600 hover:bg-red-500 rounded-lg font-bold text-white disabled:opacity-50">{migrating ? '...' : 'اجرای مهاجرت'}</button>
+            </div>
+          )}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
             <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
             <div className="flex gap-2">
