@@ -425,11 +425,20 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
       if (pricePatterns.test(h)) priceIdx = i
       if (codePatterns.test(h) && qtyIdx === -1 && symIdx !== i) qtyIdx = -2
     }
+    // If price column found and quantity not found, quantity is the next numeric column after price
+    if (qtyIdx < 0 && priceIdx > symIdx && sampleRows && sampleRows.length > 0) {
+      const candidates = []
+      for (let c = priceIdx + 1; c < (sampleRows[0]?.length || 0); c++) {
+        const vals = sampleRows.slice(0, 10).map(r => parseFloat(String(r[c] ?? '').replace(/[^0-9.]/g, ''))).filter(v => !isNaN(v) && v > 0)
+        if (vals.length >= 3) candidates.push(c)
+      }
+      if (candidates.length === 1) qtyIdx = candidates[0]
+    }
     if (qtyIdx < 0 && sampleRows && sampleRows.length > 0) {
       const colCount = Math.max(...sampleRows.map(r => r.length))
       let bestCol = -1, bestScore = -1
       for (let c = 0; c < colCount; c++) {
-        if (c === symIdx) continue
+        if (c === symIdx || c === priceIdx) continue
         const vals = sampleRows.slice(0, 20).map(r => parseFloat(String(r[c] ?? '').replace(/[^0-9.]/g, ''))).filter(v => !isNaN(v) && v > 0)
         if (vals.length < 3) continue
         const avg = vals.reduce((s, v) => s + v, 0) / vals.length
@@ -443,9 +452,9 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
         if (vals.some(v => v < 1000) && vals.some(v => v > 10000)) score += 2
         if (score > bestScore) { bestScore = score; bestCol = c }
       }
-      qtyIdx = bestCol >= 0 ? bestCol : Math.min(symIdx + 2, colCount - 1)
+      qtyIdx = bestCol >= 0 ? bestCol : Math.min(symIdx + (priceIdx >= 0 ? 2 : 2), colCount - 1)
     }
-    if (qtyIdx < 0 || qtyIdx === -2) qtyIdx = Math.min(symIdx + 2, headers.length - 1)
+    if (qtyIdx < 0 || qtyIdx === -2) qtyIdx = Math.min(symIdx + (priceIdx >= 0 ? 2 : 2), Math.max(headers.length - 1, (sampleRows?.[0]?.length ?? 1) - 1))
     return { symIdx, qtyIdx, priceIdx }
   }
 
@@ -979,7 +988,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
                     </div>
                     <div className="text-center">
                     <p className="text-sm font-bold text-foreground">فایل خود را انتخاب کنید</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">پشتیبانی از CSV و Excel — ستون اول: نماد، ستون دوم: مقدار</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">پشتیبانی از CSV و Excel — ستون‌های: نماد، مقدار (تعداد سهم)</p>
                     </div>
                   </>
                 ) : (
