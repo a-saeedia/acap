@@ -1112,13 +1112,10 @@ function AdminSignals() {
             ) : signals.map(s => {
               const actualOk = s.actualReturn !== null && s.actualReturn !== undefined
               const isWin = actualOk && s.actualReturn >= 0
-              const catColor = s.type === 'crypto' ? 'from-orange-500/30 to-orange-900/30 border-orange-500/30'
-                : s.type === 'stock' ? 'from-cyan-500/30 to-cyan-900/30 border-cyan-500/30'
-                : s.type === 'gold' ? 'from-yellow-500/30 to-yellow-900/30 border-yellow-500/30'
-                : s.type === 'dollar' ? 'from-emerald-500/30 to-emerald-900/30 border-emerald-500/30'
-                : 'from-blue-500/30 to-blue-900/30 border-blue-500/30'
+              const hasImg = s.imageUrl && String(s.imageUrl).startsWith('data:image')
+              const hasAud = !!s.audioUrl
               return (
-                <div key={s.id} className={`bg-gradient-to-br ${catColor} rounded-xl p-4 border shadow-lg shadow-black/10 hover:shadow-lg hover:shadow-black/20 transition-all group`}>
+                <div key={s.id} className="bg-gray-900/80 rounded-xl p-4 border border-gray-700/50 hover:bg-gray-800/80 transition-all group">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -1128,25 +1125,32 @@ function AdminSignals() {
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-gray-400 font-semibold">{s.symbol}</span>
                         <span className="text-[9px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span>
+                        {hasImg && <span className="text-[8px] text-blue-400">🖼</span>}
+                        {hasAud && <span className="text-[8px] text-amber-400">🎤</span>}
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
-                      <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                      <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                     </div>
                   </div>
+                  {hasImg && (
+                    <div className="mb-2 -mx-1">
+                      <img src={s.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg border border-gray-700/50" />
+                    </div>
+                  )}
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-black/20 rounded-lg p-2 text-center">
+                    <div className="bg-black/30 rounded-lg p-2 text-center">
                       <div className="text-[8px] text-gray-500">سود هدف</div>
                       <div className="text-xs font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</div>
                     </div>
-                    <div className="bg-black/20 rounded-lg p-2 text-center">
+                    <div className="bg-black/30 rounded-lg p-2 text-center">
                       <div className="text-[8px] text-gray-500">بازده واقعی</div>
                       <div className={`text-xs font-bold ${actualOk ? (isWin ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>
                         {actualOk ? `${isWin ? '+' : ''}${s.actualReturn}%` : <button onClick={async () => { await recalculateSignalReturn(s.id); await load() }} className="underline text-[9px]">محاسبه</button>}
                       </div>
                     </div>
-                    <div className="bg-black/20 rounded-lg p-2 text-center">
+                    <div className="bg-black/30 rounded-lg p-2 text-center">
                       <div className="text-[8px] text-gray-500">تاریخ</div>
                       <div className="text-[10px] text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}</div>
                     </div>
