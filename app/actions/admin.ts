@@ -329,6 +329,7 @@ export async function createSignal(data: {
   actualReturn?: number; priceAtPublish: number; priceNow?: number
   imageUrl?: string; audioUrl?: string
   visibility?: string; targetUserIds?: string[]
+  audience?: string
   expiresAt?: string; publishedAt?: string
 }) {
   await requireAdmin()
@@ -348,6 +349,7 @@ export async function createSignal(data: {
     audioUrl: data.audioUrl || null,
     visibility: data.visibility || 'public',
     targetUserIds: data.targetUserIds || null,
+    audience: data.audience || 'general',
     expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
     publishedAt: data.publishedAt ? new Date(data.publishedAt) : new Date(),
   })
@@ -359,6 +361,7 @@ export async function updateSignal(id: string, data: {
   actualReturn?: number; priceAtPublish?: number; priceNow?: number
   imageUrl?: string | null; audioUrl?: string | null
   visibility?: string; targetUserIds?: string[] | null
+  audience?: string
   expiresAt?: string | null; publishedAt?: string | null
 }) {
   await requireAdmin()
@@ -377,6 +380,7 @@ export async function updateSignal(id: string, data: {
   if (data.audioUrl !== undefined) updateData.audioUrl = data.audioUrl
   if (data.visibility !== undefined) updateData.visibility = data.visibility
   if (data.targetUserIds !== undefined) updateData.targetUserIds = data.targetUserIds
+  if (data.audience !== undefined) updateData.audience = data.audience
   if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
   if (data.publishedAt !== undefined) updateData.publishedAt = data.publishedAt ? new Date(data.publishedAt) : null
   await db.update(signal).set(updateData).where(eq(signal.id, id))
@@ -471,12 +475,14 @@ export async function deleteSignal(id: string) {
 
 // -------- ACAP Revenue CRUD --------
 
-export async function getAcapRevenue() {
+export async function getAcapRevenue(type?: string) {
   await requireAdmin()
-  return db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+  const q = db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+  if (type) return await db.select().from(acapRevenue).where(eq(acapRevenue.type, type)).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+  return q
 }
 
-export async function addAcapRevenue(amount: number, month: number, year: number, description?: string) {
+export async function addAcapRevenue(amount: number, month: number, year: number, description?: string, type?: string) {
   await requireAdmin()
   await db.insert(acapRevenue).values({
     id: randomUUID(),
@@ -484,16 +490,18 @@ export async function addAcapRevenue(amount: number, month: number, year: number
     month,
     year,
     description: description || null,
+    type: type || 'general',
   })
 }
 
-export async function updateAcapRevenue(id: string, amount: number, description?: string, month?: number, year?: number) {
+export async function updateAcapRevenue(id: string, amount: number, description?: string, month?: number, year?: number, type?: string) {
   await requireAdmin()
   const updateData: any = {}
   if (amount !== undefined) updateData.amount = amount
   if (description !== undefined) updateData.description = description
   if (month !== undefined) updateData.month = month
   if (year !== undefined) updateData.year = year
+  if (type !== undefined) updateData.type = type
   await db.update(acapRevenue).set(updateData).where(eq(acapRevenue.id, id))
 }
 
@@ -507,27 +515,32 @@ export async function deleteAcapRevenue(id: string) {
 export async function populateRevenueFromSignals() {
   await requireAdmin()
   const signalData = await db.select().from(signal)
-  const monthlyRevenue: Record<string, { amount: number; count: number }> = {}
+  const monthlyRevenue: Record<string, { amount: number; count: number; type: string }> = {}
 
   for (const s of signalData) {
     const profit = s.actualReturn
     if (!profit || profit <= 0) continue
     const d = s.publishedAt ? new Date(s.publishedAt) : new Date()
     const j = toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
-    const key = `${j.jy}-${String(j.jm).padStart(2, '0')}`
-    if (!monthlyRevenue[key]) monthlyRevenue[key] = { amount: 0, count: 0 }
+    const key = `${j.jy}-${String(j.jm).padStart(2, '0')}-${s.audience || 'general'}`
+    if (!monthlyRevenue[key]) monthlyRevenue[key] = { amount: 0, count: 0, type: s.audience || 'general' }
     monthlyRevenue[key].amount += profit
     monthlyRevenue[key].count++
   }
 
   let inserted = 0
   for (const [key, data] of Object.entries(monthlyRevenue)) {
-    const [year, month] = key.split('-').map(Number)
+    const parts = key.split('-')
+    const year = parseInt(parts[0])
+    const month = parseInt(parts[1])
+    const type = parts[2] || 'general'
+
     const existing = await db.select().from(acapRevenue)
-      .where(and(eq(acapRevenue.year, year), eq(acapRevenue.month, month)))
+      .where(and(eq(acapRevenue.year, year), eq(acapRevenue.month, month), eq(acapRevenue.type, type)))
       .limit(1)
 
-    const avgReturn = Math.round((data.amount / data.count) * 10) / 10 // average return %
+    const avgReturn = Math.round((data.amount / data.count) * 10) / 10
+    const typeLabel = type === 'plus' ? 'A|CAP+' : 'عمومی'
     if (existing.length > 0) {
       await db.update(acapRevenue).set({ amount: avgReturn }).where(eq(acapRevenue.id, existing[0].id))
     } else {
@@ -536,7 +549,8 @@ export async function populateRevenueFromSignals() {
         amount: avgReturn,
         month,
         year,
-        description: `میانگین بازده ${data.count} سیگنال موفق`,
+        type,
+        description: `میانگین بازده ${data.count} سیگنال ${typeLabel}`,
       })
     }
     inserted++
@@ -640,6 +654,7 @@ export async function populateSignals() {
       priceNow: Math.round(currentPrice),
       imageUrl: null,
       audioUrl: null,
+      audience: 'general',
       expiresAt: new Date(publishedAt.getTime() + 90 * 86400000),
       publishedAt,
     })
@@ -655,7 +670,7 @@ export async function populateSignals() {
   return { signals: created.length, revenueMonths: revResult.months }
 }
 
-export async function getPublicAcapRevenue(months?: number) {
-  let query = db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
-  return query
+export async function getPublicAcapRevenue(months?: number, type?: string) {
+  if (type) return db.select().from(acapRevenue).where(eq(acapRevenue.type, type)).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+  return db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
 }

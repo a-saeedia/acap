@@ -199,6 +199,7 @@ export const signal = pgTable('signal', {
   audioUrl: text('audioUrl'),
   visibility: text('visibility').notNull().default('public'),
   targetUserIds: jsonb('targetUserIds'),
+  audience: text('audience').notNull().default('general'), // 'general' | 'plus'
   expiresAt: timestamp('expiresAt'),
   publishedAt: timestamp('publishedAt').notNull().defaultNow(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
@@ -210,6 +211,7 @@ export const acapRevenue = pgTable('acap_revenue', {
   description: text('description'),
   month: integer('month').notNull(),
   year: integer('year').notNull(),
+  type: text('type').notNull().default('general'), // 'general' | 'plus'
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 

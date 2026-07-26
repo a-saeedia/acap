@@ -145,11 +145,17 @@ export async function GET(req: Request) {
     const timeMonths = parseInt(url.searchParams.get('months') || '0')
     const userId = url.searchParams.get('userId') || ''
 
+    let isPlus = false
+    if (userId) {
+      const { rows: subRows } = await pool.query(`SELECT "acapPlus" FROM subscription WHERE "userId" = $1`, [userId])
+      isPlus = subRows.length > 0 && subRows[0].acapPlus === true
+    }
+
     const { rows } = await pool.query(
-      `SELECT * FROM signal WHERE ("visibility" IS NULL OR "visibility" = 'public' ${userId ? `OR ("visibility" = 'private' AND "targetUserIds" @> '["${userId}"]'::jsonb)` : ''}) ORDER BY "publishedAt" DESC`
+      `SELECT * FROM signal WHERE ("visibility" IS NULL OR "visibility" = 'public' ${userId ? `OR ("visibility" = 'private' AND "targetUserIds" @> '["${userId}"]'::jsonb)` : ''}) AND ("audience" IS NULL OR "audience" = 'general' ${isPlus ? `OR "audience" = 'plus'` : ''}) ORDER BY "publishedAt" DESC`
     )
 
-    const { rows: revenueRows } = await pool.query('SELECT * FROM acap_revenue ORDER BY year DESC, month DESC')
+    const { rows: revenueRows } = await pool.query(`SELECT * FROM acap_revenue WHERE "type" IS NULL OR "type" = 'general' ORDER BY year DESC, month DESC`)
 
     if (rows.length === 0) {
       const demo = generateDemoSignals(timeMonths)

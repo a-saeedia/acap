@@ -912,14 +912,14 @@ function AdminSignals() {
   const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
   const [editSignalId, setEditSignalId] = useState<string | null>(null)
   const [userList, setUserList] = useState<{id: string; name: string; email: string}[]>([])
-  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [] as string[], expiresAt: '', publishedAt: '' })
+  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [] as string[], audience: 'general', expiresAt: '', publishedAt: '' })
   const [signalSaving, setSignalSaving] = useState(false)
   const [signalError, setSignalError] = useState('')
   const [signalErrorField, setSignalErrorField] = useState<string | null>(null)
   const [showRevenueForm, setShowRevenueForm] = useState(false)
   const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
   const [editRevenueId, setEditRevenueId] = useState<string | null>(null)
-  const [rf, setRf] = useState(() => { const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); return { amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '' } })
+  const [rf, setRf] = useState(() => { const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); return { amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '', type: 'general' } })
   const [revenueSaving, setRevenueSaving] = useState(false)
   const [revenueError, setRevenueError] = useState('')
 
@@ -927,6 +927,7 @@ function AdminSignals() {
     const [sigs, revs] = await Promise.all([getSignals(), getAcapRevenue()])
     setSignals(sigs); setRevenues(revs)
   }, [])
+  const [revenueTab, setRevenueTab] = useState<'general' | 'plus'>('general')
 
   useEffect(() => {
     (async () => {
@@ -944,14 +945,14 @@ function AdminSignals() {
 
   function openSignalForm(s?: any) {
     getUsers().then(u => setUserList(u.map((x: any) => ({ id: x.id, name: x.name, email: x.email })))).catch(() => {})
-    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', visibility: s.visibility || 'public', targetUserIds: s.targetUserIds || [], expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
-    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [], expiresAt: '', publishedAt: gregorianISOToPersianDatetime(new Date().toISOString()) }) }
+    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', visibility: s.visibility || 'public', targetUserIds: s.targetUserIds || [], audience: s.audience || 'general', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
+    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [], audience: 'general', expiresAt: '', publishedAt: gregorianISOToPersianDatetime(new Date().toISOString()) }) }
     setShowSignalForm(true)
   }
 
   function openRevenueForm(r?: any) {
-    if (r) { setRevenueFormMode('edit'); setEditRevenueId(r.id); setRf({ amount: r.amount.toString(), month: r.month.toString(), year: r.year.toString(), description: r.description || '' }) }
-    else { setRevenueFormMode('create'); setEditRevenueId(null); const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); setRf({ amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '' }) }
+    if (r) { setRevenueFormMode('edit'); setEditRevenueId(r.id); setRf({ amount: r.amount.toString(), month: r.month.toString(), year: r.year.toString(), description: r.description || '', type: r.type || 'general' }) }
+    else { setRevenueFormMode('create'); setEditRevenueId(null); const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); setRf({ amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '', type: 'general' }) }
     setShowRevenueForm(true)
   }
 
@@ -962,7 +963,7 @@ function AdminSignals() {
     setSignalSaving(true)
     try {
       const priceVal = sf.priceAtPublish ? parseFloat(sf.priceAtPublish) : 0
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, visibility: sf.visibility, targetUserIds: sf.visibility === 'private' ? sf.targetUserIds : undefined, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
+      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, visibility: sf.visibility, targetUserIds: sf.visibility === 'private' ? sf.targetUserIds : undefined, audience: sf.audience, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
       if (signalFormMode === 'create') await createSignal(data); else if (editSignalId) await updateSignal(editSignalId, data)
       setShowSignalForm(false); await load()
     } catch (e) { setSignalError(e instanceof Error ? e.message : 'خطا در انتشار سیگنال') }; setSignalSaving(false)
@@ -977,14 +978,15 @@ function AdminSignals() {
     setRevenueSaving(true)
     try {
       const amount = parseFloat(rf.amount); const month = parseInt(rf.month); const year = parseInt(rf.year)
-      if (revenueFormMode === 'create') await addAcapRevenue(amount, month, year, rf.description || undefined); else if (editRevenueId) await updateAcapRevenue(editRevenueId, amount, rf.description || undefined, month, year)
+      if (revenueFormMode === 'create') await addAcapRevenue(amount, month, year, rf.description || undefined, rf.type); else if (editRevenueId) await updateAcapRevenue(editRevenueId, amount, rf.description || undefined, month, year, rf.type)
       setShowRevenueForm(false); await load()
     } catch (e) { setRevenueError(e instanceof Error ? e.message : 'خطا در ثبت درآمد') }; setRevenueSaving(false)
   }
 
   async function deleteRevenue(id: string) { if (!confirm('حذف درآمد؟')) return; await deleteAcapRevenue(id); await load() }
 
-  const totalRevenue = revenues.reduce((sum: number, r: any) => sum + r.amount, 0)
+  const filteredRevenues = revenues.filter(r => (r.type || 'general') === revenueTab)
+  const totalRevenue = filteredRevenues.reduce((sum: number, r: any) => sum + r.amount, 0)
   const persianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
   const signalFormOverlay = showSignalForm && (
@@ -1039,6 +1041,16 @@ function AdminSignals() {
               </div>
             )}
           </div>
+          <div>
+            <label className="text-[10px] text-gray-500 mb-1 block">مخاطب</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSf(p => ({ ...p, audience: 'general' }))}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.audience === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
+              <button onClick={() => setSf(p => ({ ...p, audience: 'plus' }))}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.audience === 'plus' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-lg shadow-amber-500/10' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>ویژه A|CAP+</button>
+            </div>
+            {sf.audience === 'plus' && <p className="text-[9px] text-amber-500/70 mt-1">این سیگنال فقط برای کاربران A|CAP+ نمایش داده می‌شود</p>}
+          </div>
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UploadBtn label="تصویر سیگنال" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
             <div className="flex gap-2 items-end"><VoiceRecorder onRecord={v => setSf(p => ({ ...p, audioUrl: v }))} />{sf.audioUrl ? <button onClick={() => setSf(p => ({ ...p, audioUrl: '' }))} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button> : null}</div>
@@ -1063,6 +1075,7 @@ function AdminSignals() {
             <div><label className="text-[10px] text-gray-500 mb-1 block">ماه</label><select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors">{persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}</select></div>
             <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           </div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">نوع</label><div className="flex gap-2"><button onClick={() => setRf(p => ({ ...p, type: 'general' }))} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${rf.type === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button><button onClick={() => setRf(p => ({ ...p, type: 'plus' }))} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${rf.type === 'plus' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>A|CAP+</button></div></div>
           <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات (اختیاری)</label><textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="منبع درآمد" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
           {revenueError && <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2"><X className="w-3.5 h-3.5 text-red-400 shrink-0" /><p className="text-red-400 text-xs font-bold">{revenueError}</p></div>}
           <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white py-3 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : <><Plus className="w-4 h-4 inline-block ml-1" />{revenueFormMode === 'create' ? 'ثبت درآمد' : 'ذخیره'}</>}</button>
@@ -1188,7 +1201,11 @@ function AdminSignals() {
           )}
           {/* Monthly revenue records (as percentages) */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">عملکرد ماهانه</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setRevenueTab('general')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${revenueTab === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
+              <button onClick={() => setRevenueTab('plus')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${revenueTab === 'plus' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>A|CAP+</button>
+              <span className="text-xs text-gray-500">عملکرد ماهانه</span>
+            </div>
             <div className="flex gap-2">
               <button onClick={async () => {
                 try {
@@ -1203,9 +1220,9 @@ function AdminSignals() {
               <button onClick={() => openRevenueForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Plus className="w-3.5 h-3.5" /> ثبت دستی</button>
             </div>
           </div>
-          {revenues.length > 0 ? (
+          {filteredRevenues.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {[...revenues].sort((a, b) => (b.year - a.year) || (b.month - a.month)).map(r => (
+              {[...filteredRevenues].sort((a, b) => (b.year - a.year) || (b.month - a.month)).map(r => (
                 <div key={r.id} className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-all hover:shadow-lg hover:shadow-emerald-500/5 group">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
