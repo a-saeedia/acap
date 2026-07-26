@@ -926,8 +926,13 @@ function AdminSignals() {
   const [revenueError, setRevenueError] = useState('')
 
   const load = useCallback(async () => {
-    const [sigs, revs] = await Promise.all([getSignals(), getAcapRevenue()])
-    setSignals(sigs); setRevenues(revs)
+    try {
+      const [sigs, revs] = await Promise.all([getSignals(), getAcapRevenue()])
+      setSignals(sigs); setRevenues(revs)
+      if (sigs.length === 0) setMigrateError('')
+    } catch {
+      setMigrateError('خطا در بارگذاری سیگنال‌ها — دیتابیس نیاز به مهاجرت دارد')
+    }
   }, [])
   const [revenueTab, setRevenueTab] = useState<'general' | 'plus'>('general')
 
@@ -936,9 +941,8 @@ function AdminSignals() {
       try {
         await load()
         const sigs = await getSignals()
-        if (sigs.length === 0) {
-          await populateSignals()
-          await load()
+        if (sigs.length === 0 && !migrateError) {
+          try { await populateSignals(); await load() } catch {}
         }
       } catch (e) { console.error('auto seed failed:', e) }
       setLoading(false)

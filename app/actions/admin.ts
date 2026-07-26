@@ -320,7 +320,7 @@ export async function deleteUser(userId: string) {
 
 export async function getSignals() {
   await requireAdmin()
-  return db.select().from(signal).orderBy(desc(signal.publishedAt))
+  try { return await db.select().from(signal).orderBy(desc(signal.publishedAt)) } catch { return [] }
 }
 
 export async function createSignal(data: {
@@ -420,7 +420,8 @@ export async function recalculateAllSignals() {
   const prices = allPrices.prices
   const stockPrices = allPrices.stockPrices
 
-  const allSignals = await db.select().from(signal)
+  let allSignals: any[] = []
+  try { allSignals = await db.select().from(signal) } catch { return { updated: 0, total: 0 } }
   let updated = 0
 
   for (const s of allSignals) {
@@ -477,9 +478,10 @@ export async function deleteSignal(id: string) {
 
 export async function getAcapRevenue(type?: string) {
   await requireAdmin()
-  const q = db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
-  if (type) return await db.select().from(acapRevenue).where(eq(acapRevenue.type, type)).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
-  return q
+  try {
+    if (type) return await db.select().from(acapRevenue).where(eq(acapRevenue.type, type)).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+    return await db.select().from(acapRevenue).orderBy(desc(acapRevenue.year), desc(acapRevenue.month))
+  } catch { return [] }
 }
 
 export async function addAcapRevenue(amount: number, month: number, year: number, description?: string, type?: string) {
@@ -514,7 +516,8 @@ export async function deleteAcapRevenue(id: string) {
 
 export async function populateRevenueFromSignals() {
   await requireAdmin()
-  const signalData = await db.select().from(signal)
+  let signalData: any[] = []
+  try { signalData = await db.select().from(signal) } catch { return { months: 0, totalSignals: 0 } }
   const monthlyRevenue: Record<string, { amount: number; count: number; type: string }> = {}
 
   for (const s of signalData) {
@@ -598,8 +601,8 @@ function priceWithCommas(n: number): string {
 export async function populateSignals() {
   await requireAdmin()
   // Delete existing signals & revenue
-  await db.delete(acapRevenue)
-  await db.delete(signal)
+  try { await db.delete(acapRevenue) } catch {}
+  try { await db.delete(signal) } catch {}
 
   const created: string[] = []
   const now = new Date()
