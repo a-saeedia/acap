@@ -929,17 +929,17 @@ function AdminSignals() {
   }, [])
 
   useEffect(() => {
-    load().catch(() => {}).finally(async () => {
-      const sigs = await getSignals()
-      if (sigs.length === 0) {
-        try {
+    (async () => {
+      try {
+        await load()
+        const sigs = await getSignals()
+        if (sigs.length === 0) {
           await populateSignals()
           await load()
-        } catch (e) { console.error('auto seed failed:', e) }
-      } else {
-        setLoading(false)
-      }
-    })
+        }
+      } catch (e) { console.error('auto seed failed:', e) }
+      setLoading(false)
+    })()
   }, [load])
 
   function openSignalForm(s?: any) {
