@@ -24,7 +24,6 @@ const NAV_ITEMS = [
   { id: 'plus-requests', label: 'درخواست‌های A|CAP+', icon: Crown, color: 'text-amber-400' },
   { id: 'tasks', label: 'وظایف', icon: ClipboardList, color: 'text-rose-400' },
   { id: 'referrals', label: 'معرفی‌ها', icon: Gift, color: 'text-orange-400' },
-  { id: 'messages', label: 'پیغام‌ها', icon: ClipboardList, color: 'text-rose-400' },
 ]
 
 export default function AdminPage() {
@@ -604,7 +603,7 @@ export default function AdminPage() {
           {tab === 'analytics' && <AdminAnalytics />}
           {tab === 'tasks' && <AdminTasks />}
           {tab === 'referrals' && <AdminReferrals />}
-          {tab === 'messages' && <AdminMessages />}
+
         </main>
       </div>
     </div>
@@ -910,104 +909,6 @@ function AdminPlusRequests() {
   )
 }
 
-function AdminMessages() {
-  const [allSugs, setAllSugs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [profit, setProfit] = useState('')
-  const [broadcast, setBroadcast] = useState(false)
-  const [sending, setSending] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const load = useCallback(async () => { setAllSugs(await getAllSuggestions()) }, [])
-  useEffect(() => { load().finally(() => setLoading(false)) }, [load])
-
-  async function handleSend() {
-    if (!title.trim() || !content.trim()) { setError('عنوان و متن را وارد کنید'); return }
-    setSending(true); setError(''); setSuccess('')
-    try {
-      const p = profit ? parseFloat(profit) : undefined
-      if (broadcast) {
-        await broadcastSuggestion(title, content, p)
-        setSuccess('پیغام برای همه کاربران ارسال شد')
-      } else {
-        setError('لطفاً ابتدا کاربر را از بخش "کاربران" انتخاب کنید یا از گزینه "ارسال به همه" استفاده کنید')
-        return
-      }
-      setTitle(''); setContent(''); setProfit(''); setBroadcast(false)
-      await load()
-    } catch (e) { setError(e instanceof Error ? e.message : 'خطا') } finally { setSending(false) }
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm('حذف پیغام؟')) return
-    setDeleting(id)
-    try { await deleteSuggestion(id); await load() } catch {}
-    setDeleting(null)
-  }
-
-  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
-
-  return (
-    <div dir="rtl" className="space-y-4">
-      <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 p-4">
-        <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2"><ClipboardList className="w-4 h-4" />ارسال پیغام جدید</h3>
-        <div className="space-y-3">
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="عنوان پیغام" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" />
-          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="متن پیغام" rows={3} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" />
-          <div className="flex items-center gap-3">
-            <input value={profit} onChange={e => setProfit(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="درصد سود (اختیاری)" className="flex-1 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" />
-          </div>
-          <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-            <input type="checkbox" checked={broadcast} onChange={e => setBroadcast(e.target.checked)} className="rounded" />
-            ارسال به همه کاربران
-          </label>
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-          {success && <p className="text-emerald-400 text-xs">{success}</p>}
-          <button onClick={handleSend} disabled={sending}
-            className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
-            {sending ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ارسال پیغام'}
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
-          <span className="text-xs font-bold text-gray-400">تاریخچه پیغام‌های ارسالی ({allSugs.length})</span>
-        </div>
-        <div className="divide-y divide-gray-800/40">
-          {allSugs.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">هیچ پیغامی ارسال نشده</p>
-          ) : allSugs.map(s => (
-            <div key={s.id} className="px-4 py-3 hover:bg-gray-800/40 transition-colors">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
-                    {s.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">همگانی</span>}
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${s.isRead ? 'bg-gray-700/50 text-gray-500' : 'bg-blue-500/20 text-blue-400'}`}>{s.isRead ? 'خوانده شده' : 'جدید'}</span>
-                  </div>
-                  {s.content && <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{s.content}</p>}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] text-gray-500">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</span>
-                    {s.profitPercent && <span className="text-[9px] text-emerald-400">+{s.profitPercent}%</span>}
-                  </div>
-                </div>
-                <button onClick={() => handleDelete(s.id)} disabled={deleting === s.id}
-                  className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors shrink-0">
-                  {deleting === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function AdminSignals() {
   const [signals, setSignals] = useState<any[]>([])
   const [revenues, setRevenues] = useState<any[]>([])
@@ -1152,30 +1053,48 @@ function AdminSignals() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
             {signals.length === 0 ? (
               <p className="text-center py-8 text-gray-500 col-span-full">هنوز سیگنالی به کاربران ارسال نشده. از دکمه بالا سیگنال جدید بسازید.</p>
-            ) : signals.map(s => (
-              <div key={s.id} className="bg-gray-900/80 rounded-xl p-4 border border-gray-700/50 hover:bg-gray-800/80 transition-all group">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
-                      {s.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">همگانی</span>}
-                      {s.imageUrl && <span className="text-[8px] text-blue-400">🖼</span>}
-                      {s.audioUrl && <span className="text-[8px] text-amber-400">🎤</span>}
+            ) : signals.map(s => {
+              const hasImg = s.imageUrl && (String(s.imageUrl).startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)$/i.test(String(s.imageUrl)))
+              const hasAud = !!s.audioUrl
+              return (
+                <div key={s.id} className="bg-gray-900/80 rounded-xl p-4 border border-gray-700/50 hover:bg-gray-800/80 transition-all group">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
+                        {s.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">A|CAP+</span>}
+                        {!s.isRead && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">جدید</span>}
+                        {hasImg && <span className="text-[8px] text-blue-400">🖼</span>}
+                        {hasAud && <span className="text-[8px] text-amber-400">🎤</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-gray-500">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-emerald-400 font-semibold">+{s.profitPercent}%</span>
-                      <span className="text-[9px] text-gray-500">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</span>
-                      {!s.isRead && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">جدید</span>}
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                      <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                     </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
-                    <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                  {hasImg && (
+                    <div className="mb-2 -mx-1">
+                      <img src={s.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg border border-gray-700/50" />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div className="bg-black/30 rounded-lg p-2 text-center">
+                      <div className="text-[8px] text-gray-500">سود</div>
+                      <div className="text-xs font-bold text-emerald-400">{s.profitPercent ? `+${s.profitPercent}%` : '—'}</div>
+                    </div>
+                    <div className="bg-black/30 rounded-lg p-2 text-center">
+                      <div className="text-[8px] text-gray-500">وضعیت</div>
+                      <div className={`text-[10px] font-bold ${s.isRead ? 'text-gray-400' : 'text-blue-400'}`}>{s.isRead ? 'خوانده شده' : 'ارسال شده'}</div>
+                    </div>
                   </div>
+                  {s.content && <p className="text-[10px] text-gray-400 line-clamp-2">{s.content}</p>}
                 </div>
-                {s.content && <p className="text-[10px] text-gray-400 line-clamp-2">{s.content}</p>}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
