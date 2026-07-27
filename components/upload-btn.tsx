@@ -28,14 +28,14 @@ export function UploadBtn({ label, onUpload, accept, currentUrl }: { label: stri
         </label>
         {currentUrl ? <button onClick={() => onUpload('')} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button> : null}
       </div>
-      {currentUrl && currentUrl.startsWith('data:image') ? (
+      {currentUrl && (currentUrl.startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)$/i.test(currentUrl)) ? (
         <>
           <img src={currentUrl} alt="" className="w-full h-24 object-cover rounded-lg mt-1 border border-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreview(currentUrl)} />
           <div className="flex justify-end mt-1">
             <button onClick={() => setPreview(currentUrl)} className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"><ZoomIn className="w-3 h-3" />بزرگنمایی</button>
           </div>
         </>
-      ) : currentUrl && currentUrl.startsWith('data:') ? <audio src={currentUrl} controls className="w-full h-8 mt-1" /> : null}
+      ) : currentUrl && (currentUrl.startsWith('data:audio') || /\.(webm|mp3|m4a|ogg|wav)$/i.test(currentUrl)) ? <audio src={currentUrl} controls className="w-full h-8 mt-1" /> : null}
       {preview && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setPreview(null)}>
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>

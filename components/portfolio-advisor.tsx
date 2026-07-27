@@ -103,6 +103,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, a) => {
+      if (a.type === 'cash') return sum + a.quantity
       return sum + getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
     }, 0)
   }, [assets, prices, stockPrices])
@@ -110,7 +111,7 @@ export function PortfolioAdvisor(props: AdvisorProps) {
   const byType = useMemo(() => {
     const map: Record<string, number> = {}
     for (const a of assets) {
-      const val = getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
+      const val = a.type === 'cash' ? a.quantity : getAssetPriceIr(a.symbol, prices, stockPrices) * a.quantity
       map[a.type] = (map[a.type] || 0) + val
     }
     return map

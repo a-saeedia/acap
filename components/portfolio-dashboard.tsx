@@ -482,24 +482,25 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
       }
 
       const hasHeader = rows.length > 0 && rows[0].some(c => /[^\d.,\s-]/i.test(String(c)))
-      const { symIdx, qtyIdx } = hasHeader && rows.length > 0
+      const { symIdx, qtyIdx, priceIdx } = hasHeader && rows.length > 0
         ? detectHeaderCols(rows[0], rows.slice(1))
-        : { symIdx: 0, qtyIdx: -1 }
+        : { symIdx: 0, qtyIdx: -1, priceIdx: -1 }
       const dataRows = hasHeader ? rows.slice(1).filter(r => r[symIdx]?.trim()) : rows.filter(r => r[symIdx]?.trim())
 
       if (qtyIdx < 0 && dataRows.length > 0) {
         const fallback = detectHeaderCols([], dataRows)
-        if (fallback.qtyIdx >= 0) {
-          const { symIdx: si, qtyIdx: qi } = fallback
-          const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
-          for (const row of dataRows) {
-            const sym = row[si]?.trim()
-            let qty = parseFloat(String(row[qi] ?? '').replace(/[^0-9.]/g, ''))
-            if (!sym || !qty || qty <= 0) continue
-            if (uploadIsRial) qty = qty / 10
-            const { type, label } = detectType(sym)
-            items.push({ symbol: sym, label, type, quantity: qty, price: 0 })
-          }
+          if (fallback.qtyIdx >= 0) {
+            const { symIdx: si, qtyIdx: qi, priceIdx: pi } = fallback
+            const items: { symbol: string; label: string; type: string; quantity: number; price: number }[] = []
+            for (const row of dataRows) {
+              const sym = row[si]?.trim()
+              let qty = parseFloat(String(row[qi] ?? '').replace(/[^0-9.]/g, ''))
+              if (!sym || !qty || qty <= 0) continue
+              let price = pi >= 0 ? parseFloat(String(row[pi] ?? '').replace(/[^0-9.]/g, '')) : 0
+              if (uploadIsRial) price = price / 10
+              const { type, label } = detectType(sym)
+              items.push({ symbol: sym, label, type, quantity: qty, price })
+            }
           if (items.length > 0) { setUploadResult(items); setUploadParsing(false); return }
         }
       }
@@ -509,9 +510,10 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
         const sym = row[symIdx]?.trim()
         let qty = parseFloat(String(row[qtyIdx] ?? '').replace(/[^0-9.]/g, ''))
         if (!sym || !qty || qty <= 0) continue
-        if (uploadIsRial) qty = qty / 10
+        let price = priceIdx >= 0 ? parseFloat(String(row[priceIdx] ?? '').replace(/[^0-9.]/g, '')) : 0
+        if (uploadIsRial) price = price / 10
         const { type, label } = detectType(sym)
-        items.push({ symbol: sym, label, type, quantity: qty, price: 0 })
+        items.push({ symbol: sym, label, type, quantity: qty, price })
       }
       if (items.length === 0) { showToast('هیچ دارایی معتبری در فایل یافت نشد', 'error'); return }
       setUploadResult(items)
@@ -532,7 +534,7 @@ export function PortfolioDashboard({ investorType, quizTaken }: { investorType?:
     let count = 0
     for (const item of uploadResult) {
       try {
-        await createAsset({ type: item.type, symbol: item.symbol, label: item.label, quantity: item.quantity })
+        await createAsset({ type: item.type, symbol: item.symbol, label: item.label, quantity: item.quantity, purchasePrice: item.price > 0 ? item.price : undefined })
         count++
       } catch {
         console.error(`خطا در ثبت دارایی ${item.symbol}`, item)

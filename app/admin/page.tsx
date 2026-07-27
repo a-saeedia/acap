@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, recalculateAllSignals, populateRevenueFromSignals, broadcastSuggestion, getSignals, getAcapRevenue, createSignal, updateSignal, deleteSignal, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, recalculateSignalReturn, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest, populateSignals } from '@/app/actions/admin'
+import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getAllSuggestions, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, broadcastSuggestion, getAcapRevenue, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, updateSuggestion, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
 import { AdminTasks } from '@/components/admin/admin-tasks'
 import { Loader2, Plus, Edit3, Trash2, X, ArrowLeft, LayoutDashboard, Users, Ticket, BarChart3, BookOpen, Signal, Crown, ClipboardList, Gift, Download, Menu, ChevronDown, Search, Shield, Bomb, TrendingUp } from 'lucide-react'
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { id: 'plus-requests', label: 'درخواست‌های A|CAP+', icon: Crown, color: 'text-amber-400' },
   { id: 'tasks', label: 'وظایف', icon: ClipboardList, color: 'text-rose-400' },
   { id: 'referrals', label: 'معرفی‌ها', icon: Gift, color: 'text-orange-400' },
+  { id: 'messages', label: 'پیغام‌ها', icon: ClipboardList, color: 'text-rose-400' },
 ]
 
 export default function AdminPage() {
@@ -217,8 +218,7 @@ export default function AdminPage() {
       const byType: Record<string, number> = {}
       let totalVal = 0
       for (const a of portfolioAssets) {
-        const price = getPrice(a.symbol)
-        const val = price * a.quantity
+        const val = a.type === 'cash' ? a.quantity : getPrice(a.symbol) * a.quantity
         const t = a.type as string
         byType[t] = (byType[t] ?? 0) + val; totalVal += val
       }
@@ -231,8 +231,14 @@ export default function AdminPage() {
     } catch {} finally { setScanLoading(false) }
   }
 
-  const totalValue = portfolioAssets.reduce((sum, a) => sum + getPrice(a.symbol) * a.quantity, 0)
-  const totalInvested = portfolioAssets.reduce((sum, a) => sum + (a.purchasePrice ?? 0) * a.quantity, 0)
+  const totalValue = portfolioAssets.reduce((sum, a) => {
+    if (a.type === 'cash') return sum + a.quantity
+    return sum + getPrice(a.symbol) * a.quantity
+  }, 0)
+  const totalInvested = portfolioAssets.reduce((sum, a) => {
+    if (a.type === 'cash') return sum + a.quantity
+    return sum + (a.purchasePrice ?? 0) * a.quantity
+  }, 0)
   const pnl = totalValue - totalInvested
 
   if (isPending) return (
@@ -598,6 +604,7 @@ export default function AdminPage() {
           {tab === 'analytics' && <AdminAnalytics />}
           {tab === 'tasks' && <AdminTasks />}
           {tab === 'referrals' && <AdminReferrals />}
+          {tab === 'messages' && <AdminMessages />}
         </main>
       </div>
     </div>
@@ -903,56 +910,136 @@ function AdminPlusRequests() {
   )
 }
 
+function AdminMessages() {
+  const [allSugs, setAllSugs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [profit, setProfit] = useState('')
+  const [broadcast, setBroadcast] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const load = useCallback(async () => { setAllSugs(await getAllSuggestions()) }, [])
+  useEffect(() => { load().finally(() => setLoading(false)) }, [load])
+
+  async function handleSend() {
+    if (!title.trim() || !content.trim()) { setError('عنوان و متن را وارد کنید'); return }
+    setSending(true); setError(''); setSuccess('')
+    try {
+      const p = profit ? parseFloat(profit) : undefined
+      if (broadcast) {
+        await broadcastSuggestion(title, content, p)
+        setSuccess('پیغام برای همه کاربران ارسال شد')
+      } else {
+        setError('لطفاً ابتدا کاربر را از بخش "کاربران" انتخاب کنید یا از گزینه "ارسال به همه" استفاده کنید')
+        return
+      }
+      setTitle(''); setContent(''); setProfit(''); setBroadcast(false)
+      await load()
+    } catch (e) { setError(e instanceof Error ? e.message : 'خطا') } finally { setSending(false) }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('حذف پیغام؟')) return
+    setDeleting(id)
+    try { await deleteSuggestion(id); await load() } catch {}
+    setDeleting(null)
+  }
+
+  if (loading) return <div className="text-center py-8 text-gray-500">در حال بارگذاری...</div>
+
+  return (
+    <div dir="rtl" className="space-y-4">
+      <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 p-4">
+        <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2"><ClipboardList className="w-4 h-4" />ارسال پیغام جدید</h3>
+        <div className="space-y-3">
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="عنوان پیغام" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" />
+          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="متن پیغام" rows={3} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" />
+          <div className="flex items-center gap-3">
+            <input value={profit} onChange={e => setProfit(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="درصد سود (اختیاری)" className="flex-1 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" />
+          </div>
+          <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+            <input type="checkbox" checked={broadcast} onChange={e => setBroadcast(e.target.checked)} className="rounded" />
+            ارسال به همه کاربران
+          </label>
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+          {success && <p className="text-emerald-400 text-xs">{success}</p>}
+          <button onClick={handleSend} disabled={sending}
+            className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
+            {sending ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'ارسال پیغام'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
+          <span className="text-xs font-bold text-gray-400">تاریخچه پیغام‌های ارسالی ({allSugs.length})</span>
+        </div>
+        <div className="divide-y divide-gray-800/40">
+          {allSugs.length === 0 ? (
+            <p className="text-center py-8 text-gray-500">هیچ پیغامی ارسال نشده</p>
+          ) : allSugs.map(s => (
+            <div key={s.id} className="px-4 py-3 hover:bg-gray-800/40 transition-colors">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
+                    {s.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">همگانی</span>}
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${s.isRead ? 'bg-gray-700/50 text-gray-500' : 'bg-blue-500/20 text-blue-400'}`}>{s.isRead ? 'خوانده شده' : 'جدید'}</span>
+                  </div>
+                  {s.content && <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{s.content}</p>}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[9px] text-gray-500">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</span>
+                    {s.profitPercent && <span className="text-[9px] text-emerald-400">+{s.profitPercent}%</span>}
+                  </div>
+                </div>
+                <button onClick={() => handleDelete(s.id)} disabled={deleting === s.id}
+                  className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors shrink-0">
+                  {deleting === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AdminSignals() {
   const [signals, setSignals] = useState<any[]>([])
   const [revenues, setRevenues] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [migrating, setMigrating] = useState(false)
-  const [migrateError, setMigrateError] = useState('')
   const [signalTab, setSignalTab] = useState<'signals' | 'revenue'>('signals')
   const [showSignalForm, setShowSignalForm] = useState(false)
   const [signalFormMode, setSignalFormMode] = useState<'create' | 'edit'>('create')
   const [editSignalId, setEditSignalId] = useState<string | null>(null)
-  const [userList, setUserList] = useState<{id: string; name: string; email: string}[]>([])
-  const [sf, setSf] = useState({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [] as string[], audience: 'general', expiresAt: '', publishedAt: '' })
+  const [sf, setSf] = useState({ title: '', content: '', profitPercent: '', expiresAt: '', imageUrl: '', audioUrl: '' })
   const [signalSaving, setSignalSaving] = useState(false)
   const [signalError, setSignalError] = useState('')
-  const [signalErrorField, setSignalErrorField] = useState<string | null>(null)
   const [showRevenueForm, setShowRevenueForm] = useState(false)
   const [revenueFormMode, setRevenueFormMode] = useState<'create' | 'edit'>('create')
   const [editRevenueId, setEditRevenueId] = useState<string | null>(null)
   const [rf, setRf] = useState(() => { const j = toJalaali(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()); return { amount: '', month: j.jm.toString(), year: j.jy.toString(), description: '', type: 'general' } })
   const [revenueSaving, setRevenueSaving] = useState(false)
   const [revenueError, setRevenueError] = useState('')
-
-  const load = useCallback(async () => {
-    try {
-      const [sigs, revs] = await Promise.all([getSignals(), getAcapRevenue()])
-      setSignals(sigs); setRevenues(revs)
-      if (sigs.length === 0) setMigrateError('')
-    } catch {
-      setMigrateError('خطا در بارگذاری سیگنال‌ها — دیتابیس نیاز به مهاجرت دارد')
-    }
-  }, [])
   const [revenueTab, setRevenueTab] = useState<'general' | 'plus'>('general')
 
+  const load = useCallback(async () => {
+    const [allSugs, revs] = await Promise.all([getAllSuggestions(), getAcapRevenue()])
+    setSignals(allSugs.filter((s: any) => s.isBroadcast === true))
+    setRevenues(revs)
+  }, [])
+
   useEffect(() => {
-    (async () => {
-      try {
-        await load()
-        const sigs = await getSignals()
-        if (sigs.length === 0 && !migrateError) {
-          try { await populateSignals(); await load() } catch {}
-        }
-      } catch (e) { console.error('auto seed failed:', e) }
-      setLoading(false)
-    })()
+    load().finally(() => setLoading(false))
   }, [load])
 
   function openSignalForm(s?: any) {
-    getUsers().then(u => setUserList(u.map((x: any) => ({ id: x.id, name: x.name, email: x.email })))).catch(() => {})
-    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ type: s.type, symbol: s.symbol, title: s.title, description: s.description || '', action: s.action, investorType: s.investorType || 'balanced', expectedProfit: s.expectedProfit?.toString() || '', actualReturn: s.actualReturn?.toString() || '', priceAtPublish: s.priceAtPublish?.toString() || '', priceNow: s.priceNow?.toString() || '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '', visibility: s.visibility || 'public', targetUserIds: s.targetUserIds || [], audience: s.audience || 'general', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', publishedAt: s.publishedAt ? gregorianISOToPersianDatetime(s.publishedAt) : '' }) }
-    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ type: 'crypto', symbol: '', title: '', description: '', action: 'buy', investorType: 'balanced', expectedProfit: '', actualReturn: '', priceAtPublish: '', priceNow: '', imageUrl: '', audioUrl: '', visibility: 'public', targetUserIds: [], audience: 'general', expiresAt: '', publishedAt: gregorianISOToPersianDatetime(new Date().toISOString()) }) }
+    if (s) { setSignalFormMode('edit'); setEditSignalId(s.id); setSf({ title: s.title, content: s.content || '', profitPercent: s.profitPercent?.toString() || '', expiresAt: s.expiresAt ? gregorianISOToPersianDatetime(s.expiresAt) : '', imageUrl: s.imageUrl || '', audioUrl: s.audioUrl || '' }) }
+    else { setSignalFormMode('create'); setEditSignalId(null); setSf({ title: '', content: '', profitPercent: '', expiresAt: '', imageUrl: '', audioUrl: '' }) }
     setShowSignalForm(true)
   }
 
@@ -963,25 +1050,27 @@ function AdminSignals() {
   }
 
   async function saveSignal() {
-    setSignalError(''); setSignalErrorField(null)
-    if (!sf.title) { setSignalError('عنوان سیگنال را وارد کنید'); setSignalErrorField('title'); return }
-    if (!sf.symbol) { setSignalError('نماد را وارد کنید'); setSignalErrorField('symbol'); return }
+    setSignalError('')
+    if (!sf.title.trim()) { setSignalError('عنوان سیگنال را وارد کنید'); return }
     setSignalSaving(true)
     try {
-      const priceVal = sf.priceAtPublish ? parseFloat(sf.priceAtPublish) : 0
-      const data = { type: sf.type, symbol: sf.symbol.toUpperCase(), title: sf.title, description: sf.description || undefined, action: sf.action, investorType: sf.investorType || undefined, expectedProfit: sf.expectedProfit ? parseFloat(sf.expectedProfit) : undefined, actualReturn: sf.actualReturn ? parseFloat(sf.actualReturn) : undefined, priceAtPublish: priceVal, priceNow: sf.priceNow ? parseFloat(sf.priceNow) : undefined, imageUrl: sf.imageUrl || undefined, audioUrl: sf.audioUrl || undefined, visibility: sf.visibility, targetUserIds: sf.visibility === 'private' ? sf.targetUserIds : undefined, audience: sf.audience, expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : undefined, publishedAt: sf.publishedAt ? persianDatetimeToGregorianISO(sf.publishedAt) : undefined }
-      if (signalFormMode === 'create') await createSignal(data); else if (editSignalId) await updateSignal(editSignalId, data)
+      const p = sf.profitPercent ? parseFloat(sf.profitPercent) : undefined
+      if (signalFormMode === 'create') {
+        await broadcastSuggestion(sf.title, sf.content, p, undefined,
+          sf.expiresAt || undefined, sf.imageUrl || undefined, sf.audioUrl || undefined)
+      } else if (editSignalId) {
+        await updateSuggestion(editSignalId, {
+          title: sf.title, content: sf.content,
+          profitPercent: p ?? null,
+          expiresAt: sf.expiresAt ? persianDatetimeToGregorianISO(sf.expiresAt) : null,
+          imageUrl: sf.imageUrl || null, audioUrl: sf.audioUrl || null,
+        })
+      }
       setShowSignalForm(false); await load()
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'خطا در انتشار سیگنال'
-      if (msg.includes('column') || msg.includes('audience') || msg.includes('visibility') || msg.includes('type')) {
-        setSignalError('ستون‌های دیتابیس وجود ندارند. روی دکمه قرمز "اجرای مهاجرت" کلیک کنید.')
-        setMigrateError('نیاز به اجرای مهاجرت دیتابیس است')
-      } else setSignalError(msg)
-    }; setSignalSaving(false)
+    } catch (e) { setSignalError(e instanceof Error ? e.message : 'خطا') }; setSignalSaving(false)
   }
 
-  async function handleDeleteSignal(id: string) { if (!confirm('حذف سیگنال؟')) return; await deleteSignal(id); await load() }
+  async function handleDeleteSignal(id: string) { if (!confirm('حذف سیگنال؟')) return; await deleteSuggestion(id); await load() }
 
   async function saveRevenue() {
     setRevenueError('')
@@ -998,7 +1087,6 @@ function AdminSignals() {
   async function deleteRevenue(id: string) { if (!confirm('حذف درآمد؟')) return; await deleteAcapRevenue(id); await load() }
 
   const filteredRevenues = revenues.filter(r => (r.type || 'general') === revenueTab)
-  const totalRevenue = filteredRevenues.reduce((sum: number, r: any) => sum + r.amount, 0)
   const persianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
   const signalFormOverlay = showSignalForm && (
@@ -1006,71 +1094,18 @@ function AdminSignals() {
       <div className="bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-700/50 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-2 border-b border-gray-800"><h3 className="text-base font-bold flex items-center gap-2"><Signal className="w-4 h-4 text-amber-400" />{signalFormMode === 'create' ? 'افزودن' : 'ویرایش'} سیگنال</h3><button onClick={() => setShowSignalForm(false)} className="text-gray-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button></div>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-[10px] text-gray-500 mb-1 block">نوع دارایی</label><select value={sf.type} onChange={e => setSf(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="crypto">ارز دیجیتال</option><option value="stock">سهام</option><option value="gold">طلا</option><option value="forex">فارکس</option><option value="dollar">دلار</option></select></div>
-            <div><label className="text-[10px] text-gray-500 mb-1 block">نماد</label><input value={sf.symbol} onChange={e => { setSf(p => ({ ...p, symbol: e.target.value })); setSignalErrorField(p => p === 'symbol' ? null : p) }} placeholder="مثلاً BTC" className={`w-full px-3 py-2.5 rounded-xl bg-gray-800 border text-sm outline-none transition-colors ltr ${signalErrorField === 'symbol' ? 'border-red-500/60' : 'border-gray-700 focus:border-amber-500/50'}`} dir="ltr" /></div>
-          </div>
-          <div><label className="text-[10px] text-gray-500 mb-1 block">عنوان سیگنال</label><input value={sf.title} onChange={e => { setSf(p => ({ ...p, title: e.target.value })); setSignalErrorField(p => p === 'title' ? null : p) }} placeholder="مثلاً خرید بیت‌کوین در حمایت" className={`w-full px-3 py-2.5 rounded-xl bg-gray-800 border text-sm outline-none transition-colors ${signalErrorField === 'title' ? 'border-red-500/60' : 'border-gray-700 focus:border-amber-500/50'}`} /></div>
-          <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات</label><textarea value={sf.description} onChange={e => setSf(p => ({ ...p, description: e.target.value }))} placeholder="تحلیل و دلیل سیگنال" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-[10px] text-gray-500 mb-1 block">نوع معامله</label><select value={sf.action} onChange={e => setSf(p => ({ ...p, action: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="buy">خرید</option><option value="sell">فروش</option></select></div>
-            <div><label className="text-[10px] text-gray-500 mb-1 block">تیپ سرمایه‌گذار</label><select value={sf.investorType} onChange={e => setSf(p => ({ ...p, investorType: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors"><option value="conservative">محافظه‌کار</option><option value="balanced">متعادل</option><option value="growth">رشدگرا</option><option value="aggressive">تهاجمی</option></select></div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-[10px] text-gray-500 mb-1 block">درصد سود هدف</label><input value={sf.expectedProfit} onChange={e => setSf(p => ({ ...p, expectedProfit: e.target.value }))} placeholder="مثلاً 15" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
-            <div><label className="text-[10px] text-gray-500 mb-1 block">بازده واقعی</label><input value={sf.actualReturn} onChange={e => setSf(p => ({ ...p, actualReturn: e.target.value }))} placeholder="مثلاً 12.5" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-[10px] text-gray-500 mb-1 block">قیمت در انتشار</label><input value={sf.priceAtPublish} onChange={e => setSf(p => ({ ...p, priceAtPublish: e.target.value }))} placeholder="قیمت به تومان" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
-            <div><label className="text-[10px] text-gray-500 mb-1 block">قیمت فعلی (اختیاری)</label><input value={sf.priceNow} onChange={e => setSf(p => ({ ...p, priceNow: e.target.value }))} placeholder="در صورت تغییر" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50 transition-colors" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <PersianDateTimePicker label="تاریخ انتشار" value={sf.publishedAt} onChange={v => setSf(p => ({ ...p, publishedAt: v }))} placeholder="به صورت خودکار پر شده" />
-            <PersianDateTimePicker label="تاریخ انقضا (اختیاری)" value={sf.expiresAt} onChange={v => setSf(p => ({ ...p, expiresAt: v }))} placeholder="در صورت نیاز انتخاب کنید" />
-          </div>
-          <div>
-            <label className="text-[10px] text-gray-500 mb-1 block">دسترسی</label>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setSf(p => ({ ...p, visibility: 'public', targetUserIds: [] }))}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.visibility === 'public' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
-              <button onClick={() => setSf(p => ({ ...p, visibility: 'private' }))}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.visibility === 'private' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>خصوصی</button>
-            </div>
-            {sf.visibility === 'private' && (
-              <div className="mt-2">
-                <label className="text-[10px] text-gray-500 mb-1 block">انتخاب کاربران</label>
-                <div className="max-h-32 overflow-y-auto space-y-1 bg-gray-800/60 rounded-lg p-2 border border-gray-700">
-                  {userList.map(u => {
-                    const sel = sf.targetUserIds.includes(u.id)
-                    return (
-                      <label key={u.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-700/50 cursor-pointer">
-                        <input type="checkbox" checked={sel} onChange={() => setSf(p => ({ ...p, targetUserIds: sel ? p.targetUserIds.filter(id => id !== u.id) : [...p.targetUserIds, u.id] }))} className="accent-amber-500" />
-                        <span className="text-[11px] text-gray-300">{u.name} <span className="text-gray-600">({u.email})</span></span>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="text-[10px] text-gray-500 mb-1 block">مخاطب</label>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setSf(p => ({ ...p, audience: 'general' }))}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.audience === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
-              <button onClick={() => setSf(p => ({ ...p, audience: 'plus' }))}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${sf.audience === 'plus' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-lg shadow-amber-500/10' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>ویژه A|CAP+</button>
-            </div>
-            {sf.audience === 'plus' && <p className="text-[9px] text-amber-500/70 mt-1">این سیگنال فقط برای کاربران A|CAP+ نمایش داده می‌شود</p>}
-          </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <UploadBtn label="تصویر سیگنال" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
+          <div><label className="text-[10px] text-gray-500 mb-1 block">عنوان</label><input value={sf.title} onChange={e => setSf(p => ({ ...p, title: e.target.value }))} placeholder="مثلاً 🚨 ACAP | سیگنال معاملاتی صندوق اهرم" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">متن سیگنال</label><textarea value={sf.content} onChange={e => setSf(p => ({ ...p, content: e.target.value }))} placeholder="متن کامل سیگنال" rows={4} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">درصد سود</label><input value={sf.profitPercent} onChange={e => setSf(p => ({ ...p, profitPercent: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مثلاً ۱۵" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-amber-500/50" /></div>
+          <PersianDateTimePicker label="تاریخ انقضا (اختیاری)" value={sf.expiresAt} onChange={v => setSf(p => ({ ...p, expiresAt: v }))} placeholder="در صورت نیاز" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UploadBtn label="تصویر" accept="image/*" currentUrl={sf.imageUrl} onUpload={v => setSf(p => ({ ...p, imageUrl: v }))} />
             <div className="flex gap-2 items-end"><VoiceRecorder onRecord={v => setSf(p => ({ ...p, audioUrl: v }))} />{sf.audioUrl ? <button onClick={() => setSf(p => ({ ...p, audioUrl: '' }))} className="p-2 text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button> : null}</div>
           </div>
           {signalError && <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2"><X className="w-3.5 h-3.5 text-red-400 shrink-0" /><p className="text-red-400 text-xs font-bold">{signalError}</p></div>}
           <button onClick={saveSignal} disabled={signalSaving}
             className="w-full bg-gradient-to-l from-amber-600 to-orange-500 text-white py-3 rounded-xl text-sm font-bold hover:from-amber-500 hover:to-orange-400 transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20">
-            {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : signalFormMode === 'create' ? 'انتشار سیگنال' : 'ذخیره تغییرات'}
+            {signalSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : signalFormMode === 'create' ? 'انتشار سیگنال (ارسال به همه A|CAP+)' : 'ذخیره تغییرات'}
           </button>
         </div>
       </div>
@@ -1082,13 +1117,13 @@ function AdminSignals() {
       <div className="bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-700/50 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-2 border-b border-gray-800"><h3 className="text-base font-bold">{revenueFormMode === 'create' ? 'افزودن' : 'ویرایش'} درآمد A|CAP</h3><button onClick={() => setShowRevenueForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
         <div className="space-y-3">
-          <div><label className="text-[10px] text-gray-500 mb-1 block">درصد بازده</label><input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مثلاً ۱۲.۵" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">درصد بازده</label><input value={rf.amount} onChange={e => setRf(p => ({ ...p, amount: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="مثلاً ۱۲.۵" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50" /></div>
           <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-[10px] text-gray-500 mb-1 block">ماه</label><select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors">{persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}</select></div>
-            <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">ماه</label><select value={rf.month} onChange={e => setRf(p => ({ ...p, month: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50">{persianMonths.map((name, i) => <option key={i + 1} value={(i + 1).toString()}>{name}</option>)}</select></div>
+            <div><label className="text-[10px] text-gray-500 mb-1 block">سال</label><input value={rf.year} onChange={e => setRf(p => ({ ...p, year: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="مثلاً 1404" className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50" /></div>
           </div>
           <div><label className="text-[10px] text-gray-500 mb-1 block">نوع</label><div className="flex gap-2"><button onClick={() => setRf(p => ({ ...p, type: 'general' }))} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${rf.type === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button><button onClick={() => setRf(p => ({ ...p, type: 'plus' }))} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${rf.type === 'plus' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>A|CAP+</button></div></div>
-          <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات (اختیاری)</label><textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="منبع درآمد" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50 transition-colors" /></div>
+          <div><label className="text-[10px] text-gray-500 mb-1 block">توضیحات (اختیاری)</label><textarea value={rf.description} onChange={e => setRf(p => ({ ...p, description: e.target.value }))} placeholder="منبع درآمد" rows={2} className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm outline-none focus:border-emerald-500/50" /></div>
           {revenueError && <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2"><X className="w-3.5 h-3.5 text-red-400 shrink-0" /><p className="text-red-400 text-xs font-bold">{revenueError}</p></div>}
           <button onClick={saveRevenue} disabled={revenueSaving} className="w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white py-3 rounded-xl text-sm font-bold hover:from-emerald-500 hover:to-green-400 transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20">{revenueSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : <><Plus className="w-4 h-4 inline-block ml-1" />{revenueFormMode === 'create' ? 'ثبت درآمد' : 'ذخیره'}</>}</button>
         </div>
@@ -1104,114 +1139,55 @@ function AdminSignals() {
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         <button onClick={() => setSignalTab('signals')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${signalTab === 'signals' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>سیگنال‌ها ({signals.length})</button>
         <button onClick={() => setSignalTab('revenue')} className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${signalTab === 'revenue' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>درآمد A|CAP ({revenues.length})</button>
-        <button onClick={async () => {
-          try {
-            const r = await recalculateAllSignals()
-            alert(`${r.updated} از ${r.total} سیگنال با قیمت‌های زنده به‌روز شد`)
-            await load()
-          } catch (e: any) {
-            alert('خطا: ' + (e?.message || 'نامشخص'))
-          }
-        }} className="px-4 py-2.5 rounded-lg text-sm whitespace-nowrap bg-gradient-to-l from-emerald-600 to-green-500 text-white font-bold shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-green-400 transition-all">
-          به‌روزرسانی قیمت‌ها
-        </button>
+
       </div>
       {signalTab === 'signals' && (
         <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800/60 overflow-hidden shadow-lg shadow-black/10">
-          {migrateError && (
-            <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] text-red-400">{migrateError}</span>
-              <button onClick={async () => {
-                setMigrating(true); setMigrateError('')
-                try {
-                  const r = await fetch('/api/migrate?key=acap_migrate_2026')
-                  const j = await r.json()
-                  if (j.success) { setMigrateError(''); await load() }
-                  else setMigrateError('خطا: ' + (j.error || 'نامشخص'))
-                } catch (e: any) { setMigrateError('خطا: ' + e.message) }
-                setMigrating(false)
-              }} disabled={migrating} className="text-[10px] px-2.5 py-1 bg-red-600 hover:bg-red-500 rounded-lg font-bold text-white disabled:opacity-50">{migrating ? '...' : 'اجرای مهاجرت'}</button>
-            </div>
-          )}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/60 bg-gradient-to-r from-gray-900/80 to-gray-950/80">
-            <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌ها</span>
+            <span className="text-xs font-bold text-gray-400 flex items-center gap-2"><Signal className="w-3.5 h-3.5 text-amber-400" />مدیریت سیگنال‌های A|CAP+</span>
             <div className="flex gap-2">
-              <button onClick={async () => {
-                try {
-                  const r = await populateSignals()
-                  alert(`${r.signals} سیگنال و ${r.revenueMonths} ماه درآمد نمونه ساخته شد`)
-                  await load()
-                } catch (e: any) { alert('خطا: ' + (e?.message || 'نامشخص')) }
-              }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"><Signal className="w-3.5 h-3.5" /> تولید سیگنال نمونه</button>
               <button onClick={() => openSignalForm()} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-lg text-xs font-bold transition-all shadow-lg shadow-amber-600/20"><Plus className="w-3.5 h-3.5" /> سیگنال جدید</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-3">
             {signals.length === 0 ? (
-              <p className="text-center py-8 text-gray-500 col-span-full">سیگنالی یافت نشد</p>
-            ) : signals.map(s => {
-              const actualOk = s.actualReturn !== null && s.actualReturn !== undefined
-              const isWin = actualOk && s.actualReturn >= 0
-              const hasImg = s.imageUrl && String(s.imageUrl).startsWith('data:image')
-              const hasAud = !!s.audioUrl
-              return (
-                <div key={s.id} className="bg-gray-900/80 rounded-xl p-4 border border-gray-700/50 hover:bg-gray-800/80 transition-all group">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
-                        <span className={`text-[8px] px-1.5 py-0.5 rounded-full shrink-0 ${s.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.action === 'buy' ? 'خرید' : 'فروش'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-gray-400 font-semibold">{s.symbol}</span>
-                        <span className="text-[9px] text-gray-500">{s.type === 'crypto' ? 'ارز دیجیتال' : s.type === 'stock' ? 'سهام' : s.type === 'gold' ? 'طلا' : s.type === 'dollar' ? 'دلار' : 'فارکس'}</span>
-                        {hasImg && <span className="text-[8px] text-blue-400">🖼</span>}
-                        {hasAud && <span className="text-[8px] text-amber-400">🎤</span>}
-                      </div>
+              <p className="text-center py-8 text-gray-500 col-span-full">هنوز سیگنالی به کاربران ارسال نشده. از دکمه بالا سیگنال جدید بسازید.</p>
+            ) : signals.map(s => (
+              <div key={s.id} className="bg-gray-900/80 rounded-xl p-4 border border-gray-700/50 hover:bg-gray-800/80 transition-all group">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-sm font-bold text-white truncate">{s.title}</h4>
+                      {s.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">همگانی</span>}
+                      {s.imageUrl && <span className="text-[8px] text-blue-400">🖼</span>}
+                      {s.audioUrl && <span className="text-[8px] text-amber-400">🎤</span>}
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
-                      <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-emerald-400 font-semibold">+{s.profitPercent}%</span>
+                      <span className="text-[9px] text-gray-500">{new Date(s.createdAt).toLocaleDateString('fa-IR')}</span>
+                      {!s.isRead && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">جدید</span>}
                     </div>
                   </div>
-                  {hasImg && (
-                    <div className="mb-2 -mx-1">
-                      <img src={s.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg border border-gray-700/50" />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-black/30 rounded-lg p-2 text-center">
-                      <div className="text-[8px] text-gray-500">سود هدف</div>
-                      <div className="text-xs font-bold text-blue-400">{s.expectedProfit ? `+${s.expectedProfit}%` : '—'}</div>
-                    </div>
-                    <div className="bg-black/30 rounded-lg p-2 text-center">
-                      <div className="text-[8px] text-gray-500">بازده واقعی</div>
-                      <div className={`text-xs font-bold ${actualOk ? (isWin ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>
-                        {actualOk ? `${isWin ? '+' : ''}${s.actualReturn}%` : <button onClick={async () => { await recalculateSignalReturn(s.id); await load() }} className="underline text-[9px]">محاسبه</button>}
-                      </div>
-                    </div>
-                    <div className="bg-black/30 rounded-lg p-2 text-center">
-                      <div className="text-[8px] text-gray-500">تاریخ</div>
-                      <div className="text-[10px] text-gray-400">{new Date(s.publishedAt).toLocaleDateString('fa-IR')}</div>
-                    </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => openSignalForm(s)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5 text-blue-400" /></button>
+                    <button onClick={() => handleDeleteSignal(s.id)} className="p-1.5 hover:bg-gray-700/50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                   </div>
-                  {s.description && <p className="text-[10px] text-gray-400 mt-2 line-clamp-2">{s.description}</p>}
                 </div>
-              )
-            })}
+                {s.content && <p className="text-[10px] text-gray-400 line-clamp-2">{s.content}</p>}
+              </div>
+            ))}
           </div>
         </div>
       )}
       {signalTab === 'revenue' && (
         <div className="space-y-4">
-          {/* Performance stats */}
           {signals.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: 'کل سیگنال‌ها', value: signals.length, color: 'text-white' },
-                { label: 'نرخ برد', value: `${(() => { const w = signals.filter((s: any) => (s.actualReturn ?? 0) > 0).length; return signals.length > 0 ? Math.round(w / signals.length * 100) : 0 })()}%`, color: 'text-emerald-400' },
-                { label: 'میانگین بازده', value: `${(() => { const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined); if (withR.length === 0) return '—'; const avg = withR.reduce((s: number, o: any) => s + (o.actualReturn ?? 0), 0) / withR.length; return (avg >= 0 ? '+' : '') + avg.toFixed(1) })()}%`, color: 'text-amber-400' },
-                { label: 'بهترین بازده', value: `${(() => { const withR = signals.filter((s: any) => s.actualReturn !== null && s.actualReturn !== undefined); if (withR.length === 0) return '—'; return '+' + Math.max(...withR.map((s: any) => s.actualReturn ?? 0)).toFixed(1) })()}%`, color: 'text-emerald-400' },
+                { label: 'نرخ برد', value: `${(() => { const w = signals.filter((s: any) => (s.profitPercent ?? 0) > 0).length; return signals.length > 0 ? Math.round(w / signals.length * 100) : 0 })()}%`, color: 'text-emerald-400' },
+                { label: 'میانگین سود', value: `${(() => { const withR = signals.filter((s: any) => s.profitPercent != null); if (withR.length === 0) return '—'; const avg = withR.reduce((s: number, o: any) => s + (o.profitPercent ?? 0), 0) / withR.length; return (avg >= 0 ? '+' : '') + avg.toFixed(1) })()}%`, color: 'text-amber-400' },
+                { label: 'بهترین سود', value: `${(() => { const withR = signals.filter((s: any) => s.profitPercent != null); if (withR.length === 0) return '—'; return '+' + Math.max(...withR.map((s: any) => s.profitPercent ?? 0)).toFixed(1) })()}%`, color: 'text-emerald-400' },
               ].map(stat => (
                 <div key={stat.label} className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10">
                   <div className="text-[10px] text-gray-500 mb-1">{stat.label}</div>
@@ -1223,10 +1199,9 @@ function AdminSignals() {
           {signals.length === 0 && (
             <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10">
               <div className="text-[10px] text-gray-500 mb-1">آمار عملکرد</div>
-              <div className="text-lg font-black text-gray-600">هنوز سیگنالی ثبت نشده</div>
+              <div className="text-lg font-black text-gray-600">هنوز سیگنالی ارسال نشده</div>
             </div>
           )}
-          {/* Monthly revenue records (as percentages) */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button onClick={() => setRevenueTab('general')} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${revenueTab === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
@@ -1236,6 +1211,7 @@ function AdminSignals() {
             <div className="flex gap-2">
               <button onClick={async () => {
                 try {
+                  const { populateRevenueFromSignals } = await import('@/app/actions/admin')
                   const r = await populateRevenueFromSignals()
                   if (r.months > 0) alert(`${r.months} ماه درآمد از ${r.totalSignals} دوره از سیگنال‌ها محاسبه و ثبت شد`)
                   else alert('هیچ سیگنال موفقی برای محاسبه درآمد یافت نشد')

@@ -106,6 +106,11 @@ export async function deleteSuggestion(suggestionId: string) {
   await db.delete(suggestion).where(eq(suggestion.id, suggestionId))
 }
 
+export async function getAllSuggestions() {
+  await requireAdmin()
+  return db.select().from(suggestion).orderBy(desc(suggestion.createdAt)).limit(500)
+}
+
 export async function getSentSuggestions(userId: string) {
   const admin = await requireAdmin()
   const rows = await db.select().from(suggestion).where(eq(suggestion.userId, userId)).orderBy(desc(suggestion.createdAt))
@@ -324,7 +329,22 @@ export async function deleteUser(userId: string) {
   await db.delete(user).where(eq(user.id, userId))
 }
 
-// -------- Signals CRUD --------
+export async function updateSuggestion(id: string, data: {
+  title?: string; content?: string; profitPercent?: number | null
+  profitMessage?: string | null; expiresAt?: string | null
+  imageUrl?: string | null; audioUrl?: string | null
+}) {
+  await requireAdmin()
+  const updateData: any = {}
+  if (data.title !== undefined) updateData.title = sanitize(data.title, 200)
+  if (data.content !== undefined) updateData.content = sanitize(data.content)
+  if (data.profitPercent !== undefined) updateData.profitPercent = data.profitPercent && data.profitPercent > 0 ? data.profitPercent : null
+  if (data.profitMessage !== undefined) updateData.profitMessage = data.profitMessage ? sanitize(data.profitMessage, 500) : null
+  if (data.expiresAt !== undefined) updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
+  if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl
+  if (data.audioUrl !== undefined) updateData.audioUrl = data.audioUrl
+  await db.update(suggestion).set(updateData).where(eq(suggestion.id, id))
+}
 
 export async function getSignals() {
   await requireAdmin()
