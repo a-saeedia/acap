@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLang } from '@/components/lang-provider'
-import { Play, Pause, X, Crown, Volume2, ChevronLeft, Signal, TrendingUp, CalendarDays, MessageSquare } from 'lucide-react'
+import { Play, Pause, X, Volume2, ChevronLeft, Signal } from 'lucide-react'
 
 function formatDateHeader(d: Date) {
   const t = new Date(); const y = new Date(t); y.setDate(y.getDate() - 1)
@@ -85,11 +85,11 @@ function AudioPlayer({ url, playing, onToggle }: { url: string; playing: boolean
 }
 
 function SignalCard({ item, onSelect }: { item: any; onSelect: () => void }) {
-  const actualOk = item.actualReturn !== null && item.actualReturn !== undefined
-  const isWin = actualOk && item.actualReturn >= 0
+  const hasProfit = item.actualReturn !== null && item.actualReturn !== undefined
+  const isWin = hasProfit && item.actualReturn >= 0
   const hasImg = item.imageUrl && (String(item.imageUrl).startsWith('data:image') || /\.(jpg|jpeg|png|webp|gif)$/i.test(String(item.imageUrl)))
   const hasAud = !!item.audioUrl
-  const hasAction = item.action === 'buy' || item.action === 'sell'
+  const hasExpProfit = item.expectedProfit !== null && item.expectedProfit !== undefined
   const desc = item.description || item.content || ''
   return (
     <motion.button
@@ -101,17 +101,10 @@ function SignalCard({ item, onSelect }: { item: any; onSelect: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <h4 className="text-sm font-bold text-white truncate">{item.title}</h4>
-            {hasAction && <span className={`text-[8px] px-1.5 py-0.5 rounded-full shrink-0 ${item.action === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{item.action === 'buy' ? 'خرید' : 'فروش'}</span>}
-            {item.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">همگانی</span>}
+            {item.isBroadcast && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">A|CAP+</span>}
+            {hasImg && <span className="text-[8px] text-blue-400">🖼</span>}
+            {hasAud && <span className="text-[8px] text-amber-400">🎤</span>}
           </div>
-          {item.symbol && (
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] text-gray-400 font-semibold">{item.symbol}</span>
-              <span className="text-[9px] text-gray-500">{item.type === 'crypto' ? 'ارز دیجیتال' : item.type === 'stock' ? 'سهام' : item.type === 'gold' ? 'طلا' : item.type === 'dollar' ? 'دلار' : 'فارکس'}</span>
-              {hasImg && <span className="text-[8px] text-blue-400">🖼</span>}
-              {hasAud && <span className="text-[8px] text-amber-400">🎤</span>}
-            </div>
-          )}
         </div>
         <ChevronLeft className="w-4 h-4 shrink-0 text-gray-500 group-hover:text-gray-300 transition-colors" />
       </div>
@@ -120,15 +113,11 @@ function SignalCard({ item, onSelect }: { item: any; onSelect: () => void }) {
           <img src={item.imageUrl} alt="" className="w-full h-24 object-cover rounded-lg border border-gray-700/50" />
         </div>
       )}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="bg-black/30 rounded-lg p-2 text-center">
-          <div className="text-[8px] text-gray-500">سود هدف</div>
-          <div className="text-xs font-bold text-blue-400">{item.expectedProfit ? `+${item.expectedProfit}%` : '—'}</div>
-        </div>
-        <div className="bg-black/30 rounded-lg p-2 text-center">
-          <div className="text-[8px] text-gray-500">بازده واقعی</div>
-          <div className={`text-xs font-bold ${actualOk ? (isWin ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>
-            {actualOk ? `${isWin ? '+' : ''}${item.actualReturn}%` : '—'}
+          <div className="text-[8px] text-gray-500">سود</div>
+          <div className={`text-xs font-bold ${hasProfit ? (isWin ? 'text-emerald-400' : 'text-red-400') : 'text-gray-500'}`}>
+            {hasProfit ? `${isWin ? '+' : ''}${item.actualReturn}%` : '—'}
           </div>
         </div>
         <div className="bg-black/30 rounded-lg p-2 text-center">
@@ -268,170 +257,37 @@ function DetailModal({ item, onClose, isSug }: { item: any; onClose: () => void;
 export default function PersonalPage() {
   const { t } = useLang()
   const [sugs, setSugs] = useState<any[]>([])
-  const [revenues, setRevenues] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'sugs' | 'signals' | 'revenue'>('sugs')
-  const [revenueTab, setRevenueTab] = useState<'general' | 'plus'>('general')
   const [selected, setSelected] = useState<any | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      import('@/app/actions/admin').then(m => m.getUserSuggestions().then(setSugs).catch(() => {})),
-      import('@/app/actions/admin').then(m => m.getAcapRevenue().then(setRevenues).catch(() => {})),
-    ]).finally(() => setLoading(false))
+    import('@/app/actions/admin').then(m =>
+      m.getUserSuggestions().then(setSugs).catch(() => {})
+    ).finally(() => setLoading(false))
   }, [])
 
   const acapSignals = sugs.filter((s: any) => s.profitPercent != null && s.profitPercent > 0)
-  const winCount = acapSignals.filter((s: any) => s.profitPercent > 0).length
-  const winRate = acapSignals.length > 0 ? Math.round(winCount / acapSignals.length * 100) : 0
-  const avgReturn = acapSignals.length > 0
-    ? acapSignals.reduce((s: number, o: any) => s + (o.profitPercent || 0), 0) / acapSignals.length
-    : 0
-  const bestReturn = acapSignals.length > 0 ? Math.max(...acapSignals.map((s: any) => s.profitPercent || 0)) : 0
-
-  const filteredRevenues = revenues.filter((r: any) => (r.type || 'general') === revenueTab)
-  const totalRevenue = filteredRevenues.reduce((sum: number, r: any) => sum + r.amount, 0)
-
-  const persianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between pb-3 border-b border-gray-700/30">
         <h1 className="text-base md:text-lg font-black text-white flex items-center gap-2">
-          <Signal className="w-5 h-5 text-amber-400" />{t('sig.title')}
+          <Signal className="w-5 h-5 text-amber-400" />سیگنال‌های A|CAP+
         </h1>
-      </div>
-
-      <div className="flex gap-2 my-3 overflow-x-auto pb-1">
-        <button onClick={() => setTab('sugs')}
-          className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${tab === 'sugs' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>
-          <MessageSquare className="w-3.5 h-3.5 inline-block ml-1" />پیغام‌ها ({sugs.length})
-        </button>
-        <button onClick={() => setTab('signals')}
-          className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${tab === 'signals' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>
-          <Signal className="w-3.5 h-3.5 inline-block ml-1" />سیگنال‌ها ({acapSignals.length})
-        </button>
-        <button onClick={() => setTab('revenue')}
-          className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${tab === 'revenue' ? 'bg-gradient-to-l from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-600/20' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700/30'}`}>
-          <TrendingUp className="w-3.5 h-3.5 inline-block ml-1" />درآمد A|CAP ({revenues.length})
-        </button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>
-      ) : tab === 'sugs' ? (
-        <div className="flex-1 overflow-y-auto py-1 px-0.5 scrollbar-thin space-y-3">
-          {sugs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 relative overflow-hidden rounded-2xl mx-2"
-              style={{
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                background: 'rgba(15,23,42,0.35)', border: '1px solid rgba(148,163,184,0.05)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)'
-              }}>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(251,146,60,0.08) 100%)' }} />
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 relative overflow-hidden"
-                style={{
-                  backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                  background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.06)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)'
-                }}>
-                <Crown className="w-6 h-6 text-gray-500" style={{ opacity: 0.4 }} />
-              </div>
-              <p className="text-sm text-gray-500 relative">{t('sig.no.private')}</p>
-            </div>
-          ) : (groupByDay(sugs, 'createdAt').map(g => (
-            <div key={g.d}>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, transparent, rgba(56,189,248,0.2), transparent)' }} />
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full relative overflow-hidden"
-                  style={{
-                    backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                    background: 'rgba(15,23,42,0.45)', border: '1px solid rgba(148,163,184,0.06)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)'
-                  }}>
-                  <CalendarDays className="w-3 h-3 text-sky-400" />
-                  <span className="text-[10px] font-bold text-gray-300">{formatDateHeader(new Date(g.d))}</span>
-                </div>
-                <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, transparent, rgba(251,146,60,0.2), transparent)' }} />
-              </div>
-              <div className="space-y-2">
-                {g.items.map((item: any) => (
-                  <button key={item.id} onClick={() => setSelected({ ...item, isSug: true })}
-                    className="w-full text-right px-4 py-3 rounded-xl bg-gray-800/40 border border-gray-700/30 hover:bg-gray-700/50 transition-all">
-                    <div className="text-sm font-bold text-white">{item.title}</div>
-                    {item.content && <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">{item.content}</p>}
-                    <div className="text-[9px] text-gray-500 mt-1">{formatTime(new Date(item.createdAt))}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )))}
-        </div>
-      ) : tab === 'signals' ? (
-        <div className="flex-1 overflow-y-auto py-1 px-0.5 scrollbar-thin">
+      ) : (
+        <div className="flex-1 overflow-y-auto py-3 px-0.5 scrollbar-thin">
           {acapSignals.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">سیگنالی یافت نشد</p>
+            <p className="text-center py-8 text-gray-500">هنوز سیگنالی دریافت نکرده‌اید</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {acapSignals.map((s: any) => (
                 <SignalCard key={s.id} item={{ ...s, actualReturn: s.profitPercent, description: s.content, publishedAt: s.createdAt }} onSelect={() => setSelected({ ...s, isSug: true })} />
               ))}
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto py-1 px-0.5 scrollbar-thin space-y-4">
-          {/* Performance stats */}
-          {acapSignals.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: 'کل سیگنال‌ها', value: acapSignals.length, color: 'text-white' },
-                { label: 'نرخ برد', value: `${winRate}%`, color: 'text-emerald-400' },
-                { label: 'میانگین بازده', value: `${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(1)}%`, color: 'text-amber-400' },
-                { label: 'بهترین بازده', value: `+${bestReturn.toFixed(1)}%`, color: 'text-emerald-400' },
-              ].map(stat => (
-                <div key={stat.label} className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10">
-                  <div className="text-[10px] text-gray-500 mb-1">{stat.label}</div>
-                  <div className={`text-lg font-black ${stat.color}`}>{stat.value}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {acapSignals.length === 0 && (
-            <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-4 border border-gray-800/60 shadow-lg shadow-black/10">
-              <div className="text-[10px] text-gray-500 mb-1">آمار عملکرد</div>
-              <div className="text-lg font-black text-gray-600">هنوز سیگنالی ثبت نشده</div>
-            </div>
-          )}
-
-          {/* Revenue tabs */}
-          <div className="flex items-center gap-2">
-            <button onClick={() => setRevenueTab('general')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${revenueTab === 'general' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>عمومی</button>
-            <button onClick={() => setRevenueTab('plus')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${revenueTab === 'plus' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>A|CAP+</button>
-            <span className="text-xs text-gray-500">عملکرد ماهانه</span>
-          </div>
-
-          {/* Monthly revenue */}
-          {filteredRevenues.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {[...filteredRevenues].sort((a, b) => (b.year - a.year) || (b.month - a.month)).map((r: any) => (
-                <div key={r.id || `${r.year}-${r.month}`} className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-all hover:shadow-lg hover:shadow-emerald-500/5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="text-xs font-bold text-gray-300">{persianMonths[r.month - 1] || r.month}</span>
-                      <span className="text-[10px] text-gray-500">{r.year}</span>
-                    </div>
-                  </div>
-                  <div className="text-lg font-black text-emerald-400">+{Number(r.amount).toFixed(1)}%</div>
-                  {r.description && <div className="text-[11px] text-gray-500 mt-1.5 line-clamp-2">{r.description}</div>}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center py-8 text-gray-500">عملکردی ثبت نشده است</p>
           )}
         </div>
       )}
