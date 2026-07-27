@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { user, userProfile, subscription, suggestion, quizResult, ticket, ticketMessage, asset, course, article, enrollment, articleCategory, signal, acapRevenue, referral, userEvent, siteComment, account, session } from '@/lib/db/schema'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { eq, desc, and, sql } from 'drizzle-orm'
+import { eq, desc, and, or, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import { toJalaali } from 'jalaali-js'
 
@@ -77,6 +77,14 @@ export async function sendSuggestion(userId: string, title: string, content: str
 export async function getUserSuggestions() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) throw new Error('Unauthorized')
+  // Check if user is A|CAP+ to also show broadcast signals
+  const subs = await db.select().from(subscription).where(eq(subscription.userId, session.user.id)).limit(1)
+  const isPlus = subs.length > 0 && subs[0].acapPlus === true
+  if (isPlus) {
+    return db.select().from(suggestion).where(
+      or(eq(suggestion.userId, session.user.id), eq(suggestion.isBroadcast, true))
+    ).orderBy(desc(suggestion.createdAt))
+  }
   return db.select().from(suggestion).where(eq(suggestion.userId, session.user.id)).orderBy(desc(suggestion.createdAt))
 }
 
@@ -193,20 +201,20 @@ export async function broadcastSuggestion(title: string, content: string, profit
   const admin = await requireAdmin()
   if (!title || !content) throw new Error('All fields required')
   const subs = await db.select().from(subscription).where(eq(subscription.acapPlus, true))
-  for (const sub of subs) {
-    await db.insert(suggestion).values({
-      id: randomUUID(),
-      userId: sub.userId,
-      adminId: admin.id,
-      title: sanitize(title, 200),
-      content: sanitize(content),
-      profitPercent: profitPercent && profitPercent > 0 ? profitPercent : null,
-      profitMessage: profitMessage ? sanitize(profitMessage, 500) : null,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
-      imageUrl: imageUrl || null,
-      audioUrl: audioUrl || null,
-    })
-  }
+  // Create one broadcast entry visible to all Plus users via isBroadcast flag
+  await db.insert(suggestion).values({
+    id: randomUUID(),
+    userId: admin.id, // owner is the admin
+    adminId: admin.id,
+    title: sanitize(title, 200),
+    content: sanitize(content),
+    profitPercent: profitPercent && profitPercent > 0 ? profitPercent : null,
+    profitMessage: profitMessage ? sanitize(profitMessage, 500) : null,
+    expiresAt: expiresAt ? new Date(expiresAt) : null,
+    imageUrl: imageUrl || null,
+    audioUrl: audioUrl || null,
+    isBroadcast: true,
+  })
   return subs.length
 }
 

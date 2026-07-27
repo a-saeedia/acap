@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
     await pool.query(`ALTER TABLE signal ADD COLUMN IF NOT EXISTS "audience" text NOT NULL DEFAULT 'general'`)
     // New: type field for acap_revenue to separate general vs plus revenue
     await pool.query(`ALTER TABLE acap_revenue ADD COLUMN IF NOT EXISTS "type" text NOT NULL DEFAULT 'general'`)
+    // New: isBroadcast field for suggestion to mark broadcast-to-all-plus signals
+    await pool.query(`ALTER TABLE suggestion ADD COLUMN IF NOT EXISTS "isBroadcast" boolean NOT NULL DEFAULT false`)
 
     return NextResponse.json({ success: true, message: 'All migrations applied' })
   } catch (e: any) {

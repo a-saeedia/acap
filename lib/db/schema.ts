@@ -119,6 +119,7 @@ export const suggestion = pgTable('suggestion', {
   audioUrl: text('audioUrl'),
   expiresAt: timestamp('expiresAt'),
   actualProfit: real('actual_profit'),
+  isBroadcast: boolean('isBroadcast').notNull().default(false),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
