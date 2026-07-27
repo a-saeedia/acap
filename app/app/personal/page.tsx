@@ -266,7 +266,7 @@ export default function PersonalPage() {
     ).finally(() => setLoading(false))
   }, [])
 
-  const acapSignals = sugs.filter((s: any) => s.profitPercent != null && s.profitPercent > 0)
+  const acapSignals = sugs
 
   return (
     <div className="flex flex-col h-full">
@@ -281,7 +281,7 @@ export default function PersonalPage() {
       ) : (
         <div className="flex-1 overflow-y-auto py-3 px-0.5 scrollbar-thin">
           {acapSignals.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">هنوز سیگنالی دریافت نکرده‌اید</p>
+            <p className="text-center py-8 text-gray-500">هنوز پیغامی دریافت نکرده‌اید</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {acapSignals.map((s: any) => (
