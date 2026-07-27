@@ -15,26 +15,21 @@ export async function GET(req: NextRequest) {
     }
 
     if (cmds === 'retro-broadcast') {
-      const { rows: suggestions } = await pool.query(
-        `SELECT title, content, "profitPercent", "profitMessage", "imageUrl", "audioUrl", "expiresAt", "adminId"
-         FROM suggestion WHERE "adminId" IS NOT NULL AND ("isBroadcast" IS NULL OR "isBroadcast" = false)
-         GROUP BY title, content, "profitPercent", "profitMessage", "imageUrl", "audioUrl", "expiresAt", "adminId"`
+      // Step 1: Mark ALL existing admin-created suggestions as isBroadcast
+      const updateRes = await pool.query(
+        `UPDATE suggestion SET "isBroadcast" = true WHERE "adminId" IS NOT NULL AND ("isBroadcast" IS NULL OR "isBroadcast" = false)`
       )
-      let created = 0
-      for (const s of suggestions) {
-        const existing = await pool.query(
-          `SELECT id FROM suggestion WHERE "isBroadcast" = true AND title = $1 AND content = $2`,
-          [s.title, s.content]
-        )
-        if (existing.rows.length > 0) continue
-        await pool.query(
-          `INSERT INTO suggestion (id, "userId", "adminId", title, content, "profitPercent", "profitMessage", "imageUrl", "audioUrl", "expiresAt", "isBroadcast", "createdAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW())`,
-          [randomUUID(), s.adminId, s.adminId, s.title, s.content, s.profitPercent, s.profitMessage, s.imageUrl, s.audioUrl, s.expiresAt]
-        )
-        created++
+      // Step 2: Deduplicate — for each unique (title, content), keep one broadcast entry, delete duplicates
+      const { rows: dupes } = await pool.query(
+        `SELECT id FROM suggestion WHERE "isBroadcast" = true AND id NOT IN (
+           SELECT MIN(id) FROM suggestion WHERE "isBroadcast" = true GROUP BY title, content
+         )`
+      )
+      if (dupes.length > 0) {
+        const ids = dupes.map((r: any) => `'${r.id}'`).join(',')
+        await pool.query(`DELETE FROM suggestion WHERE id IN (${ids})`)
       }
-      return NextResponse.json({ success: true, broadcastEntriesCreated: created })
+      return NextResponse.json({ success: true, markedAsBroadcast: updateRes.rowCount, duplicatesRemoved: dupes.length })
     }
 
     // Full migration run
