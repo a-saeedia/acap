@@ -1,5 +1,5 @@
 const {Pool}=require('pg');
-const p=new Pool({connectionString:'postgresql://neondb_owner:npg_7cDmedLMV9TH@ep-cool-rice-ad08tjh2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require'});
+const p=new Pool({connectionString:process.env.DATABASE_URL});
 (async()=>{
 try{
   const r=await p.query('SELECT count(*) FROM iran_stock');
