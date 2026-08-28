@@ -1,16 +1,20 @@
 import { pool } from '@/lib/db'
 import { fetchAllPrices, DEFAULT_STOCKS, fetchTsetmcSearch } from '@/lib/prices'
 import { detectAnomalies } from '@/lib/ml'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, timingSafeEqual, createHash } from 'node:crypto'
 
 const CRON_SECRET = process.env.CRON_SECRET
 
 export async function GET(req: Request) {
-  const isVercelCron = req.headers.get('x-vercel-cron') === '1'
   const url = new URL(req.url)
   const token = url.searchParams.get('token')
 
-  if (!isVercelCron && (!CRON_SECRET || token !== CRON_SECRET)) {
+  if (!CRON_SECRET || !token) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+  const a = createHash('sha256').update(String(token)).digest()
+  const b = createHash('sha256').update(CRON_SECRET).digest()
+  if (!timingSafeEqual(a, b)) {
     return new Response('Unauthorized', { status: 401 })
   }
 
@@ -51,8 +55,12 @@ export async function GET(req: Request) {
     const { prices, irrRate, stockPrices } = await fetchAllPrices(insCodeMap)
 
     // Batch upsert: update existing rows, insert new ones
+    // Type normalization: a symbol found via TSETMC is always 'iran-stock';
+    // forex pairs are 'forex'; everything else (crypto, gold, coins) is 'crypto'.
+    const classify = (sym: string): string =>
+      sym in stockPrices ? 'iran-stock' : /^[A-Z]{3}-IRR$/.test(sym) || /^(USD|EUR|GBP|AED|TRY|CHF|CAD|AUD|INR|KWD|SAR|SGD|MYR|CNY|RUB|AZN)-IRR$/.test(sym) ? 'forex' : 'crypto'
     const allEntries = [
-      ...Object.entries(prices).filter(([, d]) => d.price > 0).map(([sym, d]) => ({ sym, price: d.price, currency: d.currency, type: 'crypto' })),
+      ...Object.entries(prices).filter(([, d]) => d.price > 0).map(([sym, d]) => ({ sym, price: d.price, currency: d.currency, type: classify(sym) })),
       ...Object.entries(stockPrices).filter(([, d]) => d.price > 0).map(([sym, d]) => ({ sym, price: d.price, currency: 'IRR', type: 'iran-stock' })),
     ]
 
@@ -72,7 +80,13 @@ export async function GET(req: Request) {
       }
 
       for (const e of toUpdate) {
-        try { await pool.query('UPDATE asset_price SET price = $1, "updatedAt" = NOW() WHERE symbol = $2', [e.price, e.sym]) } catch (e2) { console.error('cron update error:', e2) }
+        try { await pool.query(
+          `UPDATE asset_price SET price = $1, "updatedAt" = NOW()
+           WHERE symbol = $2 AND id = (
+             SELECT id FROM asset_price WHERE symbol = $2 ORDER BY "updatedAt" DESC, id DESC LIMIT 1
+           )`,
+          [e.price, e.sym]
+        ) } catch (e2) { console.error('cron update error:', e2) }
       }
     }
 

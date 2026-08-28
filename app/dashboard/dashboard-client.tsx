@@ -469,6 +469,7 @@ export function DashboardClient() {
                       {['BTC', 'GOLD18', 'USD-IRR'].map(sym => {
                         const p = priceData[sym]
                         const change = p?.change ?? 0
+                        if (change === 0) return null
                         const isUp = change >= 0
                         return (
                           <span key={sym} className="text-[10px] font-bold text-white/80 bg-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5">

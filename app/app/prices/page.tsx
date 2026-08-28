@@ -105,19 +105,21 @@ function PriceBubble({ symbol, price, currency, weekChange }: { symbol: string; 
       <div className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))' }} />
       <div className="relative bg-card backdrop-blur-xl border border-border rounded-2xl p-4 hover:border-primary/30 transition-all duration-300 hover:-translate-y-0.5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            {renderIcon()}
-            <div>
-              <div className="text-sm font-bold text-foreground leading-tight">{label}</div>
-              <div className="text-[10px] text-muted-foreground font-mono">{symbol}</div>
+<div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              {renderIcon()}
+              <div>
+                <div className="text-sm font-bold text-foreground leading-tight">{label}</div>
+                <div className="text-[10px] text-muted-foreground font-mono">{symbol}</div>
+              </div>
             </div>
+            {weekChange !== 0 && (
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {isPositive ? '+' : ''}{weekChange.toFixed(1)}%
+              </div>
+            )}
           </div>
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
-            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {isPositive ? '+' : ''}{weekChange.toFixed(1)}%
-          </div>
-        </div>
         <div className="flex items-end justify-between">
           <div>
             <div className="text-lg font-black text-foreground tracking-tight font-mono">
@@ -137,6 +139,7 @@ export default function PricesPage() {
   const { t, lang } = useLang()
   const [activeTab, setActiveTab] = useState('all')
   const [prices, setPrices] = useState<Record<string, { price: number; currency: string; change?: number }>>({})
+  const [stale, setStale] = useState(false)
   const [loading, setLoading] = useState(true)
 
   async function loadPrices() {
@@ -146,12 +149,13 @@ export default function PricesPage() {
     try {
       const r = await fetch('/api/prices', { signal: controller.signal })
       const d = await r.json()
+      setStale(d.source === 'default')
       const m: Record<string, { price: number; currency: string; change?: number }> = {}
       for (const [k, v] of Object.entries(d.prices ?? {}) as [string, any][]) {
         if (v.price > 0) m[k] = v
       }
       setPrices(m)
-    } catch { setPrices({}) }
+    } catch { setPrices({}); setStale(false) }
     clearTimeout(tid)
     setLoading(false)
   }
@@ -198,6 +202,14 @@ export default function PricesPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : stale ? (
+        <div className="text-center py-16">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-amber-400" />
+          </div>
+          <p className="text-sm font-bold text-amber-400 mb-1">{t('price.no.data')}</p>
+          <button onClick={loadPrices} className="text-xs text-muted-foreground underline">{t('price.retry')}</button>
         </div>
       ) : Object.keys(prices).length === 0 ? (
         <div className="text-center py-20">

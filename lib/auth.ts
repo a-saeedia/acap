@@ -28,6 +28,11 @@ export const auth = betterAuth({
       await sendResetPasswordEmail(user.email, `${base}/reset-password?token=${token}`)
     },
   },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 10,
+  },
   ...(process.env.NODE_ENV === 'development' && {
     advanced: {
       defaultCookieAttributes: { sameSite: 'lax', secure: false },

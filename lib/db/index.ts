@@ -10,6 +10,10 @@ export const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : { rejectUnauthorized: false },
 })
 
+pool.on('error', (err) => {
+  console.error('Unexpected PG pool error:', err)
+})
+
 // Warm up pool on first import
 pool.query('SELECT 1').catch(() => {})
 

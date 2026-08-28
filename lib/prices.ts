@@ -1,3 +1,4 @@
+export {}
 const COINGECKO = 'https://api.coingecko.com/api/v3'
 const TGJU_AJAX = 'https://call2.tgju.org/ajax.json'
 const TGJU_HTML = 'https://www.tgju.org/'
@@ -6,7 +7,7 @@ const NOBITEX = 'https://api.nobitex.ir'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA } }
 const TGJU_FETCH_OPTS = { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': UA, Accept: 'text/html,application/json,*/*' } }
-const FALLBACK_USD_RATE = 1850000
+export const FALLBACK_USD_RATE = 1850000
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin',
@@ -447,13 +448,20 @@ export async function fetchAllPrices(insCodeMap?: Record<string, string>): Promi
   irrRate: number
   stockPrices: Record<string, { price: number; change: number; closePrice: number }>
 }> {
-  const stockFetch = insCodeMap
-    ? Promise.allSettled(
-        Object.entries(insCodeMap).map(([symbol, code]) =>
-          fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))
-        )
+  // Fetch stocks in batches of 40 to avoid serverless memory/concurrency blowup
+  const stockFetch = (async () => {
+    const entries = Object.entries(insCodeMap ?? {})
+    const stockFetchPromises: Array<Promise<PromiseSettledResult<{ symbol: string; info: any }>[]>> = []
+    for (let i = 0; i < entries.length; i += 40) {
+      const batch = entries.slice(i, i + 40)
+      stockFetchPromises.push(
+        Promise.allSettled(batch.map(([symbol, code]) => fetchTsetmcPriceInfo(code).then(info => ({ symbol, info }))))
       )
-    : Promise.resolve([] as PromiseSettledResult<{ symbol: string; info: any }>[])
+    }
+    const settledBatches: Array<PromiseSettledResult<{ symbol: string; info: any }>[]> = []
+    for (const p of stockFetchPromises) settledBatches.push(await p)
+    return settledBatches.flat()
+  })()
 
   // Only need nobitex for rate + TGJU for commodities
   const [nobitexRate, tgju, stockResults] = await Promise.all([

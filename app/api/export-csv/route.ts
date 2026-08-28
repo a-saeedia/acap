@@ -30,6 +30,13 @@ export async function GET() {
       aggressive: 'تهاجمی',
     }
 
+    // CSV-injection-safe quoting: prefix formulas, escape embedded quotes
+    const esc = (v: any) => {
+      const s = String(v ?? '')
+      const guarded = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
+      return `"${guarded.replace(/"/g, '""')}"`
+    }
+
     const rows = [['نام', 'ایمیل', 'موبایل', 'سن', 'A|CAP+', 'تاریخ ثبت\u200Cنام', 'امتیاز تست', 'نوع سرمایه\u200Cگذاری', 'تاریخ تست'].join(',')]
 
     for (const u of allUsers) {
@@ -40,9 +47,9 @@ export async function GET() {
 
       if (rs.length === 0) {
         rows.push([
-          `"${u.name}"`,
-          `"${u.email}"`,
-          `"${phone}"`,
+          esc(u.name),
+          esc(u.email),
+          esc(phone),
           p?.age ?? '',
           s?.acapPlus ? 'بله' : 'خیر',
           new Date(u.createdAt).toLocaleDateString('fa-IR'),
@@ -51,14 +58,14 @@ export async function GET() {
       } else {
         for (const r of rs) {
           rows.push([
-            `"${u.name}"`,
-            `"${u.email}"`,
-            `"${phone}"`,
+            esc(u.name),
+            esc(u.email),
+            esc(phone),
             p?.age ?? '',
             s?.acapPlus ? 'بله' : 'خیر',
             new Date(u.createdAt).toLocaleDateString('fa-IR'),
             r.score,
-            `"${TYPE_LABELS[r.investorType] || r.investorType}"`,
+            esc(TYPE_LABELS[r.investorType] || r.investorType),
             new Date(r.createdAt).toLocaleDateString('fa-IR'),
           ].join(','))
         }

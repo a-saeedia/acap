@@ -98,6 +98,15 @@ export async function getUnreadSuggestionCount() {
 export async function markSuggestionRead(suggestionId: string) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) throw new Error('Unauthorized')
+  const rows = await db.select().from(suggestion).where(eq(suggestion.id, suggestionId)).limit(1)
+  const target = rows[0]
+  if (!target) throw new Error('Not found')
+  const isOwner = target.userId === session.user.id
+  if (!isOwner) {
+    // Admin may also mark suggestions read
+    const users = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1)
+    if (users[0]?.role !== 'admin') throw new Error('Forbidden')
+  }
   await db.update(suggestion).set({ isRead: true, readAt: new Date() }).where(eq(suggestion.id, suggestionId))
 }
 

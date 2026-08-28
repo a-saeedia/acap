@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto'
 export async function GET(req: NextRequest) {
   try {
     const key = req.nextUrl.searchParams.get('key')
-    if (key !== 'acap_migrate_2026') return NextResponse.json({ error: 'Invalid key' }, { status: 403 })
+    if (!process.env.MIGRATE_SECRET || key !== process.env.MIGRATE_SECRET) return NextResponse.json({ error: 'Invalid key' }, { status: 403 })
 
     const cmds = req.nextUrl.searchParams.get('cmd')
 
@@ -47,6 +47,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'All migrations applied' })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message, detail: e.stack?.substring(0, 300) }, { status: 500 })
+    return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }

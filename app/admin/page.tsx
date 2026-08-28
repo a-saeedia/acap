@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUsers, toggleAcapPlus, sendSuggestion, getSentSuggestions, deleteSuggestion, getAllSuggestions, getUserAssets, getTickets, getTicketMessages, replyToTicket, closeTicket, deleteTicket, toggleScanner, getUserQuizResults, deleteUser, broadcastSuggestion, getAcapRevenue, addAcapRevenue, updateAcapRevenue, deleteAcapRevenue, updateSuggestion, getAdminArticles, getAdminCourses, getAdminEnrollments, getPendingAcapPlusRequests, approveAcapPlusRequest } from '@/app/actions/admin'
 import { useSession } from '@/lib/auth-client'
@@ -63,6 +63,7 @@ export default function AdminPage() {
   const [adminError, setAdminError] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sdHover, setSdHover] = useState(false)
+  const sugSendingRef = useRef(false)
 
   async function sha256(msg: string): Promise<string> {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg))
@@ -156,7 +157,9 @@ export default function AdminPage() {
   }
 
   async function handleSuggestion(userId: string) {
+    if (sugSendingRef.current) return
     if (!sugTitle.trim() || !sugContent.trim()) { setSugError('عنوان و متن پیشنهاد را وارد کنید'); setSugSuccess(''); return }
+    sugSendingRef.current = true
     setSugSending(true); setSugError(''); setSugSuccess('')
     try {
       const profit = sugProfit ? parseFloat(sugProfit) : undefined
@@ -168,7 +171,7 @@ export default function AdminPage() {
         setSugSuccess('پیشنهاد با موفقیت ارسال شد'); loadHistory(userId)
       }
       setSugTitle(''); setSugContent(''); setSugProfit(''); setSugProfitMsg(''); setSugExpiresAt(''); setSugImageUrl(''); setSugAudioUrl(''); setSugBroadcast(false)
-    } catch (e) { setSugError(e instanceof Error ? e.message : 'خطا در ارسال پیشنهاد') } finally { setSugSending(false) }
+    } catch (e) { setSugError(e instanceof Error ? e.message : 'خطا در ارسال پیشنهاد') } finally { sugSendingRef.current = false; setSugSending(false) }
   }
 
   async function openTicket(ticketId: string) {

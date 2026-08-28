@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
+import { db } from '@/lib/db'
+import { user } from '@/lib/db/schema'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
+import { eq } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 const SYMBOLS = [
@@ -33,6 +38,14 @@ export async function GET() {
 }
 
 export async function POST() {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const users = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1)
+    if (users[0]?.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 })
+  } catch {
+    return Response.json({ error: 'Auth check failed' }, { status: 401 })
+  }
   try {
     await pool.query('DELETE FROM acap_revenue')
     await pool.query('DELETE FROM signal')
